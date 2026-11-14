@@ -5,5 +5,5 @@ uv run --with pyinstaller --with nbtlib --with pyside6 --with psutil --with pyya
   --exclude-module PySide6.Qt3DCore --exclude-module PySide6.QtMultimedia --exclude-module PySide6.QtCharts ^
   main.py
 echo.
-echo Bitti: dist\Spypaper.exe  (Translation klasorunu yanina koy; config.json ilk acilista olusur)
+echo Bitti: dist\Spypaper.exe  (config.json, Translation ve Icons ilk kullanimda exenin yaninda olusur)
 pause

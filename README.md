@@ -1,245 +1,245 @@
 # Spypaper
 
-**Minecraft sunucuları için masaüstü yönetim paneli.** Sunucuyu başlat/durdur, konsolu canlı izle, oyuncuların envanterine bak, eklenti ve modları yönet, yedek al, sunucu yazılımını tek tıkla güncelle ve sunucuna özel yapay zeka asistanı **Esplora**'ya danış.
+**English** · [Türkçe](README.tr.md)
 
-Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlenir. 16 dil desteği vardır. Özgür ve açık kaynaklıdır (GPL-3.0).
+**A desktop management panel for Minecraft servers.** Start and stop your server, watch the console live, look into player inventories, manage plugins and mods, take backups, install or update the server software in one click, view a live BlueMap, and ask **Esplora**, an AI assistant that knows your server.
 
-**[⬇ Son sürümü indir](https://github.com/TyraelDiablo/Spypaper-Releases/releases/latest)** · **[Hata bildir / öneri yap](https://github.com/TyraelDiablo/Spypaper-Releases/issues)**
+Written in Python + PySide6 and built as a single `.exe` for Windows. The interface is available in 16 languages. Free and open source (GPL-3.0).
 
-> Spypaper resmi bir Minecraft ürünü değildir; Mojang Studios ya da Microsoft ile bağlantısı yoktur.
+**[⬇ Download the latest release](https://github.com/TyraelDiablo/Spypaper-Releases/releases/latest)** · **[Report a bug / suggest a feature](https://github.com/TyraelDiablo/Spypaper-Releases/issues)**
+
+> Spypaper is not an official Minecraft product. It is not approved by or associated with Mojang Studios or Microsoft.
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
 ---
 
-## Özellikler
+## Features
 
-| Bölüm | Neler yapar |
+| Section | What it does |
 |---|---|
-| **Ana ekran** | Birden çok sunucuyu kartlar halinde listeler; paneli açmadan hızlı başlat/durdur, düzenle, klasörü aç. |
-| **Dashboard** | Anlık RAM/CPU, çevrimiçi oyuncular, günlük giriş, ölüm, gecikme ve hata sayıları, saatlik etkinlik grafiği. |
-| **Canlı Konsol** | Renkli konsol, komut geçmişi, sunucu mesajlarının panel diline çevrilmesi (isteğe bağlı). |
-| **Günlük** | `logs/latest.log` ve arşivlenmiş `.log.gz` dosyalarından olaylar, oturumlar ve grafikler. Sunucu panel dışında açılmış olsa bile takip eder. |
-| **Esplora** | API anahtarıyla çalışan, yalnızca bu sunucunun yönetimine odaklı yapay zeka asistanı (Anthropic Claude, Google Gemini, OpenAI ve uyumlu servisler). Kategorili hazır sorular, mesaj balonları, durdurma ve yeniden oluşturma. Komut çalıştırmaz; önerdiği komutları sen **▶ Çalıştır** ile gönderirsin. |
-| **Oyuncular** | Envanter, zırh ve Ender sandığı; eşya ikonları, büyüler, kaplamalar, dayanıklılık. Eşya adları seçili dilde (Minecraft'ın kendi dil dosyalarıyla). Sık kullanılan oyuncu komutları. Minecraft 26.x'in yeni `world/players/` düzenini de okur. |
-| **Eklentiler / Modlar** | Paper, Purpur ve Spigot'ta `plugins/`, Fabric, Quilt, Forge ve NeoForge'da `mods/` klasörünü yönetir: ekle, sil, devre dışı bırak. |
-| **Mod Dil Dosyaları** | Mod ve eklenti jar'larının içindeki İngilizce dil dosyalarını, yolu ne olursa olsun bulur (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…). JSON ve YAML, düz ya da iç içe. Çeviriyi sen yazarsın; panel jar'ın içine ve eklentinin kendi klasöründeki kopyaya kaydeder. Biçim kodu kontrolü (`%s`, `%player%`, `§a`, `&c`, `<red>`), dışa/içe aktarma, orijinali geri yükleme. |
-| **Sunucu Ayarları** | `server.properties` düzenleyici, Java yolu, RAM, jar, sunucu ikonu. |
-| **Whitelist & Ban** | Whitelist, ban ve op listeleri. |
-| **Bakım & Yedek** | Dünya (Overworld, Nether, End) yedeği, otomatik yedek ve bakım modu. |
-| **Canlı Harita** | BlueMap 3D haritası panelin içinde açılır. BlueMap kurulu değilse sunucunun yazılımına ve sürümüne uygun olanı Modrinth'ten indirip kurar, doku indirme iznini (onayınla) ayarlar. |
-| **Sunucu Yazılımı** | **Paper, Purpur, Vanilla, Fabric, Forge, NeoForge** için sürüm seçip indirme/kurma. Mümkün olduğunda SHA-256 / SHA-1 doğrulaması yapılır, eski jar `backups/jars/` klasörüne taşınır. |
-| **Güvenlik** | 4 seviyeli güvenli mod (tehlikeli komutlar için onay, engelleme ya da salt okunur) ve sunucu başına isteğe bağlı PIN. |
-| **Görünüm** | 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller. |
+| **Home screen** | Lists all your servers as cards; quick start/stop, edit and open folder without entering the panel. |
+| **Dashboard** | Live RAM/CPU, online players, today's joins, deaths, lag warnings and errors, hourly activity chart. |
+| **Live Console** | Colored console, command history, optional translation of server messages into the panel language. |
+| **Log** | Events, sessions and charts from `logs/latest.log` and archived `.log.gz` files. Works even if the server was started outside the panel. |
+| **Esplora** | An AI assistant (bring your own API key: Anthropic Claude, Google Gemini, OpenAI and compatible services) scoped strictly to managing this server. Preset questions by category, chat bubbles, stop and regenerate. It never runs commands itself; you send the commands it suggests with **▶ Run**. |
+| **Players** | Inventory, armor and Ender chest with item icons, enchantments, armor trims and durability. Item names in your language (from Minecraft's own language files). Common player commands. Supports Minecraft 26.x's new `world/players/` layout. |
+| **Plugins / Mods** | Manages `plugins/` on Paper, Purpur and Spigot, and `mods/` on Fabric, Quilt, Forge and NeoForge: add, remove, disable. |
+| **Mod Language Files** | Finds the English language files inside mod and plugin jars wherever they are (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…), JSON or YAML, flat or nested. You write the translation; the panel saves it into the jar and into the plugin's own data folder copy. Format code checks (`%s`, `%player%`, `§a`, `&c`, `<red>`), import/export, restore original. |
+| **Server Settings** | `server.properties` editor, Java path, RAM, jar, server icon. |
+| **Whitelist & Bans** | Whitelist, ban and op lists. |
+| **Maintenance & Backups** | World backups (Overworld, Nether, End), automatic backups and maintenance mode. |
+| **Live Map** | Shows the BlueMap 3D map inside the panel. If BlueMap isn't installed, it downloads the right version for your server software and Minecraft version from Modrinth and (with your consent) enables its texture download. |
+| **Server Software** | Pick a version and download/install **Paper, Purpur, Vanilla, Fabric, Forge or NeoForge**. Files are verified with SHA-256 / SHA-1 where available; the old jar is moved to `backups/jars/`. |
+| **Security** | 4-level safe mode (confirm, block or read-only for dangerous commands) and an optional per-server PIN. |
+| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages. |
 
 ---
 
-## Gereksinimler
-
-- **Windows 10/11** (geliştirme sırasında Linux ve macOS'ta da çalışır; API anahtarı şifrelemesi yalnızca Windows'ta DPAPI ile yapılır).
-- **Java**: Minecraft sürümüne uygun (1.20.5 ve sonrası için Java 21, 26.x için Java 25). Panel Java'yı kendisi kurmaz.
-- Kaynaktan çalıştırmak için: **Python 3.10+** ve [uv](https://docs.astral.sh/uv/).
-
----
-
-## Hızlı başlangıç
-
-### Hazır exe ile
-
-1. [Releases](https://github.com/TyraelDiablo/Spypaper-Releases/releases/latest) sayfasından `Spypaper.exe` dosyasını indirip bir klasöre koy (ör. `D:\Spypaper\`).
-2. Eşya adlarının ve ikonların görünmesi için yanına `Translation` ve `Icons` klasörlerini koy (aşağıya bak).
-3. Exe'yi aç → **Sunucu Ekle** → sunucu klasörünü seç. Jar, sürüm ve yazılım otomatik algılanır.
-
-`config.json` ilk açılışta exe'nin yanında oluşur. Sunucu profilleri, ayarlar ve şifrelenmiş API anahtarı buradadır, **paylaşma**.
-
-### Kaynaktan
-
-```bat
-calistir.bat
-```
-
-ya da
-
-```bat
-uv run --with nbtlib --with pyside6 --with psutil --with pyyaml python main.py
-```
-
-### Exe derleme
-
-```bat
-build.bat
-```
-
-Çıktı `dist\Spypaper.exe` olur. Dil dosyaları (`locales/`) ve yasal metinler (`legal/`) exe'nin içine gömülür. Gömülü harita için Qt WebEngine de pakete girdiğinden exe 150 MB civarındadır.
-
----
-
-## Minecraft dil dosyaları ve ikonlar
-
-Eşya, büyü ve ölüm mesajı gibi oyun metinleri ve eşya ikonları Minecraft'ın kendi dosyalarından okunur. Bu dosyalar Mojang'a ait olduğu için Spypaper ile **dağıtılmaz**; her kullanıcı kendi bilgisayarında hazırlar:
-
-**Oyuncular** sayfasındaki **Oyun Dosyalarını Al** düğmesi ya da **☰ → Oyun Dosyaları** ile:
-
-1. **Bu bilgisayardaki Minecraft kurulumundan çıkar:** `.minecraft` otomatik bulunur, internet gerekmez. Önce oyunun o sürümünü launcher'dan bir kez açmış olman gerekir.
-2. **Mojang'ın resmî sunucularından indir:** Bilgisayarda Minecraft yoksa (ör. yalnızca sunucu makinesi) kullanılır. İstemci jar'ı geçici olarak indirilir, yalnızca dil dosyaları ve ikonlar ayrılıp jar silinir.
-
-Dosyalar exe'nin yanındaki `Translation` ve `Icons` klasörlerine yazılır. Komut satırını tercih edenler için `mc_dilleri_cikar.bat` da aynı işi yapar:
-
-```bat
-mc_dilleri_cikar.bat                      :: panelin 16 dili, en yeni sürüm
-mc_dilleri_cikar.bat --surum 26.3         :: belirli sürüm
-mc_dilleri_cikar.bat --hepsi              :: Minecraft'taki tüm diller
-```
-
----
-
-## Sunucu yazılımları
-
-**Güncelle** düğmesi mevcut yazılımı algılar ve aynı yazılımın yeni sürümünü önerir; istersen başka bir yazılıma geçebilirsin.
-
-| Yazılım | Kaynak | Doğrulama | Not |
-|---|---|---|---|
-| Paper | PaperMC Fill API v3 | SHA-256 | Yalnızca STABLE kanal |
-| Purpur | api.purpurmc.org | — | |
-| Vanilla | Mojang sürüm listesi | SHA-1 | Yalnızca kararlı sürümler |
-| Fabric | meta.fabricmc.net | — | Sunucu başlatıcı jar'ı |
-| Forge | files.minecraftforge.net | SHA-1 | Kurulum programı çalıştırılır |
-| NeoForge | maven.neoforged.net | SHA-1 | Kurulum programı çalıştırılır; beta sürümler işaretlenir |
-
-Forge (1.17+) ve NeoForge sunucuları jar ile değil, `libraries/.../win_args.txt` argüman dosyasıyla başlatılır. Panel bunu otomatik yapar (`java @user_jvm_args.txt @libraries/.../win_args.txt nogui`).
-
-> PaperMC, isteklerde iletişim bilgisi içeren bir User-Agent ister. ☰ → Genel bölümünden e-posta ya da site adresini girebilirsin.
-
-**Minecraft EULA:** Sunucu ilk kez başlatılırken `eula.txt` kabul edilmemişse panel sana sorar. Panel EULA'yı senin yerine kabul etmez.
-
----
-
-## Esplora (yapay zeka asistanı)
-
-1. ☰ → **Yapay Zeka** → sağlayıcıyı seç, API anahtarını gir → **Bağlantıyı Test Et**.
-2. **Modelleri Getir** ile anahtarının erişebildiği modelleri listele.
-
-| Sağlayıcı | Varsayılan model | Not |
-|---|---|---|
-| Anthropic (Claude) | `claude-sonnet-5-5` | |
-| Google Gemini | `gemini-3.8-flash` | Kapatılan bir model için servis yeni model önerirse panel otomatik geçer |
-| OpenAI / uyumlu | `gpt-4o-mini` | OpenRouter, LM Studio, Ollama vb. için *Sunucu adresi* alanını kullan |
-
-**Gizlilik:** Esplora'ya soru sorduğunda; sorun, sunucu adı, sürümü, ayarları, eklenti/mod listesi, oyuncu adları, son log satırları ve varsa son çökme raporu seçtiğin yapay zeka sağlayıcısına gönderilir. Ayrıntılar için [GIZLILIK.md](legal/GIZLILIK.md).
-
-API anahtarı `config.json` içinde saklanır; Windows'ta kullanıcı hesabına bağlı olarak DPAPI ile şifrelenir.
-
----
-
-## Arayüz çevirileri
-
-Arayüz metinleri Türkçe yazılır ve `tools/translations/*.tsv` tablolarıyla diğer dillere çevrilir.
-
-```bat
-uv run python tools\extract_strings.py      :: koddaki çevrilecek metinleri ve eksikleri listeler
-uv run python tools\build_locales.py        :: TSV -> locales\<dil>.json
-```
-
-`build_locales.py`, çevirideki yer tutucular (`{n}`, `{name}`…) asıl metinle uyuşmazsa hata verir.
-
-Desteklenen diller: Türkçe, English, Deutsch, Français, Español, Português (Brasil), Italiano, Nederlands, Polski, Русский, Українська, Azərbaycanca, 日本語, 한국어, 简体中文, العربية.
-
----
-
-## Klasör yapısı
-
-```
-SpypaperQt/
-├─ main.py                 giriş noktası
-├─ core/                   arayüzden bağımsız iş mantığı
-│  ├─ config.py            ayarlar, sunucu profilleri, jar/yazılım algılama
-│  ├─ server.py            sunucu süreci (başlat, durdur, komut)
-│  ├─ software.py          Paper/Purpur/Vanilla/Fabric/Forge/NeoForge sağlayıcıları
-│  ├─ updater.py           indirme ve doğrulama
-│  ├─ players.py           oyuncu verisi (NBT), envanter, Minecraft çevirileri
-│  ├─ logwatch.py          latest.log takibi, olaylar, metrikler
-│  ├─ logtrans.py          sunucu mesajlarını panel diline çevirme
-│  ├─ files.py             eklenti/mod klasörü, server.properties, yedekler
-│  ├─ maintenance.py       bakım modu ve otomatik yedek
-│  ├─ gamefiles.py         Minecraft dil dosyaları ve ikonlar (yerel kurulum ya da Mojang)
-│  ├─ modtrans.py          mod/eklenti dil dosyası düzenleyici (JSON, YAML)
-│  ├─ bluemap.py           BlueMap algılama, Modrinth'ten kurulum, ayarlar
-│  ├─ ai.py, esplora.py    yapay zeka sağlayıcıları, Esplora kuralları ve hazır sorular
-│  ├─ safemode.py          güvenli mod ve PIN
-│  └─ secrets.py           API anahtarı şifreleme
-├─ ui/                     PySide6 arayüzü (pencere, sayfalar, temalar, i18n)
-├─ locales/                derlenmiş arayüz çevirileri
-├─ tools/                  çeviri ve Minecraft dil dosyası araçları
-├─ legal/                  gizlilik, üçüncü taraf bildirimleri, lisans kopyası
-├─ docs/screenshots/       README görselleri
-├─ LICENSE                 GNU GPL v3
-├─ calistir.bat, build.bat, mc_dilleri_cikar.bat
-```
-
----
-
-## Ekran görüntüleri
+## Screenshots
 
 | | |
 |---|---|
-| ![Ana ekran](docs/screenshots/ana-ekran.png) | ![Günlük](docs/screenshots/gunluk.png) |
-| **Ana ekran:** birden çok sunucu, durum ve yazılım rozetleri | **Günlük:** latest.log ve arşivlerden olaylar, oturumlar |
-| ![Esplora](docs/screenshots/esplora.png) | ![Mod Dil Dosyaları](docs/screenshots/mod-dil-dosyalari.png) |
-| **Esplora:** sunucuya özel yapay zeka, önerilen komutu tek tıkla gönder | **Mod Dil Dosyaları:** eklenti/mod dil dosyalarını yan yana çevir |
-| ![Açık tema](docs/screenshots/dashboard-acik-tema.png) | |
-| **Açık tema:** 7 temadan biri | |
+| ![Home screen](docs/screenshots/ana-ekran.png) | ![Log](docs/screenshots/gunluk.png) |
+| **Home screen:** multiple servers with status and software badges | **Log:** events and sessions from latest.log and archives |
+| ![Esplora](docs/screenshots/esplora.png) | ![Mod Language Files](docs/screenshots/mod-dil-dosyalari.png) |
+| **Esplora:** server-aware AI, send a suggested command in one click | **Mod Language Files:** translate plugin/mod language files side by side |
+| ![Light theme](docs/screenshots/dashboard-acik-tema.png) | |
+| **Light theme:** one of 7 themes | |
+
+*Screenshots show the Turkish interface; the app follows the language you choose.*
 
 ---
 
-## Yol haritası
+## Requirements
 
-Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com/TyraelDiablo/Spypaper-Releases/issues) sayfasına yazabilirsin):
-
-- [ ] **Zamanlanmış görevler:** belirli saatte yeniden başlatma, geri sayım duyurusu, komut ve yedek
-- [ ] **Çökme bekçisi:** beklenmedik kapanmada otomatik yeniden başlatma, art arda çökmede durma
-- [ ] **Yedekten geri yükleme** ve yedek sayısı sınırı (eski yedekleri otomatik silme)
-- [ ] **Eklenti ve mod mağazası:** Modrinth ve Hangar'dan arama, kurma ve güncelleme uyarısı
-- [ ] **Discord bildirimleri:** açıldı, kapandı, çöktü, oyuncu girdi (webhook)
-- [ ] **Java yöneticisi:** Minecraft sürümüne uygun Java'yı algılama ve indirme
-- [ ] **TPS / MSPT grafiği** Dashboard'da
-- [ ] **Yapılandırma dosyası editörü** (`paper-global.yml`, `config/*.toml`…) ve biçim denetimi
-- [ ] **Panelin kendini güncellemesi** (GitHub Releases)
-- [ ] **Uzaktan erişim** için web arayüzü
+- **Windows 10/11** (also runs on Linux and macOS from source; API key encryption uses Windows DPAPI and is Windows-only).
+- **Java** matching your Minecraft version (Java 21 for 1.20.5+, Java 25 for 26.x). The panel does not install Java.
+- To run from source: **Python 3.10+** and [uv](https://docs.astral.sh/uv/).
 
 ---
 
-## Sorun giderme
+## Getting started
 
-- **Eşya adları İngilizce görünüyor ya da ikon yok:** Oyuncular sayfasında **Oyun Dosyalarını Al**'a bas. Sayfanın altında hangi dil dosyasının kullanıldığı yazar.
-- **Sunucu başlamıyor:** Canlı Konsol'daki hatayı oku ya da Esplora'da *Sunucu neden açılmıyor?* sorusunu kullan. Java sürümünün Minecraft sürümüne uygun olduğundan emin ol.
-- **Forge/NeoForge kurulumu başarısız:** Java yolunun doğru olduğunu ve sunucu klasörüne yazma izni olduğunu kontrol et; kurulum çıktısının son satırları pencerede gösterilir.
-- **Gemini/OpenAI 429 hatası:** Sağlayıcının istek sınırı doldu; bir süre sonra tekrar dene.
+### With the exe
+
+1. Download `Spypaper.exe` from [Releases](https://github.com/TyraelDiablo/Spypaper-Releases/releases/latest) and put it in a folder (e.g. `D:\Spypaper\`).
+2. Open it → **Add Server** → choose your server folder. The jar, version and software are detected automatically.
+3. For item names and icons, use **Players → Get Game Files** (see below).
+
+`config.json` is created next to the exe on first start. It holds your server profiles, settings and the encrypted API key, so **don't share it**.
+
+### From source
+
+The source code lives in the `src` folder.
+
+```bat
+src\calistir.bat
+```
+
+or
+
+```bat
+cd src
+uv run --with nbtlib --with pyside6 --with psutil --with pyyaml python main.py
+```
+
+### Building the exe
+
+```bat
+src\build.bat
+```
+
+The result is `src\dist\Spypaper.exe`. The interface translations (`locales/`) and legal texts (`legal/`) are embedded in the exe. Qt WebEngine is included for the built-in map, so the exe is about 150 MB.
 
 ---
 
-## Lisans
+## Minecraft language files and icons
 
-Spypaper özgür ve açık kaynak bir yazılımdır; [GNU Genel Kamu Lisansı sürüm 3](LICENSE) (GPL-3.0) ile lisanslanmıştır.
-Programı ücretsiz kullanabilir, inceleyebilir, değiştirebilir ve paylaşabilirsin. Değiştirilmiş bir sürümü dağıtırsan
-kaynak kodunu da aynı lisansla paylaşman gerekir. Program hiçbir garanti olmadan sunulur.
+In-game texts such as item, enchantment and death message names, and the item icons, are read from Minecraft's own files. These files belong to Mojang, so they are **not distributed** with Spypaper; each user prepares them on their own computer.
+
+Use the **Get Game Files** button on the **Players** page or **☰ → Game Files**:
+
+1. **Extract from the Minecraft installation on this computer:** `.minecraft` is found automatically, no internet needed. You must have launched that game version from the launcher at least once.
+2. **Download from Mojang's official servers:** for machines without Minecraft (e.g. a dedicated server box). The client jar is downloaded temporarily; only the language files and icons are kept and the jar is deleted.
+
+Files are written to the `Translation` and `Icons` folders next to the exe. If you prefer the command line, `mc_dilleri_cikar.bat` does the same:
+
+```bat
+src\mc_dilleri_cikar.bat                  :: the panel's 16 languages, newest version
+src\mc_dilleri_cikar.bat --surum 26.3     :: a specific version
+src\mc_dilleri_cikar.bat --hepsi          :: every language in Minecraft
+```
+
+---
+
+## Server software
+
+The **Update** button detects your current software and offers newer builds of it; you can also switch to different software.
+
+| Software | Source | Verification | Notes |
+|---|---|---|---|
+| Paper | PaperMC Fill API v3 | SHA-256 | STABLE channel only |
+| Purpur | api.purpurmc.org | — | |
+| Vanilla | Mojang version manifest | SHA-1 | Releases only |
+| Fabric | meta.fabricmc.net | — | Server launcher jar |
+| Forge | files.minecraftforge.net | SHA-1 | Runs the official installer |
+| NeoForge | maven.neoforged.net | SHA-1 | Runs the official installer; beta builds are flagged |
+
+Forge (1.17+) and NeoForge servers start from an argument file instead of a jar (`java @user_jvm_args.txt @libraries/.../win_args.txt nogui`). The panel handles this automatically.
+
+> PaperMC asks for a User-Agent with contact information. You can enter an e-mail address or website under ☰ → General.
+
+**Minecraft EULA:** if `eula.txt` hasn't been accepted when the server starts for the first time, the panel asks you. It never accepts the EULA on your behalf.
+
+---
+
+## Esplora (AI assistant)
+
+1. ☰ → **AI** → choose a provider, enter your API key → **Test Connection**.
+2. Use **Fetch Models** to list the models your key can access.
+
+| Provider | Default model | Notes |
+|---|---|---|
+| Anthropic (Claude) | `claude-sonnet-5-5` | |
+| Google Gemini | `gemini-3.8-flash` | If a model is retired and the service suggests a new one, the panel switches automatically |
+| OpenAI / compatible | `gpt-4o-mini` | Use the *Server URL* field for OpenRouter, LM Studio, Ollama, etc. |
+
+**Privacy:** when you ask Esplora something, your question plus the server name, version, settings, plugin/mod list, player names, recent log lines and the latest crash report (if any) are sent to the AI provider you chose. See the [Privacy Notice](src/legal/PRIVACY_EN.md).
+
+The API key is stored in `config.json`; on Windows it is encrypted with DPAPI, bound to your user account.
+
+---
+
+## Interface translations
+
+UI strings are written in Turkish in the code and translated through the tables in `src/tools/translations/*.tsv`.
+
+```bat
+cd src
+uv run python tools\extract_strings.py      :: lists translatable strings and anything missing
+uv run python tools\build_locales.py        :: TSV -> locales\<lang>.json
+```
+
+`build_locales.py` reports an error if a translation's placeholders (`{n}`, `{name}`…) don't match the original.
+
+Supported languages: Türkçe, English, Deutsch, Français, Español, Português (Brasil), Italiano, Nederlands, Polski, Русский, Українська, Azərbaycanca, 日本語, 한국어, 简体中文, العربية.
+
+---
+
+## Project layout
+
+```
+Spypaper-Releases/
+├─ README.md, README.tr.md
+├─ LICENSE                 GNU GPL v3
+├─ docs/screenshots/       README images
+└─ src/                    source code
+   ├─ main.py              entry point
+   ├─ calistir.bat         run from source
+   ├─ build.bat            build the exe
+   ├─ mc_dilleri_cikar.bat extract Minecraft language files from the command line
+   ├─ core/                UI-independent logic
+   │  ├─ config.py         settings, server profiles, jar/software detection
+   │  ├─ server.py         server process (start, stop, commands)
+   │  ├─ software.py       Paper/Purpur/Vanilla/Fabric/Forge/NeoForge providers
+   │  ├─ updater.py        downloads and verification
+   │  ├─ players.py        player data (NBT), inventory, Minecraft translations
+   │  ├─ logwatch.py       latest.log tracking, events, metrics
+   │  ├─ logtrans.py       translating server messages into the panel language
+   │  ├─ files.py          plugins/mods folder, server.properties, backups
+   │  ├─ maintenance.py    maintenance mode and automatic backups
+   │  ├─ gamefiles.py      Minecraft language files and icons (local install or Mojang)
+   │  ├─ modtrans.py       mod/plugin language file editor (JSON, YAML)
+   │  ├─ bluemap.py        BlueMap detection, Modrinth install, configuration
+   │  ├─ ai.py, esplora.py AI providers, Esplora rules and preset questions
+   │  ├─ safemode.py       safe mode and PIN
+   │  └─ secrets.py        API key encryption
+   ├─ ui/                  PySide6 interface (window, pages, themes, i18n)
+   ├─ locales/             compiled interface translations
+   ├─ tools/               translation and Minecraft language file tools
+   └─ legal/               privacy notice, third-party notices, license copy
+```
+
+---
+
+## Roadmap
+
+Planned next (order may change; share your ideas on [Issues](https://github.com/TyraelDiablo/Spypaper-Releases/issues)):
+
+- [ ] **Scheduled tasks:** restart at a set time, countdown announcements, commands and backups
+- [ ] **Crash watchdog:** automatic restart after an unexpected shutdown, stop after repeated crashes
+- [ ] **Restore from backup** and a backup limit (delete old backups automatically)
+- [ ] **Plugin and mod store:** search, install and update notices from Modrinth and Hangar
+- [ ] **Discord notifications:** server started, stopped, crashed, player joined (webhook)
+- [ ] **Java manager:** detect and download the right Java for your Minecraft version
+- [ ] **TPS / MSPT chart** on the Dashboard
+- [ ] **Config file editor** (`paper-global.yml`, `config/*.toml`…) with syntax checks
+- [ ] **Self-update** via GitHub Releases
+- [ ] **Web interface** for remote access
+
+---
+
+## Troubleshooting
+
+- **Item names are in English or icons are missing:** click **Get Game Files** on the Players page. The bottom of the page shows which language file is in use.
+- **The server won't start:** read the error in the Live Console or ask Esplora *"Why won't the server start?"*. Make sure your Java version matches your Minecraft version.
+- **Forge/NeoForge installation failed:** check that the Java path is correct and the server folder is writable; the last lines of the installer output are shown in the window.
+- **Gemini/OpenAI error 429:** the provider's rate limit was reached; try again later.
+
+---
+
+## License
+
+Spypaper is free and open-source software licensed under the [GNU General Public License v3](LICENSE) (GPL-3.0).
+You may use, study, modify and share it free of charge. If you distribute a modified version, you must share its
+source code under the same license. The program comes with no warranty.
 
 Copyright © 2026 Serkan Aynacı ([TyraelDiablo](https://github.com/TyraelDiablo))
 
-## Yasal
+## Legal
 
-- [Gizlilik Bildirimi](legal/GIZLILIK.md) · [Privacy Notice](legal/PRIVACY_EN.md)
-- [Üçüncü Taraf Bildirimleri](legal/UCUNCU_TARAF.md)
+- [Privacy Notice](src/legal/PRIVACY_EN.md) · [Gizlilik Bildirimi](src/legal/GIZLILIK.md)
+- [Third-Party Notices](src/legal/UCUNCU_TARAF.md)
 
-Minecraft, Mojang Studios'un ticari markasıdır. Spypaper, Minecraft'ın hiçbir dosyasını dağıtmaz. Minecraft sunucusu çalıştırmak için [Minecraft EULA](https://aka.ms/MinecraftEULA)'sını kabul etmen gerekir.
-
----
-
-## English (short)
-
-Spypaper is a desktop management panel for Minecraft servers (Windows, Python + PySide6). It lets you start and stop the server, view a live BlueMap inside the app, watch the console, inspect player inventories, manage plugins and mods, take backups, install or update the server software (Paper, Purpur, Vanilla, Fabric, Forge, NeoForge), and ask **Esplora**, an AI assistant scoped to your server (bring your own API key: Anthropic, Gemini, OpenAI-compatible). The UI is available in 16 languages.
-
-Download the latest exe from [Releases](https://github.com/TyraelDiablo/Spypaper-Releases/releases/latest), run from source with `calistir.bat` (requires [uv](https://docs.astral.sh/uv/)), or build the exe with `build.bat`. Minecraft's own language files and item icons are not bundled; the app prepares them on your computer (Players → Get Game Files) from your Minecraft installation or Mojang's official servers. Report bugs and ideas on [GitHub Issues](https://github.com/TyraelDiablo/Spypaper-Releases/issues).
-
-Spypaper is free and open-source software licensed under the [GNU GPL v3](LICENSE). Copyright © 2026 Serkan Aynacı (TyraelDiablo). See the `legal/` folder for the privacy notice and third-party notices.
-
-Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
+Minecraft is a trademark of Mojang Studios. Spypaper does not distribute any Minecraft files. Running a Minecraft server requires accepting the [Minecraft EULA](https://aka.ms/MinecraftEULA).
