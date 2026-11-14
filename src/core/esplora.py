@@ -102,10 +102,10 @@ def latest_crash(server_path, max_days=7, max_lines=80):
 
 
 # ---------------------------------------------------------------- hazır sorular
-# (düğme etiketi, gönderilen soru, koşul). Koşullar: running, stopped, modded, plugins, lag, errors, crash
+# (ikon adı — ui/icons/*.svg, kategori, [(düğme etiketi, gönderilen soru, koşul)]). Koşullar: running, stopped, modded, plugins, lag, errors, crash
 # Etiket kısa tutulur; soru Esplora'ya ne yapacağını ayrıntılı söyler. İkisi de arayüz dilinde gönderilir.
 PRESETS = [
-    ("⚡", N_("Performans"), [
+    ("zap", N_("Performans"), [
         (N_("Sunucu neden kasıyor?"),
          N_("Sunucu neden kasıyor? Son loglardaki gecikme uyarılarına, RAM sınırlarına, view-distance ve simulation-distance değerlerine ve yüklü eklenti/modlara bakarak olası nedenleri önem sırasına göre sırala; her biri için ne yapmam gerektiğini yaz."), None),
         (N_("Gecikme uyarılarını açıkla"),
@@ -121,7 +121,7 @@ PRESETS = [
         (N_("Varlık yükünü azalt"),
          N_("Çok sayıda varlık (mob, yerdeki eşya, hayvan çiftliği) sunucuyu yavaşlatıyorsa bunu nasıl tespit eder ve azaltırım? Güvenli komutlar ve ayarlar öner."), None),
     ]),
-    ("🩺", N_("Hatalar"), [
+    ("stethoscope", N_("Hatalar"), [
         (N_("Son hataları açıkla"),
          N_("Loglardaki son hataları ve uyarıları açıkla: her biri ne anlama geliyor, hangi eklenti/mod ya da ayardan kaynaklanıyor ve önemli mi? Önce kritik olanları yaz."), None),
         (N_("Sunucu neden açılmıyor?"),
@@ -133,7 +133,7 @@ PRESETS = [
         (N_("Çakışmaları bul"),
          N_("Loglara bakarak birbiriyle çakışan, eksik bağımlılığı olan ya da bu sürümle uyumsuz eklenti veya mod var mı? Varsa hangileri ve ne yapmalıyım?"), None),
     ]),
-    ("👥", N_("Oyuncular"), [
+    ("users", N_("Oyuncular"), [
         (N_("Bugünkü oyuncu etkinliğini özetle"),
          N_("Bugünkü oyuncu etkinliğini özetle: kimler girdi, kimler en uzun süre oynadı, ölümler ve dikkat çeken olaylar."), None),
         (N_("Şüpheli davranış var mı?"),
@@ -145,7 +145,7 @@ PRESETS = [
         (N_("Whitelist nasıl yönetilir?"),
          N_("Whitelist'i nasıl açarım, oyuncu nasıl eklerim ve Spypaper'ın Whitelist & Ban sayfasını nasıl kullanırım?"), None),
     ]),
-    ("⚙", N_("Ayarlar"), [
+    ("settings", N_("Ayarlar"), [
         (N_("server.properties'i gözden geçir"),
          N_("Mevcut server.properties ayarlarımı gözden geçir; güvenlik, performans ve oynanış açısından dikkat çeken ya da değiştirmemi önerdiğin değerleri açıkla."), None),
         (N_("Oyun kuralları öner"),
@@ -155,7 +155,7 @@ PRESETS = [
         (N_("Sunucuyu internete aç"),
          N_("Sunucuyu arkadaşlarımın internetten bağlanabileceği hale nasıl getiririm? Port yönlendirme, server-port, güvenlik duvarı ve online-mode konularını sırayla anlat."), None),
     ]),
-    ("🧩", N_("Eklentiler ve Modlar"), [
+    ("puzzle", N_("Eklentiler ve Modlar"), [
         (N_("Yüklü eklentileri değerlendir"),
          N_("Yüklü eklentilerimi değerlendir: her biri ne işe yarar, gereksiz ya da birbirinin işini yapan var mı, bu sürümle uyumsuz olabilecek hangisi?"), "plugins"),
         (N_("Temel eklenti önerileri"),
@@ -167,7 +167,7 @@ PRESETS = [
         (N_("Mod dil dosyası nasıl çevrilir?"),
          N_("Spypaper'ın Mod Dil Dosyaları sayfasıyla bir modun dil dosyasını kendi dilime nasıl çeviririm? Biçim kodlarında (%s, %d, §) dikkat edilmesi gerekenleri de anlat."), "modded"),
     ]),
-    ("🛡", N_("Güvenlik ve Yedek"), [
+    ("shield", N_("Güvenlik ve Yedek"), [
         (N_("Güvenlik kontrolü yap"),
          N_("Bu sunucunun güvenlik durumunu kontrol et: online-mode, whitelist, op listesi, enable-command-block, RCON/query ayarları ve güvenli mod seviyesi. Riskli olanları ve nasıl düzelteceğimi yaz."), None),
         (N_("Yedekleme planı öner"),
@@ -177,7 +177,7 @@ PRESETS = [
         (N_("Güvenli mod seviyesi öner"),
          N_("Spypaper'ın güvenli mod seviyeleri ne işe yarar? Bu sunucu için hangi seviyeyi önerirsin ve neden?"), None),
     ]),
-    ("⬆", N_("Güncelleme"), [
+    ("circle-arrow-up", N_("Güncelleme"), [
         (N_("Sürüm yükseltmeye hazır mıyım?"),
          N_("Bu sunucuyu daha yeni bir Minecraft sürümüne yükseltmeden önce neleri kontrol etmeliyim? Eklenti/mod uyumluluğu, dünya dönüşümü ve yedek için bir kontrol listesi hazırla."), None),
         (N_("Hangi yazılım bana uygun?"),

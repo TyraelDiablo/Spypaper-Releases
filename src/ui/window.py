@@ -1,6 +1,6 @@
 import os
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QPoint, Qt, QTimer
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QPoint, QSize, Qt, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication, QButtonGroup, QHBoxLayout, QMainWindow, QMessageBox, QPushButton,
@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 )
 
 from core import App, ServerError, detect_version
-from . import VERSION, i18n, theme
+from . import VERSION, i18n, icons, theme
 from .i18n import t
 from .theme import rgba
 from .widgets import ServerBridge, ask, button, err_text, label
@@ -45,8 +45,10 @@ def ask_pin(parent, profile, purpose=""):
     return False
 
 
-def icon_button(text, tip, on_click):
-    b = QPushButton(text)
+def icon_button(icon_name, tip, on_click):
+    b = QPushButton()
+    b.setIcon(icons.icon(icon_name, None, 20))
+    b.setIconSize(QSize(20, 20))
     b.setObjectName("IconButton")
     b.setCursor(Qt.PointingHandCursor)
     b.setToolTip(t(tip))
@@ -75,7 +77,7 @@ class ServerPanel(QWidget):
         sv = QVBoxLayout(side)
         sv.setContentsMargins(0, 0, 0, 14)
         sv.setSpacing(0)
-        name = label(app.config.name, "Brand")
+        name = label(app.config.name, "Brand", raw=True)
         name.setWordWrap(True)
         sv.addWidget(name)
         self.brand_sub = label("", "BrandSub")
@@ -96,7 +98,7 @@ class ServerPanel(QWidget):
             sv.addWidget(b)
         self._nav_texts()
         sv.addStretch(1)
-        path = label(app.config.server_path, "BrandSub")
+        path = label(app.config.server_path, "BrandSub", raw=True)
         path.setWordWrap(True)
         sv.addWidget(path)
         self.nav.idClicked.connect(self.go)
@@ -113,8 +115,9 @@ class ServerPanel(QWidget):
         tl = QHBoxLayout(top)
         tl.setContentsMargins(12, 10, 22, 10)
         tl.setSpacing(8)
-        tl.addWidget(icon_button("☰", "Menü ve ayarlar (Ctrl+,)", ctl.toggle_drawer))
-        back = button("← Sunucular", "flat", ctl.show_home, tooltip="Ana ekrana dön")
+        tl.addWidget(icon_button("menu", "Menü ve ayarlar (Ctrl+,)", ctl.toggle_drawer))
+        back = button("Sunucular", "flat", ctl.show_home, tooltip="Ana ekrana dön")
+        back.setIcon(icons.icon("arrow-left", None, 16))
         tl.addWidget(back)
         self.title_lbl = label("", "PageTitle")
         tl.addSpacing(6)
@@ -151,7 +154,8 @@ class ServerPanel(QWidget):
         from core.safemode import LEVELS
         lvl = int(self.app.config.get("safe_mode") or 0)
         c = [theme.TOKENS["text_muted"], theme.TOKENS["info"], theme.TOKENS["warn"], theme.TOKENS["danger"]][lvl]
-        self.safe_btn.setText("🛡 " + t("Güvenli mod: {lvl}", lvl=t(LEVELS[lvl])))
+        self.safe_btn.setText(t("Güvenli mod: {lvl}", lvl=t(LEVELS[lvl])))
+        self.safe_btn.setIcon(icons.icon("shield", c, 16))
         self.safe_btn.setStyleSheet(f"color:{c};")
 
     def safe_menu(self):
@@ -160,7 +164,9 @@ class ServerPanel(QWidget):
         m = QMenu(self)
         cur = int(self.app.config.get("safe_mode") or 0)
         for i, name in enumerate(LEVELS):
-            a = m.addAction(("● " if i == cur else "   ") + t(name) + " — " + t(LEVEL_INFO[i]))
+            a = m.addAction(t(name) + " — " + t(LEVEL_INFO[i]))
+            a.setCheckable(True)
+            a.setChecked(i == cur)
             a.setData(i)
         act = m.exec(self.safe_btn.mapToGlobal(self.safe_btn.rect().bottomLeft()))
         if act is None:

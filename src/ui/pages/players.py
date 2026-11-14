@@ -11,6 +11,7 @@ from core.players import (
     tp_death_command, tp_to_player_command,
 )
 from core import N_
+from .. import icons
 from ..i18n import t
 from ..widgets import Card, Page, button, color, fill_table, label, row, segmented, table
 
@@ -206,7 +207,8 @@ class PlayersPage(Page):
         for p in self.players:
             if q and q not in p.name.lower():
                 continue
-            it = QListWidgetItem(("●  " if p.online else "○  ") + p.name)
+            it = QListWidgetItem(p.name)
+            it.setIcon(icons.dot(color("accent") if p.online else color("text_muted")))
             it.setForeground(QColor(color("text") if p.online else color("text_muted")))
             it.setData(Qt.UserRole, p)
             self.list.addItem(it)
@@ -248,15 +250,19 @@ class PlayersPage(Page):
                 rows = [("–", t("İstatistik bulunamadı"), "–", "")]
             else:
                 h, m = divmod(s["play_time_sec"] // 60, 60)
-                rows = [
-                    ("⏱", t("Oynama Süresi"), t("{h} sa {m} dk", h=h, m=m)),
-                    ("☠", t("Ölüm"), s["deaths"]),
-                    ("⚔", t("Öldürülen Mob"), s["mob_kills"]),
-                    ("🗡", t("Öldürülen Oyuncu"), s["player_kills"]),
-                    ("↑", t("Zıplama"), s["jumps"]),
-                    ("→", t("Yürünen Mesafe"), f"{s['walk_cm'] / 100000:.1f} km"),
+                stats = [
+                    ("clock", t("Oynama Süresi"), t("{h} sa {m} dk", h=h, m=m)),
+                    ("skull", t("Ölüm"), s["deaths"]),
+                    ("swords", t("Öldürülen Mob"), s["mob_kills"]),
+                    ("sword", t("Öldürülen Oyuncu"), s["player_kills"]),
+                    ("chevrons-up", t("Zıplama"), s["jumps"]),
+                    ("footprints", t("Yürünen Mesafe"), f"{s['walk_cm'] / 100000:.1f} km"),
                 ]
+                rows = [("", name, val) for _, name, val in stats]
             fill_table(self.table, rows, align_center=(0, 2))
+            if s:
+                for r, (ic, *_) in enumerate(stats):
+                    self.table.item(r, 0).setIcon(icons.icon(ic, color("text_muted"), 16))
             return
 
         self.table.setHorizontalHeaderLabels([t("Slot"), t("Eşya"), t("Miktar"), t("Özellikler")])
@@ -301,11 +307,11 @@ class PlayersPage(Page):
             tip += names
         if r.stored:
             names = [tr.ench_name(e, l) for e, l in r.stored]
-            parts.append("📖 " + ", ".join(names))
+            parts.append(t("Kitapta: {list}", list=", ".join(names)))
             tip += names
         if r.trim:
             tt = tr.trim_text(*r.trim)
-            parts.append("✦ " + tt)
+            parts.append(t("Kaplama: {trim}", trim=tt))
             tip.append(t("Kaplama: {trim}", trim=tt))
         mx = max_durability(r.item_id)
         if r.damage and mx:

@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 )
 
 from core import N_, detect_version
-from . import theme
+from . import icons, theme
 from .dialogs import ServerDialog
 from .i18n import t
 from .theme import PRESETS, TOKENS, rgba
@@ -56,8 +56,8 @@ class ServerCard(QFrame):
         else:
             icon.setText((profile.name[:1] or "?").upper())
 
-        name = label(profile.name, "ServerName")
-        path = label(profile.server_path, "Muted")
+        name = label(profile.name, "ServerName", raw=True)
+        path = label(profile.server_path, "Muted", raw=True)
         path.setToolTip(profile.server_path)
         path.setMaximumWidth(260)
         fm = path.fontMetrics()
@@ -85,7 +85,8 @@ class ServerCard(QFrame):
             b.setStyleSheet(f"color:{TOKENS['info']}; background:{rgba(TOKENS['info'], 35)};")
             badges.append(b)
         if profile.get("pin_hash"):
-            b = label("🔒 PIN", "Badge")
+            b = label("", "Badge")
+            b.setText(icons.img_tag("lock", TOKENS["text_muted"], 11) + " PIN")
             b.setStyleSheet(f"color:{TOKENS['text_muted']}; background:{rgba(TOKENS['text_muted'], 35)};")
             badges.append(b)
         if not profile.exists:
@@ -143,13 +144,14 @@ class ServerCard(QFrame):
 
 
 class AddCard(QFrame):
-    def __init__(self, on_click):
+    """Boş kart: yeni sunucu oluştur ya da var olanı ekle."""
+
+    def __init__(self, on_click, on_new=None):
         super().__init__()
         self.setObjectName("ServerCard")
         self.setStyleSheet(f"QFrame#ServerCard {{ border: 2px dashed {TOKENS['border']}; background: transparent; }}"
                            f"QFrame#ServerCard:hover {{ border-color: {TOKENS['accent']}; }}")
-        self.setCursor(Qt.PointingHandCursor)
-        self.setMinimumHeight(150)
+        self.setMinimumHeight(170)
         self.on_click = on_click
         v = QVBoxLayout(self)
         plus = label("+", "HomeTitle")
@@ -157,15 +159,15 @@ class AddCard(QFrame):
         plus.setStyleSheet(f"color:{TOKENS['accent']}")
         txt = label("Sunucu Ekle", "CardTitle")
         txt.setAlignment(Qt.AlignCenter)
-        sub = label("Var olan bir sunucu klasörünü seç", "Muted")
+        sub = label("Sıfırdan yeni bir sunucu oluştur ya da var olan bir sunucu klasörünü seç", "Muted", wrap=True)
         sub.setAlignment(Qt.AlignCenter)
         v.addStretch(1)
         for w in (plus, txt, sub):
             v.addWidget(w)
+        if on_new:
+            v.addLayout(row(None, button("Yeni Sunucu Oluştur", "primary", on_new),
+                            button("Var Olanı Ekle", "ghost", on_click), None, stretch_end=False))
         v.addStretch(1)
-
-    def mousePressEvent(self, e):
-        self.on_click()
 
 
 class ThemePreview(QWidget):
@@ -248,10 +250,12 @@ class HomeScreen(QWidget):
         top.setObjectName("TopBar")
         tl = QHBoxLayout(top)
         tl.setContentsMargins(12, 10, 22, 10)
-        tl.addWidget(icon_button("☰", "Menü ve ayarlar (Ctrl+,)", ctl.toggle_drawer))
+        tl.addWidget(icon_button("menu", "Menü ve ayarlar (Ctrl+,)", ctl.toggle_drawer))
         tl.addWidget(label("Spypaper", "PageTitle"))
         tl.addStretch(1)
-        tl.addWidget(button("Sunucu Ekle", "primary", self.add_server))
+        tl.addWidget(button("Var Olanı Ekle", "ghost", self.add_server, tooltip="Var olan bir sunucu klasörünü ekle"))
+        tl.addWidget(button("Yeni Sunucu Oluştur", "primary", self.new_server,
+                            tooltip="Sunucu yazılımını indirip sıfırdan bir sunucu kur"))
         root.addWidget(top)
 
         body = QVBoxLayout()
@@ -310,7 +314,7 @@ class HomeScreen(QWidget):
                 w.deleteLater()
         servers = sorted(self.ctl.settings.servers(), key=lambda p: p.get("last_opened") or "", reverse=True)
         self.cards = [ServerCard(self, p) for p in servers]
-        for i, c in enumerate(self.cards + [AddCard(self.add_server)]):
+        for i, c in enumerate(self.cards + [AddCard(self.add_server, self.new_server)]):
             self.grid.addWidget(c, i // COLS, i % COLS)
         for c in range(COLS):
             self.grid.setColumnStretch(c, 1)
@@ -323,7 +327,7 @@ class HomeScreen(QWidget):
         n = len(self.cards)
         on = sum(self.ctl.is_running(c.p.id) for c in self.cards)
         self.summary.setText(t("{n} kayıtlı sunucu · {on} çalışıyor", n=n, on=on) if n
-                             else t("Henüz kayıtlı sunucu yok. Başlamak için bir sunucu klasörü ekle."))
+                             else t("Henüz kayıtlı sunucu yok. Yeni bir sunucu oluştur ya da var olan bir sunucu klasörünü ekle."))
 
     # --- işlemler ---
     def add_server(self):
@@ -333,6 +337,14 @@ class HomeScreen(QWidget):
             self.refresh()
             if ask(self, t("'{name}' eklendi. Şimdi açılsın mı?", name=prof.name), t("Sunucu Ekle")):
                 self.ctl.open_server(prof.id)
+
+    def new_server(self):
+        from .new_server_dialog import NewServerDialog
+        dlg = NewServerDialog(self.ctl.settings, parent=self)
+        if dlg.exec() and dlg.profile:
+            self.refresh()
+            if ask(self, t("'{name}' oluşturuldu. Şimdi açılsın mı?", name=dlg.profile.name), t("Yeni Sunucu Oluştur")):
+                self.ctl.open_server(dlg.profile.id)
 
     def edit_server(self, prof):
         from .window import ask_pin

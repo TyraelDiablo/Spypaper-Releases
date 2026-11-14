@@ -19,6 +19,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | Section | What it does |
 |---|---|
 | **Home screen** | Lists all your servers as cards; quick start/stop, edit and open folder without entering the panel. |
+| **New server** | Create a server from scratch: pick the software and Minecraft version, set RAM, port, MOTD, game mode and difficulty; Spypaper downloads the server and prepares the folder. |
 | **Dashboard** | Live RAM/CPU, online players, today's joins, deaths, lag warnings and errors, hourly activity chart. |
 | **Live Console** | Colored console, command history, optional translation of server messages into the panel language. |
 | **Log** | Events, sessions and charts from `logs/latest.log` and archived `.log.gz` files. Works even if the server was started outside the panel. |
@@ -32,7 +33,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Live Map** | Shows the BlueMap 3D map inside the panel. If BlueMap isn't installed, it downloads the right version for your server software and Minecraft version from Modrinth and (with your consent) enables its texture download. |
 | **Server Software** | Pick a version and download/install **Paper, Purpur, Vanilla, Fabric, Forge or NeoForge**. Files are verified with SHA-256 / SHA-1 where available; the old jar is moved to `backups/jars/`. |
 | **Security** | 4-level safe mode (confirm, block or read-only for dangerous commands) and an optional per-server PIN. |
-| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages. |
+| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons. |
 
 ---
 
@@ -64,7 +65,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 ### With the exe
 
 1. Download `Spypaper.exe` from [Releases](https://github.com/TyraelDiablo/Spypaper-Releases/releases/latest) and put it in a folder (e.g. `D:\Spypaper\`).
-2. Open it → **Add Server** → choose your server folder. The jar, version and software are detected automatically.
+2. Open it → **Create New Server** to set up a fresh server, or **Add Existing** to choose a server folder you already have (the jar, version and software are detected automatically).
 3. For item names and icons, use **Players → Get Game Files** (see below).
 
 `config.json` is created next to the exe on first start. It holds your server profiles, settings and the encrypted API key, so **don't share it**.
@@ -191,6 +192,7 @@ Spypaper-Releases/
    │  ├─ maintenance.py    maintenance mode and automatic backups
    │  ├─ gamefiles.py      Minecraft language files and icons (local install or Mojang)
    │  ├─ modtrans.py       mod/plugin language file editor (JSON, YAML)
+   │  ├─ creator.py        creating new servers
    │  ├─ bluemap.py        BlueMap detection, Modrinth install, configuration
    │  ├─ ai.py, esplora.py AI providers, Esplora rules and preset questions
    │  ├─ safemode.py       safe mode and PIN

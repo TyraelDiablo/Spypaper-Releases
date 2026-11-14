@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 
 from core import N_, ai, detect_version
 from core.esplora import build_system, latest_crash, preset_items, quick_items
+from .. import icons
 from ..i18n import current, is_rtl, t
 from ..theme import TOKENS, rgba
 from ..widgets import Card, Page, button, label, row, send_guarded
@@ -86,7 +87,7 @@ class Bubble(QFrame):
             v.addWidget(self.dots)
             return
         if role == "stopped":
-            lbl = self._text("⏹ " + html.escape(text))
+            lbl = self._text(html.escape(text))
             lbl.setStyleSheet(f"color:{k['text_muted']}; font-style: italic; background: transparent;")
             v.addWidget(lbl)
             return
@@ -129,7 +130,8 @@ class Bubble(QFrame):
             c = QLabel(cmd)
             c.setTextInteractionFlags(Qt.TextSelectableByMouse)
             c.setStyleSheet(f"font-family:Consolas; color:{TOKENS['text']}; background:transparent;")
-            b = QPushButton("▶ " + t("Çalıştır"))
+            b = QPushButton(t("Çalıştır"))
+            b.setIcon(icons.icon("play", TOKENS.get("on_accent", "#0b0b0b"), 14))
             b.setProperty("variant", "primary")
             b.setCursor(Qt.PointingHandCursor)
             b.clicked.connect(lambda _=False, x=cmd: self.page.run(x))
@@ -206,15 +208,18 @@ class EsploraPage(Page):
             b.setToolTip(t(q))
             self.chips.addWidget(b)
         self.chips.addStretch(1)
-        self.chips.addWidget(button("Tüm hazır sorular ▾", "flat", self._preset_menu,
-                                    tooltip="Kategorilere ayrılmış hazır sorular"))
+        more = button("Tüm hazır sorular ▾", "flat", self._preset_menu, tooltip="Kategorilere ayrılmış hazır sorular")
+        more.setText(more.text().replace("▾", "").strip())
+        more.setIcon(icons.icon("chevron-down", None, 14))
+        more.setLayoutDirection(Qt.RightToLeft)             # ok simgesi metnin sağında
+        self.chips.addWidget(more)
 
     def _preset_menu(self):
         from PySide6.QtGui import QCursor
         from PySide6.QtWidgets import QMenu
         m = QMenu(self)
         for icon, cat, items in preset_items(self.flags or self._flags()):
-            sub = m.addMenu(f"{icon}  {t(cat)}")
+            sub = m.addMenu(icons.icon(icon, None, 16), t(cat))
             for lab, q in items:
                 act = sub.addAction(t(lab))
                 act.setToolTip(t(q))
@@ -392,14 +397,17 @@ class EsploraPage(Page):
         h = QHBoxLayout(bar)
         h.setContentsMargins(4, 0, 0, 0)
         h.setSpacing(4)
-        rb = button("↻ " + t("Yeniden oluştur"), "flat", self.retry)
+        rb = button("Yeniden oluştur", "flat", self.retry)
+        rb.setIcon(icons.icon("rotate-ccw", TOKENS["text_muted"], 13))
         h.addWidget(rb)
         if not msg.get("error") and not msg.get("stopped"):
             def copy():
                 from PySide6.QtWidgets import QApplication
                 QApplication.clipboard().setText(msg["content"])
-                cb.setText("✓ " + t("Kopyalandı"))
-            cb = button("⧉ " + t("Kopyala"), "flat", copy)
+                cb.setText(t("Kopyalandı"))
+                cb.setIcon(icons.icon("check", TOKENS["accent"], 13))
+            cb = button("Kopyala", "flat", copy)
+            cb.setIcon(icons.icon("copy", TOKENS["text_muted"], 13))
             h.addWidget(cb)
         for b in bar.findChildren(QPushButton):
             b.setStyleSheet(f"color:{TOKENS['text_muted']}; font-size:8.5pt; padding:3px 8px;")
@@ -410,7 +418,7 @@ class EsploraPage(Page):
         hist = self.app.esplora_history
         if not hist:
             hello = (t("Merhaba! Ben Esplora. Bu sunucunun ayarları, eklentileri, performansı ve oyuncuları hakkında sorabilirsin. "
-                       "Önerdiğim komutları ▶ Çalıştır ile gönderebilirsin; güvenli mod kuralları geçerlidir.")
+                       "Önerdiğim komutları ▶ Çalıştır ile gönderebilirsin; güvenli mod kuralları geçerlidir.").replace("▶ ", "")
                      + "\n\n" + t("Neler sorabilirsin:") + "\n"
                      + "- " + t("**Performans:** kasma nedenleri, RAM, görüş mesafesi, Paper/Purpur ayarları") + "\n"
                      + "- " + t("**Hatalar:** son hatalar, çökme raporları, açılmayan sunucu, Java uyumu") + "\n"
@@ -446,6 +454,6 @@ class EsploraPage(Page):
             self.warn("Sunucu kapalı iken komut gönderilemez!")
             return
         if send_guarded(self, self.app, cmd):
-            self.app.esplora_history.append({"role": "user", "content": f"/{cmd}  ✓ " + t("çalıştırıldı"), "cmd": True,
+            self.app.esplora_history.append({"role": "user", "content": f"/{cmd}  — " + t("çalıştırıldı"), "cmd": True,
                                              "time": datetime.now().strftime("%H:%M")})
             self.render()

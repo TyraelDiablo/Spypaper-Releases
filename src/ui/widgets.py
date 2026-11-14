@@ -39,9 +39,9 @@ def button(text, variant="ghost", on_click=None, tooltip=None):
     return b
 
 
-def label(text="", name=None, wrap=False):
-    """text otomatik çevrilir (t)."""
-    lbl = QLabel(t(text) if text else text)
+def label(text="", name=None, wrap=False, raw=False):
+    """text otomatik çevrilir (t). raw=True: kullanıcı verisi (sunucu adı, yol…), çevrilmez."""
+    lbl = QLabel(text if raw or not text else t(text))
     if name:
         lbl.setObjectName(name)
     lbl.setWordWrap(wrap)

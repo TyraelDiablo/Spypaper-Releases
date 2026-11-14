@@ -13,6 +13,7 @@ Spypaper is open-source software licensed under the GNU GPL v3 ([LICENSE.txt](LI
 | NumPy (nbtlib bağımlılığı / dependency) | BSD 3-Clause | https://github.com/numpy/numpy |
 | psutil | BSD 3-Clause | https://github.com/giampaolo/psutil |
 | PyYAML | MIT | https://github.com/yaml/pyyaml |
+| Lucide (arayüz ikonları / UI icons) | ISC | https://github.com/lucide-icons/lucide |
 | Qt WebEngine (Chromium dahil / incl. Chromium) | GNU LGPL v3 + Chromium üçüncü taraf lisansları / third-party licenses | https://code.qt.io/cgit/qt/qtwebengine.git/ |
 | PyInstaller bootloader | GPL v2 + bootloader exception | https://github.com/pyinstaller/pyinstaller |
 
@@ -88,3 +89,19 @@ Minecraft, Mojang Studios'un ticari markasıdır. Spypaper resmi bir Minecraft �
 Minecraft is a trademark of Mojang Studios. Spypaper is not an official Minecraft product and is not approved by or associated with Mojang or Microsoft. Spypaper does not distribute any Minecraft files.
 
 Paper, Purpur, Fabric, Forge ve NeoForge kendi geliştiricilerine aittir ve kendi lisanslarıyla dağıtılır; Spypaper bunları yalnızca kullanıcının isteğiyle resmi kaynaklarından indirir.
+
+## ISC License (Lucide)
+
+```
+Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT).
+All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee
+is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE
+INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE
+FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING
+OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+```

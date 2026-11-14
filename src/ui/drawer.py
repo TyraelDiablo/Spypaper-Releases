@@ -2,7 +2,7 @@
 import os
 import webbrowser
 
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import QSize, Qt, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QHBoxLayout, QLineEdit, QMessageBox, QPushButton, QScrollArea, QSlider,
@@ -12,7 +12,8 @@ from PySide6.QtWidgets import (
 from core import N_, get_base_dir
 from . import VERSION, i18n
 from .i18n import t
-from .theme import PRESETS
+from . import icons
+from .theme import PRESETS, TOKENS
 from .widgets import label
 
 LINKS = [
@@ -23,8 +24,13 @@ LINKS = [
 ]
 
 
-def item(text, on_click, icon=""):
-    b = QPushButton(f"{icon}   {t(text)}" if icon else t(text))
+def item(text, on_click, icon_name=None, raw=False):
+    """icon_name: Lucide ikon adı ya da hazır QIcon. raw=True: metin çevrilmez (sunucu adı)."""
+    text = text if raw else t(text)
+    b = QPushButton(("  " + text) if icon_name else text)
+    if icon_name:
+        b.setIcon(icons.icon(icon_name, TOKENS["text_muted"], 16) if isinstance(icon_name, str) else icon_name)
+        b.setIconSize(QSize(16, 16))
     b.setObjectName("DrawerItem")
     b.setCursor(Qt.PointingHandCursor)
     b.clicked.connect(on_click)
@@ -55,7 +61,8 @@ class Drawer(QWidget):
         head.setContentsMargins(18, 14, 10, 6)
         head.addWidget(label("Spypaper", "DrawerTitle"))
         head.addStretch(1)
-        close = QPushButton("✕")
+        close = QPushButton()
+        close.setIcon(icons.icon("x", TOKENS["text_muted"], 16))
         close.setObjectName("IconButton")
         close.setToolTip(t("Kapat (Esc)"))
         close.setCursor(Qt.PointingHandCursor)
@@ -74,8 +81,9 @@ class Drawer(QWidget):
 
         # --- gezinme ---
         v.addWidget(section("Gezinme"))
-        v.addWidget(item("Ana Ekran", ctl.show_home, "⌂"))
-        v.addWidget(item("Sunucu Ekle", self._add, "+"))
+        v.addWidget(item("Ana Ekran", ctl.show_home, "house"))
+        v.addWidget(item("Yeni Sunucu Oluştur", self._new, "circle-plus"))
+        v.addWidget(item("Var Olanı Ekle", self._add, "folder-open"))
         self.servers_box = QVBoxLayout()
         self.servers_box.setSpacing(2)
         v.addLayout(self.servers_box)
@@ -128,7 +136,7 @@ class Drawer(QWidget):
 
         # --- yapay zeka ---
         v.addWidget(section("Yapay Zeka"))
-        v.addWidget(item("Yapay Zeka Ayarları", self._ai, "✦"))
+        v.addWidget(item("Yapay Zeka Ayarları", self._ai, "sparkles"))
 
         # --- genel ---
         v.addWidget(section("Genel"))
@@ -157,13 +165,13 @@ class Drawer(QWidget):
 
         # --- diğer ---
         v.addWidget(section("Diğer"))
-        v.addWidget(item("Panel klasörünü aç", lambda: self._open_dir(get_base_dir()), "📁"))
-        v.addWidget(item("Dil dosyaları klasörü", lambda: self._open_dir(os.path.join(get_base_dir(), "Languages")), "🌐"))
+        v.addWidget(item("Panel klasörünü aç", lambda: self._open_dir(get_base_dir()), "folder-open"))
+        v.addWidget(item("Dil dosyaları klasörü", lambda: self._open_dir(os.path.join(get_base_dir(), "Languages")), "languages"))
         for name, url in LINKS:
-            v.addWidget(item(name, lambda _=False, u=url: webbrowser.open(u), "↗"))
-        v.addWidget(item("Oyun Dosyaları (dil ve ikon)", self._gamefiles, "▣"))
-        v.addWidget(item("Lisans ve Gizlilik", self._legal, "§"))
-        v.addWidget(item("Hakkında", self._about, "ⓘ"))
+            v.addWidget(item(name, lambda _=False, u=url: webbrowser.open(u), "external-link"))
+        v.addWidget(item("Oyun Dosyaları (dil ve ikon)", self._gamefiles, "package"))
+        v.addWidget(item("Lisans ve Gizlilik", self._legal, "scale"))
+        v.addWidget(item("Hakkında", self._about, "info"))
         v.addStretch(1)
         v.addWidget(label(f"Spypaper v{VERSION}", "Muted"))
 
@@ -187,12 +195,17 @@ class Drawer(QWidget):
                 w.deleteLater()
         recent = sorted(self.ctl.settings.servers(), key=lambda p: p.get("last_opened") or "", reverse=True)[:5]
         for p in recent:
-            dot = "●" if self.ctl.is_running(p.id) else "○"
-            self.servers_box.addWidget(item(p.name, lambda _=False, sid=p.id: self.ctl.open_server(sid), dot))
+            dot = icons.dot(TOKENS["accent"] if self.ctl.is_running(p.id) else TOKENS["text_muted"])
+            self.servers_box.addWidget(item(p.name, lambda _=False, sid=p.id: self.ctl.open_server(sid), dot, raw=True))
 
     def _ai(self):
         from .ai_dialog import AIDialog
         AIDialog(self.ctl.settings, self).exec()
+
+    def _new(self):
+        self.ctl.toggle_drawer(animate=False)
+        self.ctl.show_home()
+        self.ctl.home.new_server()
 
     def _add(self):
         self.ctl.toggle_drawer(animate=False)
