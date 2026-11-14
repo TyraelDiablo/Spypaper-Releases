@@ -215,6 +215,11 @@ QPushButton#Segment:checked {{ background: {surface_3}; color: {accent}; font-we
 QCheckBox {{ spacing: 10px; }}
 QCheckBox::indicator {{ width: 34px; height: 18px; border-radius: 9px; background: {surface_3}; border: 1px solid {border}; }}
 QCheckBox::indicator:checked {{ background: {accent}; border-color: {accent}; }}
+QRadioButton {{ spacing: 8px; }}
+QRadioButton::indicator {{ width: 14px; height: 14px; border-radius: 8px; background: {surface_3}; border: 2px solid {border}; }}
+QRadioButton::indicator:checked {{ background: {accent}; border: 4px solid {surface_3}; outline: none; }}
+QRadioButton::indicator:disabled {{ background: {surface_2}; border-color: {surface_2}; }}
+QRadioButton:disabled {{ color: {text_muted}; }}
 
 QSlider::groove:horizontal {{ height: 4px; background: {surface_3}; border-radius: 2px; }}
 QSlider::sub-page:horizontal {{ background: {accent}; border-radius: 2px; }}

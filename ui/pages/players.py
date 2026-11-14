@@ -149,7 +149,9 @@ class PlayersPage(Page):
         self.table.verticalHeader().setDefaultSectionSize(36)
         data.add(self.table, 1)
         self.lang_lbl = label("", "Muted", wrap=True)
-        data.add(self.lang_lbl)
+        self.btn_gamefiles = button("Oyun Dosyalarını Al", "ghost", self.open_gamefiles,
+                                    tooltip="Eşya adları ve ikonlar için Minecraft'ın dil dosyalarını ve dokularını hazırla")
+        data.add(row(self.lang_lbl, self.btn_gamefiles, stretch_end=False))
         right.addWidget(data, 1)
 
         bridge.line.connect(self._watch_list)
@@ -345,10 +347,21 @@ class PlayersPage(Page):
         if tr.status == "ok":
             self.lang_lbl.setText(t("Eşya adları: {file}", file=os.path.basename(tr.file)))
         elif tr.status == "fallback":
-            self.lang_lbl.setText(t("{file} bulunamadı, eşya adları İngilizce gösteriliyor. mc_dilleri_cikar.bat ile oyunun dil dosyalarını çıkarabilirsin.",
+            self.lang_lbl.setText(t("{file} bulunamadı, eşya adları İngilizce gösteriliyor. “Oyun Dosyalarını Al” ile hazırlayabilirsin.",
                                     file=tr.lang + ".json"))
         else:
-            self.lang_lbl.setText(t("Minecraft dil dosyası bulunamadı; eşya adları ID'den üretiliyor. mc_dilleri_cikar.bat ile oyunun dil dosyalarını çıkarabilirsin."))
+            self.lang_lbl.setText(t("Minecraft dil dosyası bulunamadı; eşya adları ID'den üretiliyor. “Oyun Dosyalarını Al” ile hazırlayabilirsin."))
+        self.btn_gamefiles.setVisible(tr.status != "ok")
+
+    def open_gamefiles(self):
+        from core.config import detect_version
+        from ..gamefiles_dialog import GameFilesDialog
+        d = GameFilesDialog(self, detect_version(self.app.config.server_path)[0])
+        d.exec()
+        if d.changed:
+            self.app.players.translations.load(self.app.config.server_path)
+            self.__dict__.pop("_icons", None)           # ikon önbelleğini temizle
+            self.on_show()
 
     # --- aksiyonlar ---
     def _update_actions(self):

@@ -161,6 +161,7 @@ class Drawer(QWidget):
         v.addWidget(item("Dil dosyaları klasörü", lambda: self._open_dir(os.path.join(get_base_dir(), "Languages")), "🌐"))
         for name, url in LINKS:
             v.addWidget(item(name, lambda _=False, u=url: webbrowser.open(u), "↗"))
+        v.addWidget(item("Oyun Dosyaları (dil ve ikon)", self._gamefiles, "▣"))
         v.addWidget(item("Lisans ve Gizlilik", self._legal, "§"))
         v.addWidget(item("Hakkında", self._about, "ⓘ"))
         v.addStretch(1)
@@ -202,6 +203,10 @@ class Drawer(QWidget):
     def _open_dir(path):
         os.makedirs(path, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+
+    def _gamefiles(self):
+        from .gamefiles_dialog import GameFilesDialog
+        GameFilesDialog(self).exec()
 
     def _legal(self):
         from .legal_dialog import LegalDialog

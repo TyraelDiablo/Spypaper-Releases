@@ -76,18 +76,20 @@ build.bat
 
 ## Minecraft dil dosyaları ve ikonlar
 
-Eşya, büyü, ölüm mesajı gibi oyun metinleri Minecraft'ın kendi dil dosyalarından okunur. Bu dosyalar Mojang'a ait olduğu için Spypaper ile dağıtılmaz; kendi kurulumundan çıkarman gerekir:
+Eşya, büyü ve ölüm mesajı gibi oyun metinleri ve eşya ikonları Minecraft'ın kendi dosyalarından okunur. Bu dosyalar Mojang'a ait olduğu için Spypaper ile **dağıtılmaz**; her kullanıcı kendi bilgisayarında hazırlar:
+
+**Oyuncular** sayfasındaki **Oyun Dosyalarını Al** düğmesi ya da **☰ → Oyun Dosyaları** ile:
+
+1. **Bu bilgisayardaki Minecraft kurulumundan çıkar:** `.minecraft` otomatik bulunur, internet gerekmez. Önce oyunun o sürümünü launcher'dan bir kez açmış olman gerekir.
+2. **Mojang'ın resmî sunucularından indir:** Bilgisayarda Minecraft yoksa (ör. yalnızca sunucu makinesi) kullanılır. İstemci jar'ı geçici olarak indirilir, yalnızca dil dosyaları ve ikonlar ayrılıp jar silinir.
+
+Dosyalar exe'nin yanındaki `Translation` ve `Icons` klasörlerine yazılır. Komut satırını tercih edenler için `mc_dilleri_cikar.bat` da aynı işi yapar:
 
 ```bat
 mc_dilleri_cikar.bat                      :: panelin 16 dili, en yeni sürüm
-mc_dilleri_cikar.bat --surum 1.21.4       :: belirli sürüm
+mc_dilleri_cikar.bat --surum 26.3         :: belirli sürüm
 mc_dilleri_cikar.bat --hepsi              :: Minecraft'taki tüm diller
-mc_dilleri_cikar.bat --hedef "D:\Spypaper\dist\Translation"
 ```
-
-Önce oyunun o sürümünü launcher'dan bir kez açmış olman gerekir. Araç, `Translation` (dil `.json` dosyaları) ve `Icons` (eşya/blok PNG'leri) klasörlerini oluşturur.
-
-Panel bu klasörleri sırayla exe'nin yanında, bir üst klasörde ve sunucu klasöründe arar.
 
 ---
 
@@ -159,6 +161,7 @@ SpypaperQt/
 │  ├─ logtrans.py          sunucu mesajlarını panel diline çevirme
 │  ├─ files.py             eklenti/mod klasörü, server.properties, yedekler
 │  ├─ maintenance.py       bakım modu ve otomatik yedek
+│  ├─ gamefiles.py         Minecraft dil dosyaları ve ikonlar (yerel kurulum ya da Mojang)
 │  ├─ modtrans.py          mod/eklenti dil dosyası düzenleyici (JSON, YAML)
 │  ├─ bluemap.py           BlueMap algılama, Modrinth'ten kurulum, ayarlar
 │  ├─ ai.py, esplora.py    yapay zeka sağlayıcıları, Esplora kuralları ve hazır sorular
@@ -207,7 +210,7 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 
 ## Sorun giderme
 
-- **Eşya adları İngilizce görünüyor:** `Translation` klasöründe seçili dilin dosyası (ör. `tr_tr.json`) yok. Oyuncular sayfasının altında hangi dosyanın kullanıldığı yazar.
+- **Eşya adları İngilizce görünüyor ya da ikon yok:** Oyuncular sayfasında **Oyun Dosyalarını Al**'a bas. Sayfanın altında hangi dil dosyasının kullanıldığı yazar.
 - **Sunucu başlamıyor:** Canlı Konsol'daki hatayı oku ya da Esplora'da *Sunucu neden açılmıyor?* sorusunu kullan. Java sürümünün Minecraft sürümüne uygun olduğundan emin ol.
 - **Forge/NeoForge kurulumu başarısız:** Java yolunun doğru olduğunu ve sunucu klasörüne yazma izni olduğunu kontrol et; kurulum çıktısının son satırları pencerede gösterilir.
 - **Gemini/OpenAI 429 hatası:** Sağlayıcının istek sınırı doldu; bir süre sonra tekrar dene.
@@ -235,7 +238,7 @@ Minecraft, Mojang Studios'un ticari markasıdır. Spypaper, Minecraft'ın hiçbi
 
 Spypaper is a desktop management panel for Minecraft servers (Windows, Python + PySide6). It lets you start and stop the server, view a live BlueMap inside the app, watch the console, inspect player inventories, manage plugins and mods, take backups, install or update the server software (Paper, Purpur, Vanilla, Fabric, Forge, NeoForge), and ask **Esplora**, an AI assistant scoped to your server (bring your own API key: Anthropic, Gemini, OpenAI-compatible). The UI is available in 16 languages.
 
-Download the latest exe from [Releases](https://github.com/TyraelDiablo/Spypaper-Releases/releases/latest), run from source with `calistir.bat` (requires [uv](https://docs.astral.sh/uv/)), or build the exe with `build.bat`. Minecraft's own language files and item icons are not bundled; extract them from your installation with `mc_dilleri_cikar.bat`. Report bugs and ideas on [GitHub Issues](https://github.com/TyraelDiablo/Spypaper-Releases/issues).
+Download the latest exe from [Releases](https://github.com/TyraelDiablo/Spypaper-Releases/releases/latest), run from source with `calistir.bat` (requires [uv](https://docs.astral.sh/uv/)), or build the exe with `build.bat`. Minecraft's own language files and item icons are not bundled; the app prepares them on your computer (Players → Get Game Files) from your Minecraft installation or Mojang's official servers. Report bugs and ideas on [GitHub Issues](https://github.com/TyraelDiablo/Spypaper-Releases/issues).
 
 Spypaper is free and open-source software licensed under the [GNU GPL v3](LICENSE). Copyright © 2026 Serkan Aynacı (TyraelDiablo). See the `legal/` folder for the privacy notice and third-party notices.
 
