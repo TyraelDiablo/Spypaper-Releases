@@ -1,0 +1,429 @@
+"""Eklentiler, Ayarlar, Whitelist & Ban, Bakım, Harita sayfaları."""
+import os
+import threading
+
+from PySide6.QtCore import Qt, QTimer, QUrl, Signal
+from PySide6.QtGui import QColor, QDesktopServices, QPixmap
+from PySide6.QtWidgets import (
+    QCheckBox, QFileDialog, QFormLayout, QGridLayout, QHBoxLayout, QLineEdit,
+    QListWidget, QProgressBar, QScrollArea, QSpinBox, QTableWidgetItem, QVBoxLayout, QWidget,
+)
+
+from core import N_, ServerError
+from core.files import read_name_list
+from ..i18n import t
+from ..widgets import Card, Page, button, color, fill_table, human_size, label, row, table
+
+
+def open_folder(path):
+    os.makedirs(path, exist_ok=True)
+    QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+
+
+# ---------------------------------------------------------------- Eklentiler
+class PluginsPage(Page):
+    title = "Eklentiler"
+
+    def __init__(self, app, bridge):
+        super().__init__(app, bridge)
+        card = self.card = Card("Yüklü Eklentiler", "Devre dışı bırakılan eklentiler .jar.disabled olarak saklanır")
+        self.btn_add = button("Eklenti Ekle", "primary", self.add)
+        card.header_actions.addWidget(self.btn_add)
+        for txt, v, fn in ((N_("Klasörü Aç"), "ghost", lambda: open_folder(self.app.plugins.folder)),
+                           (N_("Yenile"), "ghost", self.on_show)):
+            card.header_actions.addWidget(button(txt, v, fn))
+        self.table = table(["Eklenti", "Boyut", "Durum"], stretch_col=0)
+        self.table.itemSelectionChanged.connect(self._sel)
+        card.add(self.table, 1)
+        self.btn_toggle = button("Etkinleştir / Devre Dışı", "ghost", self.toggle)
+        self.btn_delete = button("Sil", "danger", self.delete)
+        self.hint = label("", "Muted")
+        card.add(row(self.btn_toggle, self.btn_delete, None, self.hint, stretch_end=False))
+        self.root.addWidget(card, 1)
+        self.items = []
+        self._sel()
+
+    def page_title(self):
+        return t("Modlar") if self.app.plugins.modded else t("Eklentiler")
+
+    def on_show(self):
+        mods = self.mods = self.app.plugins.modded
+        # Fabric/Forge/NeoForge sunucularında aynı sayfa mods/ klasörünü yönetir
+        self.card.title_lbl.setText(t("Yüklü Modlar") if mods else t("Yüklü Eklentiler"))
+        if self.card.subtitle_lbl:
+            self.card.subtitle_lbl.setText(
+                t("Devre dışı bırakılan modlar .jar.disabled olarak saklanır. Oyuncuların da aynı modları kurması gerekebilir.")
+                if mods else t("Devre dışı bırakılan eklentiler .jar.disabled olarak saklanır"))
+        self.btn_add.setText(t("Mod Ekle") if mods else t("Eklenti Ekle"))
+        self.table.setHorizontalHeaderItem(0, QTableWidgetItem(t("Mod") if mods else t("Eklenti")))
+        self.items = self.app.plugins.list()
+        fill_table(self.table, [
+            (n.replace(".disabled", ""), human_size(s), t("Etkin") if on else t("Devre dışı"))
+            for n, s, on in self.items], align_center=(1, 2))
+        for r, (_, _, on) in enumerate(self.items):
+            self.table.item(r, 2).setForeground(QColor(color("accent") if on else color("text_muted")))
+        n, on = len(self.items), sum(on for *_, on in self.items)
+        self.hint.setText(t("{n} mod · {on} etkin", n=n, on=on) if mods else t("{n} eklenti · {on} etkin", n=n, on=on))
+        self._sel()
+
+    def _selected(self):
+        r = self.table.currentRow()
+        return self.items[r][0] if 0 <= r < len(self.items) and self.table.selectedItems() else None
+
+    def _sel(self):
+        has = self._selected() is not None
+        self.btn_toggle.setEnabled(has)
+        self.btn_delete.setEnabled(has)
+
+    def _blocked(self):
+        if self.app.server.is_running:
+            self.warn(N_("Sunucu çalışırken modlar değiştirilemez.") if getattr(self, "mods", False)
+                      else N_("Sunucu çalışırken eklentiler değiştirilemez."), "İşlem Engellendi")
+            return True
+        return False
+
+    def add(self):
+        if self.read_only():
+            return
+        mods = getattr(self, "mods", False)
+        paths, _ = QFileDialog.getOpenFileNames(self, t("Mod Seçin") if mods else t("Eklenti Seçin"), "",
+                                                "Java Archive (*.jar)")
+        if paths:
+            self.app.plugins.add(paths)
+            self.on_show()
+            if self.app.server.is_running:
+                self.info(N_("Mod eklendi. Yüklenmesi için sunucuyu yeniden başlatın.") if mods
+                          else N_("Eklenti eklendi. Yüklenmesi için sunucuyu yeniden başlatın."))
+
+    def toggle(self):
+        if self.read_only():
+            return
+        name = self._selected()
+        if name and not self._blocked():
+            self.app.plugins.toggle(name)
+            self.on_show()
+
+    def delete(self):
+        if self.read_only():
+            return
+        name = self._selected()
+        if name and not self._blocked() and self.confirm(t("'{name}' silinsin mi?", name=name)):
+            self.app.plugins.remove(name)
+            self.on_show()
+
+
+# ---------------------------------------------------------------- Ayarlar
+class SettingsPage(Page):
+    title = "Sunucu Ayarları"
+
+    def __init__(self, app, bridge):
+        super().__init__(app, bridge)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        inner = QWidget()
+        inner.setObjectName("Page")
+        self.col = QVBoxLayout(inner)
+        self.col.setContentsMargins(0, 0, 6, 0)
+        self.col.setSpacing(14)
+        scroll.setWidget(inner)
+        self.root.addWidget(scroll, 1)
+
+        top = QHBoxLayout()
+        top.setSpacing(14)
+
+        # sunucu kimliği
+        ident = Card("Görsel Kimlik", "Sunucu listesinde görünen logo (64×64 PNG)")
+        self.icon = label()
+        self.icon.setFixedSize(64, 64)
+        self.icon.setStyleSheet(f"background:{color('surface_2')}; border-radius:8px;")
+        self.icon.setAlignment(Qt.AlignCenter)
+        ident.add(row(self.icon, button("Logo Değiştir", "ghost", self.change_icon)))
+        ident.end()
+        top.addWidget(ident, 1)
+
+        # panel ayarları
+        panel = Card("Panel Ayarları", "Sunucunun nasıl başlatılacağı")
+        form = QFormLayout()
+        form.setSpacing(8)
+        self.java = QLineEdit()
+        self.jar = QLineEdit()
+        self.ram_min = QLineEdit()
+        self.ram_max = QLineEdit()
+        self.bluemap = QLineEdit()
+        self.interval = QSpinBox()
+        self.interval.setRange(1, 24 * 60)
+        self.interval.setSuffix(" " + t("saat"))
+        self.interval.setButtonSymbols(QSpinBox.NoButtons)
+        form.addRow(t("Java"), self.java)
+        form.addRow(t("Jar dosyası"), self.jar)
+        form.addRow(t("RAM (min / max)"), row(self.ram_min, self.ram_max, stretch_end=False))
+        form.addRow(t("BlueMap adresi"), self.bluemap)
+        form.addRow(t("Otomatik bakım"), self.interval)
+        panel.add(form)
+        top.addWidget(panel, 2)
+        self.col.addLayout(top)
+
+        # server.properties
+        props = Card("server.properties", "Değişikliklerin çoğu sunucu yeniden başlatılınca geçerli olur")
+        self.search = QLineEdit()
+        self.search.setPlaceholderText(t("Ayar ara…"))
+        self.search.setFixedWidth(220)
+        self.search.textChanged.connect(self._filter)
+        props.header_actions.addWidget(self.search)
+        self.grid = QGridLayout()
+        self.grid.setHorizontalSpacing(14)
+        self.grid.setVerticalSpacing(6)
+        self.grid.setColumnStretch(1, 1)
+        self.grid.setColumnStretch(4, 1)
+        props.add(self.grid)
+        self.col.addWidget(props)
+        self.col.addStretch(1)
+
+        self.root.addLayout(row(None, button("Kaydet", "primary", self.save), stretch_end=False))
+        self.fields = {}
+
+    def on_show(self):
+        c = self.app.config
+        self.java.setText(c.get("java_path"))
+        self.jar.setText(c.get("jar_name"))
+        self.ram_min.setText(c.get("ram_min"))
+        self.ram_max.setText(c.get("ram_max"))
+        self.bluemap.setText(c.get("bluemap_url"))
+        self.interval.setValue(int(float(c.get("maintenance_interval_hours"))))
+
+        ip = self.app.properties.icon_path
+        if ip:
+            self.icon.setPixmap(QPixmap(ip).scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        else:
+            self.icon.setText(t("yok"))
+
+        while self.grid.count():
+            w = self.grid.takeAt(0).widget()
+            if w:
+                w.deleteLater()
+        self.fields.clear()
+        props = self.app.properties.load()
+        if not props:
+            self.grid.addWidget(label("server.properties bulunamadı. Sunucuyu bir kez başlatın.", "Muted"), 0, 0)
+            return
+        for i, (k, v) in enumerate(props.items()):
+            r, c0 = i // 2, (i % 2) * 3
+            name = label(k, "Muted")
+            name.setStyleSheet("font-family: Consolas;")
+            if v.lower() in ("true", "false"):
+                w = QCheckBox()
+                w.setChecked(v.lower() == "true")
+                w.setCursor(Qt.PointingHandCursor)
+            else:
+                w = QLineEdit(v)
+            self.grid.addWidget(name, r, c0)
+            self.grid.addWidget(w, r, c0 + 1)
+            self.fields[k] = (name, w)
+        self._filter()
+
+    def _filter(self):
+        q = self.search.text().lower()
+        for k, (name, w) in self.fields.items():
+            vis = q in k.lower()
+            name.setVisible(vis)
+            w.setVisible(vis)
+
+    def change_icon(self):
+        if self.read_only():
+            return
+        p, _ = QFileDialog.getOpenFileName(self, t("Sunucu Logosu (64×64 PNG)"), "", "PNG (*.png)")
+        if not p:
+            return
+        if QPixmap(p).size().width() != 64 or QPixmap(p).size().height() != 64:
+            self.warn("Minecraft yalnızca 64×64 boyutundaki logoları gösterir.")
+            return
+        self.app.properties.set_icon(p)
+        self.on_show()
+
+    def save(self):
+        if self.read_only():
+            return
+        c = self.app.config
+        for key, w in (("java_path", self.java), ("jar_name", self.jar), ("ram_min", self.ram_min),
+                       ("ram_max", self.ram_max), ("bluemap_url", self.bluemap)):
+            c.data[key] = w.text().strip()
+        c.data["maintenance_interval_hours"] = self.interval.value()
+        c.save()
+        if self.fields:
+            vals = {k: (w.isChecked() if isinstance(w, QCheckBox) else w.text()) for k, (_, w) in self.fields.items()}
+            try:
+                self.app.properties.save(vals)
+            except Exception as e:
+                self.error(str(e))
+                return
+        self.info("Ayarlar kaydedildi.")
+
+
+# ---------------------------------------------------------------- Whitelist & Ban
+class AdminPage(Page):
+    title = "Whitelist & Ban"
+
+    def __init__(self, app, bridge):
+        super().__init__(app, bridge)
+        act = Card("Oyuncu İşlemi", "Komutlar sunucu açıkken gönderilir")
+        self.name = QLineEdit()
+        self.name.setPlaceholderText(t("Oyuncu adı"))
+        self.name.setFixedWidth(260)
+        act.add(row(
+            self.name,
+            button("Whitelist'e Ekle", "primary", lambda: self.run("whitelist add")),
+            button("Whitelist'ten Çıkar", "warn", lambda: self.run("whitelist remove")),
+            button("Banla", "danger", lambda: self.run("ban")),
+            button("Banı Kaldır", "info", lambda: self.run("pardon")),
+            button("OP Ver", "purple", lambda: self.run("op")),
+            button("OP Al", "ghost", lambda: self.run("deop")),
+        ))
+        self.root.addWidget(act)
+
+        lists = QHBoxLayout()
+        lists.setSpacing(14)
+        self.lists = {}
+        for fn, title in (("whitelist.json", N_("Whitelist")), ("banned-players.json", N_("Banlılar")), ("ops.json", N_("Operatörler"))):
+            c = Card(title)
+            lw = QListWidget()
+            lw.itemClicked.connect(lambda it: self.name.setText(it.text()))
+            c.add(lw, 1)
+            lists.addWidget(c, 1)
+            self.lists[fn] = (c, lw)
+        self.root.addLayout(lists, 1)
+        bridge.line.connect(self._maybe_reload)
+
+    def on_show(self):
+        sp = self.app.config.server_path
+        for fn, (_, lw) in self.lists.items():
+            lw.clear()
+            names = read_name_list(sp, fn)
+            lw.addItems(names or [])
+            if not names:
+                lw.addItem(t("(boş)"))
+                lw.item(0).setFlags(Qt.NoItemFlags)
+
+    def _maybe_reload(self, line):
+        if any(k in line for k in ("to the whitelist", "from the whitelist", "Banned", "Unbanned", "operator")):
+            QTimer.singleShot(500, self.on_show)
+
+    def run(self, action):
+        n = self.name.text().strip()
+        if not n:
+            self.warn("Lütfen bir oyuncu adı girin.")
+            return
+        if action == "ban" and not self.confirm(t("{name} banlansın mı?", name=n)):
+            return
+        if self.send(f"{action} {n}"):
+            self.name.clear()
+
+
+# ---------------------------------------------------------------- Bakım
+class MaintenancePage(Page):
+    title = "Bakım & Yedek"
+    backup_progress = Signal(int, int)
+    backup_done = Signal(str, str)  # yol, hata
+
+    def __init__(self, app, bridge):
+        super().__init__(app, bridge)
+        top = QHBoxLayout()
+        top.setSpacing(14)
+
+        st = Card("Durum")
+        self.state_lbl = label("", "BigValue")
+        self.timer_lbl = label("", "Muted")
+        st.add(self.state_lbl)
+        st.add(self.timer_lbl)
+        self.btn_on = button("Bakım Modunu Başlat", "danger", self.enable)
+        self.btn_off = button("Bakım Modunu Bitir", "primary", self.disable)
+        st.add(row(self.btn_on, self.btn_off, button("Sayacı Sıfırla", "ghost", self.reset)))
+        st.add(label("Bakım modu: MOTD değişir, whitelist açılır ve otomatik yedek alınır.", "Muted", wrap=True))
+        st.end()
+        top.addWidget(st, 1)
+
+        bk = Card("Dünya Yedekleri", "world, world_nether ve world_the_end tek zip'te")
+        self.btn_backup = button("Şimdi Yedek Al", "primary", self.backup)
+        bk.header_actions.addWidget(button("Klasörü Aç", "ghost", lambda: open_folder(self.app.backups.folder)))
+        bk.header_actions.addWidget(self.btn_backup)
+        self.progress = QProgressBar()
+        self.progress.setVisible(False)
+        bk.add(self.progress)
+        self.table = table(["Yedek", "Boyut", "Tarih"], stretch_col=0)
+        bk.add(self.table, 1)
+        top.addWidget(bk, 2)
+        self.root.addLayout(top, 1)
+
+        self.backup_progress.connect(self._on_progress)
+        self.backup_done.connect(self._on_backup_done)
+        self.tick = QTimer(self)
+        self.tick.timeout.connect(self._tick)
+        self.tick.start(1000)
+        self._tick()
+
+    def on_show(self):
+        fill_table(self.table, [(n, human_size(s), f"{d:%d.%m.%Y %H:%M}") for n, s, d in self.app.backups.list()],
+                   align_center=(1, 2))
+
+    def _tick(self):
+        m = self.app.maintenance
+        if m.tick():
+            self.on_show()
+        if m.active:
+            self.state_lbl.setText(t("Bakım modu aktif"))
+            self.state_lbl.setStyleSheet(f"color:{color('danger')}")
+            self.timer_lbl.setText(t("Oyuncular yalnızca whitelist ile girebilir"))
+        else:
+            self.state_lbl.setText(t("Normal mod"))
+            self.state_lbl.setStyleSheet(f"color:{color('accent')}")
+            s = int(m.remaining().total_seconds())
+            d, s = divmod(s, 86400)
+            h, s = divmod(s, 3600)
+            mi, s = divmod(s, 60)
+            self.timer_lbl.setText(t("Sonraki otomatik bakım: {d} gün {time}", d=d, time=f"{h:02}:{mi:02}:{s:02}"))
+        self.btn_on.setEnabled(not m.active)
+        self.btn_off.setEnabled(m.active)
+
+    def enable(self):
+        if self.read_only():
+            return
+        if not self.confirm("Bakım modu başlatılsın mı?\nMOTD değişecek, whitelist açılacak ve yedek alınacak."):
+            return
+        path = self.app.maintenance.enable()
+        self._tick()
+        self.on_show()
+        self.info(t("Bakım modu aktif.") + "\n" + (t("Yedek: {file}", file=os.path.basename(path)) if path else t("Yedek alınamadı.")))
+
+    def disable(self):
+        if self.read_only():
+            return
+        self.app.maintenance.disable()
+        self._tick()
+
+    def reset(self):
+        self.app.maintenance.reset_timer()
+        self._tick()
+
+    def backup(self):
+        self.app.server.try_send("save-all flush")
+        self.btn_backup.setEnabled(False)
+        self.progress.setVisible(True)
+        self.progress.setValue(0)
+
+        def work():
+            try:
+                p = self.app.backups.create(progress=lambda i, n: self.backup_progress.emit(i, n))
+                self.backup_done.emit(p, "")
+            except Exception as e:
+                self.backup_done.emit("", str(e))
+        QTimer.singleShot(1500, lambda: threading.Thread(target=work, daemon=True).start())
+
+    def _on_progress(self, i, n):
+        self.progress.setMaximum(n)
+        self.progress.setValue(i)
+
+    def _on_backup_done(self, path, err):
+        self.btn_backup.setEnabled(True)
+        self.progress.setVisible(False)
+        if err:
+            self.error(t("Yedek alınamadı: {err}", err=t(err)))
+        self.on_show()

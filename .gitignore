@@ -1,0 +1,19 @@
+# kullanıcıya özel / gizli
+config.json
+config.json.tmp
+
+# Minecraft'ın dosyaları (Mojang'a ait, dağıtılmaz)
+Translation/
+Icons/
+Languages/
+
+# derleme çıktıları
+build/
+dist/
+*.spec
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+.venv/

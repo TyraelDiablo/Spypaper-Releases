@@ -1,0 +1,9 @@
+@echo off
+cd /d "%~dp0"
+uv run --with pyinstaller --with nbtlib --with pyside6 --with psutil --with pyyaml pyinstaller --noconsole --onefile --collect-all nbtlib --name Spypaper --add-data "locales;locales" --add-data "legal;legal" ^
+  --exclude-module PySide6.QtPdf --exclude-module PySide6.QtPdfWidgets ^
+  --exclude-module PySide6.Qt3DCore --exclude-module PySide6.QtMultimedia --exclude-module PySide6.QtCharts ^
+  main.py
+echo.
+echo Bitti: dist\Spypaper.exe  (Translation klasorunu yanina koy; config.json ilk acilista olusur)
+pause
