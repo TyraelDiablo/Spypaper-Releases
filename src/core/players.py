@@ -44,8 +44,12 @@ class ItemRow:
 @dataclass
 class PlayerDetails:
     xp_level: int = 0
+    xp_progress: float = 0.0                        # mevcut seviyedeki ilerleme (0-1)
     health: float = 0.0
+    absorption: float = 0.0                         # altın kalpler
     food: int = 0
+    gamemode: int = -1                              # 0 hayatta kalma, 1 yaratıcı, 2 macera, 3 izleyici
+    armor_points: int = 0                           # zırh göstergesi (0-20)
     inventory: list = field(default_factory=list)   # ItemRow (ana envanter, 0-35)
     armor: list = field(default_factory=list)       # ItemRow (4 slot, boşlar dahil)
     offhand: ItemRow = None
@@ -150,7 +154,7 @@ def icon_path(item_id, server_path):
     key = (item_id, server_path)
     if key in _ICON_CACHE:
         return _ICON_CACHE[key]
-    names = [("item", item_id), ("block", item_id)]
+    names = [("items", item_id), ("item", item_id), ("block", item_id)]   # items/: modelden çizilen ikon
     for suf in ("_side", "_front", "_top", "_0", "_bottom"):
         names.append(("block", item_id + suf))
     base = re.sub(r"_(stairs|slab|wall|fence|fence_gate|button|pressure_plate)$", "", item_id)
@@ -313,6 +317,26 @@ _TOOL = {"wooden": 59, "stone": 131, "iron": 250, "golden": 32, "diamond": 1561,
 _SINGLE = {"elytra": 432, "bow": 384, "crossbow": 465, "trident": 250, "shield": 336, "fishing_rod": 64,
            "shears": 238, "flint_and_steel": 64, "mace": 500, "carrot_on_a_stick": 25, "brush": 64,
            "warped_fungus_on_a_stick": 100, "turtle_helmet": 275, "wolf_armor": 64}
+
+
+# vanilla zırh puanları: (miğfer, göğüslük, pantolon, bot)
+_ARMOR_POINTS = {"leather": (1, 3, 2, 1), "golden": (2, 5, 3, 1), "chainmail": (2, 5, 4, 1), "copper": (2, 4, 3, 1),
+                 "iron": (2, 6, 5, 2), "diamond": (3, 8, 6, 3), "netherite": (3, 8, 6, 3)}
+_PIECE = {"helmet": 0, "chestplate": 1, "leggings": 2, "boots": 3}
+
+
+def armor_points(item_ids):
+    """Giyilen zırhın toplam zırh puanı (0-20), Minecraft'ın zırh göstergesi için."""
+    total = 0
+    for iid in item_ids:
+        iid = (iid or "").replace("minecraft:", "")
+        if iid == "turtle_helmet":
+            total += 2
+            continue
+        mat, _, piece = iid.rpartition("_")
+        if mat in _ARMOR_POINTS and piece in _PIECE:
+            total += _ARMOR_POINTS[mat][_PIECE[piece]]
+    return min(total, 20)
 
 
 def max_durability(item_id):
@@ -511,6 +535,9 @@ class PlayerService:
         d.xp_level = int(_val(root.get("XpLevel", 0)))
         d.health = float(_val(root.get("Health", 0)))
         d.food = int(_val(root.get("foodLevel", 0)))
+        d.xp_progress = max(0.0, min(1.0, float(_val(root.get("XpP", 0)))))
+        d.absorption = float(_val(root.get("AbsorptionAmount", 0)))
+        d.gamemode = int(_val(root.get("playerGameType", -1)))
 
         inv = _get(root, "Inventory") or []
         by_slot = {}
@@ -537,6 +564,7 @@ class PlayerService:
                 if it and _get(it, "id") and label not in armor:
                     armor[label] = it
         d.armor = [self._item(armor[l], l) if l in armor else ItemRow(l, "", N_("(Boş)"), 0) for l in labels]
+        d.armor_points = armor_points(r.item_id for r in d.armor)
 
         off = None
         if eq and _get(eq, "offhand") and _get(_get(eq, "offhand"), "id"):

@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.png" width="96" alt="Spypaper logo"></p>
+
 # Spypaper
 
 **English** · [Türkçe](README.tr.md)
@@ -24,7 +26,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Live Console** | Colored console, command history, optional translation of server messages into the panel language. |
 | **Log** | Events, sessions and charts from `logs/latest.log` and archived `.log.gz` files. Works even if the server was started outside the panel. |
 | **Esplora** | An AI assistant (bring your own API key: Anthropic Claude, Google Gemini, OpenAI and compatible services) scoped strictly to managing this server. Preset questions by category, chat bubbles, stop and regenerate. It never runs commands itself; you send the commands it suggests with **▶ Run**. |
-| **Players** | Inventory, armor and Ender chest with item icons, enchantments, armor trims and durability. Item names in your language (from Minecraft's own language files). Common player commands. Supports Minecraft 26.x's new `world/players/` layout. |
+| **Players** | Health, hunger, armor and XP shown with Minecraft's own HUD bars, and the player's game mode. Inventory, armor and Ender chest with item icons (block items such as fences and stairs are rendered from the game's 3D models), enchantments, armor trims and durability. Item names in your language (from Minecraft's own language files). Common player commands. Supports Minecraft 26.x's new `world/players/` layout. |
 | **Plugins / Mods** | Manages `plugins/` on Paper, Purpur and Spigot, and `mods/` on Fabric, Quilt, Forge and NeoForge: add, remove, disable. |
 | **Mod Language Files** | Finds the English language files inside mod and plugin jars wherever they are (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…), JSON or YAML, flat or nested. You write the translation; the panel saves it into the jar and into the plugin's own data folder copy. Format code checks (`%s`, `%player%`, `§a`, `&c`, `<red>`), import/export, restore original. |
 | **Server Settings** | `server.properties` editor, Java path, RAM, jar, server icon. |
@@ -33,7 +35,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Live Map** | Shows the BlueMap 3D map inside the panel. If BlueMap isn't installed, it downloads the right version for your server software and Minecraft version from Modrinth and (with your consent) enables its texture download. |
 | **Server Software** | Pick a version and download/install **Paper, Purpur, Vanilla, Fabric, Forge or NeoForge**. Files are verified with SHA-256 / SHA-1 where available; the old jar is moved to `backups/jars/`. |
 | **Security** | 4-level safe mode (confirm, block or read-only for dangerous commands) and an optional per-server PIN. |
-| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons. |
+| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons, themed in-app dialogs instead of Windows message boxes. |
 
 ---
 
@@ -102,7 +104,9 @@ In-game texts such as item, enchantment and death message names, and the item ic
 Use the **Get Game Files** button on the **Players** page or **☰ → Game Files**:
 
 1. **Extract from the Minecraft installation on this computer:** `.minecraft` is found automatically, no internet needed. You must have launched that game version from the launcher at least once.
-2. **Download from Mojang's official servers:** for machines without Minecraft (e.g. a dedicated server box). The client jar is downloaded temporarily; only the language files and icons are kept and the jar is deleted.
+2. **Download from Mojang's official servers:** for machines without Minecraft (e.g. a dedicated server box). The client jar is downloaded temporarily; only the language files, icons and HUD images are kept and the jar is deleted.
+
+Block items that have no flat picture (fences, stairs, walls, slabs…) are drawn from the game's own 3D models at this step. If you prepared the game files with an older Spypaper version, run **Game Files** again to get these icons and the HUD bars.
 
 Files are written to the `Translation` and `Icons` folders next to the exe. If you prefer the command line, `mc_dilleri_cikar.bat` does the same:
 
@@ -174,7 +178,7 @@ Supported languages: Türkçe, English, Deutsch, Français, Español, Português
 Spypaper-Releases/
 ├─ README.md, README.tr.md
 ├─ LICENSE                 GNU GPL v3
-├─ docs/screenshots/       README images
+├─ docs/                  logo and README screenshots
 └─ src/                    source code
    ├─ main.py              entry point
    ├─ calistir.bat         run from source
@@ -191,13 +195,15 @@ Spypaper-Releases/
    │  ├─ files.py          plugins/mods folder, server.properties, backups
    │  ├─ maintenance.py    maintenance mode and automatic backups
    │  ├─ gamefiles.py      Minecraft language files and icons (local install or Mojang)
+   │  ├─ iconrender.py     renders block item icons from the game's 3D models
    │  ├─ modtrans.py       mod/plugin language file editor (JSON, YAML)
    │  ├─ creator.py        creating new servers
    │  ├─ bluemap.py        BlueMap detection, Modrinth install, configuration
    │  ├─ ai.py, esplora.py AI providers, Esplora rules and preset questions
    │  ├─ safemode.py       safe mode and PIN
    │  └─ secrets.py        API key encryption
-   ├─ ui/                  PySide6 interface (window, pages, themes, i18n)
+   ├─ ui/                  PySide6 interface (window, pages, themes, i18n, HUD, dialogs)
+   │  └─ assets/           Spypaper logo (SVG, PNG, ICO)
    ├─ locales/             compiled interface translations
    ├─ tools/               translation and Minecraft language file tools
    └─ legal/               privacy notice, third-party notices, license copy

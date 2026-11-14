@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" shape-rendering="crispEdges">
+  <title>Spypaper</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f2a22"/>
+      <stop offset="1" stop-color="#121814"/>
+    </linearGradient>
+  </defs>
+  <!-- kâğıt: sağ üst köşesi katlanmış -->
+  <path d="M40 8 H192 L248 64 V216 a32 32 0 0 1 -32 32 H40 a32 32 0 0 1 -32 -32 V40 a32 32 0 0 1 32 -32 Z" fill="url(#bg)" stroke="#5ad16a" stroke-width="8" stroke-linejoin="round" shape-rendering="geometricPrecision"/>
+  <path d="M192 8 V48 a16 16 0 0 0 16 16 H248 Z" fill="#5ad16a" stroke="#5ad16a" stroke-width="8" stroke-linejoin="round" shape-rendering="geometricPrecision"/>
+  <g transform="translate(128 136) scale(0.82) translate(-128 -128)">
+    <rect x="80" y="64" width="96" height="16" fill="#2f8f3e"/><rect x="48" y="80" width="32" height="16" fill="#2f8f3e"/><rect x="80" y="80" width="96" height="16" fill="#e9f3e6"/><rect x="176" y="80" width="32" height="16" fill="#2f8f3e"/><rect x="32" y="96" width="16" height="16" fill="#2f8f3e"/><rect x="48" y="96" width="48" height="16" fill="#e9f3e6"/><rect x="96" y="96" width="64" height="16" fill="#5ad16a"/><rect x="160" y="96" width="48" height="16" fill="#e9f3e6"/><rect x="208" y="96" width="16" height="16" fill="#2f8f3e"/><rect x="16" y="112" width="16" height="16" fill="#2f8f3e"/><rect x="32" y="112" width="48" height="16" fill="#e9f3e6"/><rect x="80" y="112" width="16" height="16" fill="#5ad16a"/><rect x="96" y="112" width="32" height="16" fill="#0f1411"/><rect x="128" y="112" width="16" height="16" fill="#ffffff"/><rect x="144" y="112" width="16" height="16" fill="#0f1411"/><rect x="160" y="112" width="16" height="16" fill="#5ad16a"/><rect x="176" y="112" width="48" height="16" fill="#e9f3e6"/><rect x="224" y="112" width="16" height="16" fill="#2f8f3e"/><rect x="16" y="128" width="16" height="16" fill="#2f8f3e"/><rect x="32" y="128" width="48" height="16" fill="#e9f3e6"/><rect x="80" y="128" width="16" height="16" fill="#5ad16a"/><rect x="96" y="128" width="64" height="16" fill="#0f1411"/><rect x="160" y="128" width="16" height="16" fill="#5ad16a"/><rect x="176" y="128" width="48" height="16" fill="#e9f3e6"/><rect x="224" y="128" width="16" height="16" fill="#2f8f3e"/><rect x="32" y="144" width="16" height="16" fill="#2f8f3e"/><rect x="48" y="144" width="48" height="16" fill="#e9f3e6"/><rect x="96" y="144" width="64" height="16" fill="#5ad16a"/><rect x="160" y="144" width="48" height="16" fill="#e9f3e6"/><rect x="208" y="144" width="16" height="16" fill="#2f8f3e"/><rect x="48" y="160" width="32" height="16" fill="#2f8f3e"/><rect x="80" y="160" width="96" height="16" fill="#e9f3e6"/><rect x="176" y="160" width="32" height="16" fill="#2f8f3e"/><rect x="80" y="176" width="96" height="16" fill="#2f8f3e"/>
+  </g>
+</svg>

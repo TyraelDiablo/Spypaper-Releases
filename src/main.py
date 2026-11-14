@@ -13,6 +13,14 @@ def main(config_path=None):
     qt = QApplication(sys.argv)
     qt.setApplicationName("Spypaper")
     qt.setStyle("Fusion")
+    if sys.platform == "win32":          # görev çubuğunda python ikonu yerine Spypaper ikonu
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("TyraelDiablo.Spypaper")
+        except Exception:
+            pass
+    from ui.icons import app_icon
+    qt.setWindowIcon(app_icon())
     settings = Settings(config_path)
     win = MainWindow(settings)          # dil ve tema burada yüklenir
     win.show()

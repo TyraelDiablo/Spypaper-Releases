@@ -5,7 +5,7 @@ import webbrowser
 from PySide6.QtCore import QSize, Qt, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QHBoxLayout, QLineEdit, QMessageBox, QPushButton, QScrollArea, QSlider,
+    QCheckBox, QComboBox, QHBoxLayout, QLineEdit, QPushButton, QScrollArea, QSlider,
     QVBoxLayout, QWidget,
 )
 
@@ -226,8 +226,10 @@ class Drawer(QWidget):
         LegalDialog(self).exec()
 
     def _about(self):
-        QMessageBox.about(self, t("Hakkında"), t(
+        from .msgbox import choose
+        choose(self, "about", t("Hakkında"), t(
             "Spypaper v{v}\nMinecraft sunucu yönetim paneli.\n\nPython + PySide6 · nbtlib · psutil", v=VERSION)
             + "\n\n" + "© 2026 Serkan Aynacı (TyraelDiablo) · GPL-3.0"
             + "\n" + t("Özgür ve açık kaynak yazılım. Ayrıntılar: ☰ → Lisans ve Gizlilik.")
-            + "\n\n" + t("Resmi bir Minecraft ürünü değildir. Mojang ya da Microsoft tarafından onaylanmamıştır ve onlarla bağlantılı değildir."))
+            + "\n\n" + t("Resmi bir Minecraft ürünü değildir. Mojang ya da Microsoft tarafından onaylanmamıştır ve onlarla bağlantılı değildir."),
+            [(t("Tamam"), "primary")])

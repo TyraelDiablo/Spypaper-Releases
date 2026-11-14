@@ -119,13 +119,16 @@ class Page(QWidget):
     # --- mesajlar ---
     # text/title çevrilir; yer tutuculu metinleri çağıran t(...) ile hazırlar.
     def info(self, text, title="Bilgi"):
-        QMessageBox.information(self, t(title), t(text))
+        from . import msgbox
+        msgbox.info(self, t(title), t(text))
 
     def warn(self, text, title="Uyarı"):
-        QMessageBox.warning(self, t(title), t(text))
+        from . import msgbox
+        msgbox.warning(self, t(title), t(text))
 
     def error(self, text, title="Hata"):
-        QMessageBox.critical(self, t(title), t(text))
+        from . import msgbox
+        msgbox.error(self, t(title), t(text))
 
     def confirm(self, text, title="Onay"):
         return ask(self, t(text), t(title))
@@ -168,10 +171,8 @@ def err_text(e):
 
 
 def ask(parent, text, title):
-    box = QMessageBox(QMessageBox.Question, title, text, QMessageBox.Yes | QMessageBox.No, parent)
-    box.button(QMessageBox.Yes).setText(t("Evet"))
-    box.button(QMessageBox.No).setText(t("Hayır"))
-    return box.exec() == QMessageBox.Yes
+    from .msgbox import ask as _ask
+    return _ask(parent, text, title)
 
 
 def table(headers, stretch_col=1):

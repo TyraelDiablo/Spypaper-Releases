@@ -5,7 +5,7 @@ from datetime import datetime
 from PySide6.QtCore import QRectF, Qt, QUrl
 from PySide6.QtGui import QColor, QDesktopServices, QPainter, QPixmap
 from PySide6.QtWidgets import (
-    QFrame, QGridLayout, QHBoxLayout, QMenu, QMessageBox, QScrollArea, QStackedWidget,
+    QFrame, QGridLayout, QHBoxLayout, QLabel, QMenu, QMessageBox, QScrollArea, QStackedWidget,
     QVBoxLayout, QWidget,
 )
 
@@ -251,6 +251,13 @@ class HomeScreen(QWidget):
         tl = QHBoxLayout(top)
         tl.setContentsMargins(12, 10, 22, 10)
         tl.addWidget(icon_button("menu", "Menü ve ayarlar (Ctrl+,)", ctl.toggle_drawer))
+        from .icons import logo
+        lg = QLabel()
+        lg.setPixmap(logo(28))
+        lg.setFixedSize(28, 28)
+        tl.addSpacing(4)
+        tl.addWidget(lg)
+        tl.addSpacing(2)
         tl.addWidget(label("Spypaper", "PageTitle"))
         tl.addStretch(1)
         tl.addWidget(button("Var Olanı Ekle", "ghost", self.add_server, tooltip="Var olan bir sunucu klasörünü ekle"))

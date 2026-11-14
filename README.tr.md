@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.png" width="96" alt="Spypaper logosu"></p>
+
 # Spypaper
 
 [English](README.md) · **Türkçe**
@@ -24,7 +26,7 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Canlı Konsol** | Renkli konsol, komut geçmişi, sunucu mesajlarının panel diline çevrilmesi (isteğe bağlı). |
 | **Günlük** | `logs/latest.log` ve arşivlenmiş `.log.gz` dosyalarından olaylar, oturumlar ve grafikler. Sunucu panel dışında açılmış olsa bile takip eder. |
 | **Esplora** | API anahtarıyla çalışan, yalnızca bu sunucunun yönetimine odaklı yapay zeka asistanı (Anthropic Claude, Google Gemini, OpenAI ve uyumlu servisler). Kategorili hazır sorular, mesaj balonları, durdurma ve yeniden oluşturma. Komut çalıştırmaz; önerdiği komutları sen **▶ Çalıştır** ile gönderirsin. |
-| **Oyuncular** | Envanter, zırh ve Ender sandığı; eşya ikonları, büyüler, kaplamalar, dayanıklılık. Eşya adları seçili dilde (Minecraft'ın kendi dil dosyalarıyla). Sık kullanılan oyuncu komutları. Minecraft 26.x'in yeni `world/players/` düzenini de okur. |
+| **Oyuncular** | Can, açlık, zırh ve XP Minecraft'ın kendi göstergeleriyle; oyuncunun oyun modu. Envanter, zırh ve Ender sandığı; eşya ikonları (çit, merdiven gibi blok eşyalar oyunun 3D modellerinden çizilir), büyüler, kaplamalar, dayanıklılık. Eşya adları seçili dilde (Minecraft'ın kendi dil dosyalarıyla). Sık kullanılan oyuncu komutları. Minecraft 26.x'in yeni `world/players/` düzenini de okur. |
 | **Eklentiler / Modlar** | Paper, Purpur ve Spigot'ta `plugins/`, Fabric, Quilt, Forge ve NeoForge'da `mods/` klasörünü yönetir: ekle, sil, devre dışı bırak. |
 | **Mod Dil Dosyaları** | Mod ve eklenti jar'larının içindeki İngilizce dil dosyalarını, yolu ne olursa olsun bulur (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…). JSON ve YAML, düz ya da iç içe. Çeviriyi sen yazarsın; panel jar'ın içine ve eklentinin kendi klasöründeki kopyaya kaydeder. Biçim kodu kontrolü (`%s`, `%player%`, `§a`, `&c`, `<red>`), dışa/içe aktarma, orijinali geri yükleme. |
 | **Sunucu Ayarları** | `server.properties` düzenleyici, Java yolu, RAM, jar, sunucu ikonu. |
@@ -33,7 +35,7 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Canlı Harita** | BlueMap 3D haritası panelin içinde açılır. BlueMap kurulu değilse sunucunun yazılımına ve sürümüne uygun olanı Modrinth'ten indirip kurar, doku indirme iznini (onayınla) ayarlar. |
 | **Sunucu Yazılımı** | **Paper, Purpur, Vanilla, Fabric, Forge, NeoForge** için sürüm seçip indirme/kurma. Mümkün olduğunda SHA-256 / SHA-1 doğrulaması yapılır, eski jar `backups/jars/` klasörüne taşınır. |
 | **Güvenlik** | 4 seviyeli güvenli mod (tehlikeli komutlar için onay, engelleme ya da salt okunur) ve sunucu başına isteğe bağlı PIN. |
-| **Görünüm** | 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller, [Lucide](https://lucide.dev) ikonları. |
+| **Görünüm** | 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller, [Lucide](https://lucide.dev) ikonları, Windows mesaj kutuları yerine panele özel uyarı/soru pencereleri. |
 
 ---
 
@@ -100,7 +102,9 @@ Eşya, büyü ve ölüm mesajı gibi oyun metinleri ve eşya ikonları Minecraft
 **Oyuncular** sayfasındaki **Oyun Dosyalarını Al** düğmesi ya da **☰ → Oyun Dosyaları** ile:
 
 1. **Bu bilgisayardaki Minecraft kurulumundan çıkar:** `.minecraft` otomatik bulunur, internet gerekmez. Önce oyunun o sürümünü launcher'dan bir kez açmış olman gerekir.
-2. **Mojang'ın resmî sunucularından indir:** Bilgisayarda Minecraft yoksa (ör. yalnızca sunucu makinesi) kullanılır. İstemci jar'ı geçici olarak indirilir, yalnızca dil dosyaları ve ikonlar ayrılıp jar silinir.
+2. **Mojang'ın resmî sunucularından indir:** Bilgisayarda Minecraft yoksa (ör. yalnızca sunucu makinesi) kullanılır. İstemci jar'ı geçici olarak indirilir, yalnızca dil dosyaları, ikonlar ve HUD görselleri ayrılıp jar silinir.
+
+Düz resmi olmayan blok eşyalar (çit, merdiven, duvar, basamak…) bu adımda oyunun kendi 3D modellerinden çizilir. Oyun dosyalarını eski bir Spypaper sürümüyle hazırladıysan bu ikonlar ve can/açlık çubukları için **Oyun Dosyaları**'nı yeniden çalıştır.
 
 Dosyalar exe'nin yanındaki `Translation` ve `Icons` klasörlerine yazılır. Komut satırını tercih edenler için `mc_dilleri_cikar.bat` da aynı işi yapar:
 
@@ -172,7 +176,7 @@ Desteklenen diller: Türkçe, English, Deutsch, Français, Español, Português 
 Spypaper-Releases/
 ├─ README.md, README.tr.md
 ├─ LICENSE                 GNU GPL v3
-├─ docs/screenshots/       README görselleri
+├─ docs/                  logo ve README görselleri
 └─ src/                    kaynak kod
    ├─ main.py              giriş noktası
    ├─ calistir.bat         kaynaktan çalıştır
@@ -189,13 +193,15 @@ Spypaper-Releases/
    │  ├─ files.py          eklenti/mod klasörü, server.properties, yedekler
    │  ├─ maintenance.py    bakım modu ve otomatik yedek
    │  ├─ gamefiles.py      Minecraft dil dosyaları ve ikonlar (yerel kurulum ya da Mojang)
+   │  ├─ iconrender.py     blok eşya ikonlarını oyunun 3D modellerinden çizer
    │  ├─ modtrans.py       mod/eklenti dil dosyası düzenleyici (JSON, YAML)
    │  ├─ creator.py        yeni sunucu oluşturma
    │  ├─ bluemap.py        BlueMap algılama, Modrinth'ten kurulum, ayarlar
    │  ├─ ai.py, esplora.py yapay zeka sağlayıcıları, Esplora kuralları ve hazır sorular
    │  ├─ safemode.py       güvenli mod ve PIN
    │  └─ secrets.py        API anahtarı şifreleme
-   ├─ ui/                  PySide6 arayüzü (pencere, sayfalar, temalar, i18n)
+   ├─ ui/                  PySide6 arayüzü (pencere, sayfalar, temalar, i18n, HUD, pencereler)
+   │  └─ assets/           Spypaper logosu (SVG, PNG, ICO)
    ├─ locales/             derlenmiş arayüz çevirileri
    ├─ tools/               çeviri ve Minecraft dil dosyası araçları
    └─ legal/               gizlilik, üçüncü taraf bildirimleri, lisans kopyası

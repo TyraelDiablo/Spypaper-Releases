@@ -86,3 +86,41 @@ def img_tag(name, color=None, size=12):
     if not os.path.exists(path):
         pixmap(name, color, size).save(path)
     return f'<img src="{path}" width="{size}" height="{size}" style="vertical-align:middle">'
+
+
+# ------------------------------------------------------------------ Spypaper logosu (ui/assets)
+_ASSETS = (os.path.join(resource_dir(), "ui", "assets"), os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets"))
+
+
+def _asset(name):
+    for d in _ASSETS:
+        p = os.path.join(d, name)
+        if os.path.exists(p):
+            return p
+    return ""
+
+
+def logo(size=28, dpr=2.0):
+    """Renkli Spypaper logosu (QPixmap)."""
+    px = QPixmap(int(size * dpr), int(size * dpr))
+    px.fill(Qt.transparent)
+    p = _asset("logo.svg")
+    if p:
+        painter = QPainter(px)
+        painter.setRenderHint(QPainter.Antialiasing)
+        QSvgRenderer(p).render(painter, QRectF(0, 0, px.width(), px.height()))
+        painter.end()
+    px.setDevicePixelRatio(dpr)
+    return px
+
+
+def app_icon():
+    """Pencere / görev çubuğu ikonu."""
+    ic = QIcon()
+    ico = _asset("spypaper.ico")
+    if ico:
+        ic = QIcon(ico)
+    if ic.isNull():
+        for s in (16, 24, 32, 48, 64, 128, 256):
+            ic.addPixmap(logo(s, 1.0))
+    return ic

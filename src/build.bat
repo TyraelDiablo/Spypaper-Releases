@@ -1,6 +1,6 @@
 @echo off
 cd /d "%~dp0"
-uv run --with pyinstaller --with nbtlib --with pyside6 --with psutil --with pyyaml pyinstaller --noconsole --onefile --collect-all nbtlib --name Spypaper --add-data "locales;locales" --add-data "legal;legal" --add-data "ui/icons;ui/icons" ^
+uv run --with pyinstaller --with nbtlib --with pyside6 --with psutil --with pyyaml pyinstaller --noconsole --onefile --collect-all nbtlib --name Spypaper --add-data "locales;locales" --add-data "legal;legal" --add-data "ui/icons;ui/icons" --add-data "ui/assets;ui/assets" --icon "ui/assets/spypaper.ico" ^
   --exclude-module PySide6.QtPdf --exclude-module PySide6.QtPdfWidgets ^
   --exclude-module PySide6.Qt3DCore --exclude-module PySide6.QtMultimedia --exclude-module PySide6.QtCharts ^
   main.py

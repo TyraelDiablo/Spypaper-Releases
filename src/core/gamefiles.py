@@ -27,6 +27,9 @@ PANEL_LANGS = ["tr_tr", "en_us", "de_de", "fr_fr", "es_es", "pt_br", "it_it", "n
 MANIFEST = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 RESOURCES = "https://resources.download.minecraft.net"
 ICON_RE = re.compile(r"assets/minecraft/textures/(item|block)/([a-z0-9_]+)\.png$")
+# can/açlık/zırh/XP göstergeleri (1.20.2+ sprite düzeni) -> Icons/hud/heart_full.png gibi
+HUD_RE = re.compile(r"assets/minecraft/textures/gui/sprites/hud/((?:heart/(?:container|full|half|absorbing_full|absorbing_half))"
+                    r"|food_(?:empty|full|half)|armor_(?:empty|full|half)|experience_bar_(?:background|progress))\.png$")
 LANG_RE = re.compile(r"minecraft/lang/([a-z0-9_]+)\.json$")
 
 
@@ -90,10 +93,17 @@ def pick_local(mc, wanted=None):
     return vers[0] if vers else None
 
 
-def _write_icons(jar, idir):
+def _write_icons(jar, idir, progress=None):
+    """Düz dokular (Icons/item, Icons/block) + modellerden çizilen envanter ikonları (Icons/items)."""
     n = 0
     with zipfile.ZipFile(jar) as z:
         for name in z.namelist():
+            h = HUD_RE.match(name)
+            if h:
+                os.makedirs(os.path.join(idir, "hud"), exist_ok=True)
+                with open(os.path.join(idir, "hud", h.group(1).replace("/", "_") + ".png"), "wb") as f:
+                    f.write(z.read(name))
+                continue
             m = ICON_RE.match(name)
             if m:
                 d = os.path.join(idir, m.group(1))
@@ -101,6 +111,11 @@ def _write_icons(jar, idir):
                 with open(os.path.join(d, m.group(2) + ".png"), "wb") as f:
                     f.write(z.read(name))
                 n += 1
+    try:
+        from .iconrender import render_all
+        n += render_all(jar, os.path.join(idir, "items"), progress)
+    except Exception:
+        pass                        # çizim olmasa da düz dokular kullanılabilir
     return n
 
 

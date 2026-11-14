@@ -27,8 +27,8 @@ PAGES = [DashboardPage, ConsolePage, LogsPage, EsploraPage, PlayersPage, Plugins
 
 def ask_pin(parent, profile, purpose=""):
     """Sunucuda PIN varsa sorar. Doğruysa (ya da PIN yoksa) True."""
-    from PySide6.QtWidgets import QInputDialog, QLineEdit
     from core.safemode import verify_pin
+    from .msgbox import get_text
     stored = profile.get("pin_hash")
     if not stored:
         return True
@@ -36,7 +36,7 @@ def ask_pin(parent, profile, purpose=""):
         msg = t("'{name}' PIN ile korunuyor.", name=profile.name) + ("\n" + purpose if purpose else "")
         if attempt:
             msg += "\n" + t("Yanlış PIN, tekrar dene ({n} hak kaldı).", n=3 - attempt)
-        pin, ok = QInputDialog.getText(parent, t("PIN gerekli"), msg, QLineEdit.Password)
+        pin, ok = get_text(parent, t("PIN gerekli"), msg, password=True)
         if not ok:
             return False
         if verify_pin(pin, stored):
@@ -252,16 +252,12 @@ def eula_ok(parent, server_path):
                 return True
     except OSError:
         pass
-    box = QMessageBox(parent)
-    box.setWindowTitle(t("Minecraft EULA"))
-    box.setTextFormat(Qt.RichText)
-    box.setText(t("Sunucuyu çalıştırmak için Minecraft Son Kullanıcı Lisans Sözleşmesi'ni (EULA) kabul etmen gerekir.")
-                + "<br><br><a href='https://aka.ms/MinecraftEULA'>https://aka.ms/MinecraftEULA</a><br><br>"
-                + t("Sözleşmeyi okudun ve kabul ediyor musun?"))
-    box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-    box.button(QMessageBox.Yes).setText(t("Kabul Ediyorum"))
-    box.button(QMessageBox.No).setText(t("İptal"))
-    if box.exec() != QMessageBox.Yes:
+    from .msgbox import choose
+    text = (t("Sunucuyu çalıştırmak için Minecraft Son Kullanıcı Lisans Sözleşmesi'ni (EULA) kabul etmen gerekir.")
+            + f"<br><br><a href='https://aka.ms/MinecraftEULA' style='color:{theme.TOKENS['accent']}'>"
+              "https://aka.ms/MinecraftEULA</a><br><br>" + t("Sözleşmeyi okudun ve kabul ediyor musun?"))
+    if choose(parent, "question", t("Minecraft EULA"), text,
+              [(t("İptal"), "ghost"), (t("Kabul Ediyorum"), "primary")], default=1, cancel=0, rich=True) != 1:
         return False
     try:
         from datetime import datetime
@@ -280,6 +276,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self, settings):
         super().__init__()
+        from . import msgbox
+        msgbox.install()                      # Windows mesaj kutuları yerine panele özel kutular
         self.settings = settings
         self.apps = {}        # id -> App   (UI yeniden kurulsa da yaşar; çalışan sunucular durmaz)
         self.panels = {}      # id -> ServerPanel

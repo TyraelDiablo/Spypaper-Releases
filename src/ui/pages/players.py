@@ -2,7 +2,7 @@ from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QTableWidgetItem
 from PySide6.QtWidgets import (
-    QDialog, QDialogButtonBox, QGridLayout, QHBoxLayout, QInputDialog, QLineEdit,
+    QDialog, QDialogButtonBox, QGridLayout, QHBoxLayout, QLineEdit,
     QListWidget, QListWidgetItem, QSpinBox, QStackedWidget, QVBoxLayout, QWidget,
 )
 
@@ -12,6 +12,7 @@ from core.players import (
 )
 from core import N_
 from .. import icons
+from ..msgbox import get_item
 from ..i18n import t
 from ..widgets import Card, Page, button, color, fill_table, label, row, segmented, table
 
@@ -97,26 +98,22 @@ class PlayersPage(Page):
         self.name_lbl = label("Oyuncu seçin", "BigValue")
         self.status_lbl = label("", "Muted")
         self.status_lbl.setTextFormat(Qt.RichText)
+        # Minecraft tarzı can / zırh / açlık / XP göstergesi
+        from ..hud import HudWidget
         stats = QHBoxLayout()
-        stats.setSpacing(28)
-        self.stat_vals = {}
-        for key, title in (("xp", N_("XP Seviyesi")), ("hp", N_("Can")), ("food", N_("Açlık"))):
-            col = QVBoxLayout()
-            col.setSpacing(0)
-            col.addWidget(label(title, "Muted"))
-            v = label("–", "CardTitle")
-            col.addWidget(v)
-            self.stat_vals[key] = v
-            stats.addLayout(col)
+        stats.setSpacing(16)
+        self.hud = HudWidget()
+        self.hud.setFixedSize(self.hud.sizeHint())
+        stats.addWidget(self.hud)
+        self.hud_text = label("", "Muted")
+        stats.addWidget(self.hud_text, 0, Qt.AlignBottom)
         stats.addStretch(1)
-        top = QHBoxLayout()
         name_col = QVBoxLayout()
         name_col.setSpacing(2)
         name_col.addWidget(self.name_lbl)
         name_col.addWidget(self.status_lbl)
-        top.addLayout(name_col, 1)
-        top.addLayout(stats)
-        head.add(top)
+        head.add(name_col)
+        head.add(stats)
         right.addWidget(head)
 
         # aksiyonlar
@@ -227,11 +224,20 @@ class PlayersPage(Page):
         self.name_lbl.setText(p.name)
         st = (f'<span style="color:{color("accent")}">● {t("Çevrimiçi")}</span>' if p.online
               else f'<span style="color:{color("text_muted")}">○ {t("Çevrimdışı")}</span>')
-        self.status_lbl.setText(f'{st}  ·  <span style="color:{color("text_muted")}">{p.uuid}</span>')
+        gm = {0: N_("Hayatta Kalma"), 1: N_("Yaratıcı"), 2: N_("Macera"), 3: N_("İzleyici")}.get(
+            self.details.gamemode if self.details else -1)
+        gm_html = (f'  ·  <span style="color:{color("info")}; font-weight:600">{t(gm)}</span>' if gm else "")
+        self.status_lbl.setText(f'{st}{gm_html}  ·  <span style="color:{color("text_muted")}">{p.uuid}</span>')
         d = self.details
-        self.stat_vals["xp"].setText(str(d.xp_level) if d else "–")
-        self.stat_vals["hp"].setText(f"{d.health:.0f} / 20" if d else "–")
-        self.stat_vals["food"].setText(f"{d.food} / 20" if d else "–")
+        if d:
+            hidden = d.gamemode in (1, 3)             # yaratıcı ve izleyicide oyunda can/açlık görünmez
+            self.hud.set_values(int(round(d.health)), d.food, d.armor_points, d.absorption,
+                                d.xp_level, d.xp_progress, hidden)
+            self.hud_text.setText(t("Can {hp}/20 · Açlık {food}/20 · Zırh {ar} · Seviye {lvl}",
+                                    hp=f"{d.health:.0f}", food=d.food, ar=d.armor_points, lvl=d.xp_level))
+        else:
+            self.hud.clear()
+            self.hud_text.setText("")
         self._update_actions()
         self.show_view()
 
@@ -357,7 +363,12 @@ class PlayersPage(Page):
                                     file=tr.lang + ".json"))
         else:
             self.lang_lbl.setText(t("Minecraft dil dosyası bulunamadı; eşya adları ID'den üretiliyor. “Oyun Dosyalarını Al” ile hazırlayabilirsin."))
-        self.btn_gamefiles.setVisible(tr.status != "ok")
+        # eski sürümle hazırlanmış ikonlarda modelden çizilen blok ikonları (Icons/items) yok: yeniden hazırlamayı öner
+        from core.gamefiles import status as gf_status
+        has_rendered = os.path.isdir(os.path.join(gf_status()["icons_dir"], "items"))
+        self.btn_gamefiles.setVisible(tr.status != "ok" or not has_rendered)
+        if tr.status == "ok" and not has_rendered:
+            self.lang_lbl.setText(self.lang_lbl.text() + " · " + t("Blok ikonları için oyun dosyalarını yeniden hazırla."))
 
     def open_gamefiles(self):
         from core.config import detect_version
@@ -367,6 +378,8 @@ class PlayersPage(Page):
         if d.changed:
             self.app.players.translations.load(self.app.config.server_path)
             self.__dict__.pop("_icons", None)           # ikon önbelleğini temizle
+            from core import players as P
+            P._ICON_CACHE.clear()
             self.on_show()
 
     # --- aksiyonlar ---
@@ -408,7 +421,7 @@ class PlayersPage(Page):
             return
         names = [p.name for p in self.players if p.name != self.current.name]
         online_first = sorted(names, key=lambda n: n not in (self.online_names or set()))
-        target, ok = QInputDialog.getItem(
+        target, ok = get_item(
             self, t("Oyuncuya Işınla"), t("{name} kimin yanına ışınlansın?", name=self.current.name),
             online_first, 0, True)
         if ok and target:
