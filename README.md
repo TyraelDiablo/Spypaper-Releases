@@ -34,7 +34,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Whitelist & Bans** | Whitelist, ban and op lists. |
 | **Maintenance & Backups** | World backups (Overworld, Nether, End) and maintenance mode. Maintenance saves and empties the whitelist so nobody gets in even on whitelisted servers, kicks non-OP players and restores everything when it ends. Weekly schedule (days, time, duration) with in-game warnings. See [Maintenance](#maintenance). |
 | **Notes** | Your own notes for each server, saved automatically. |
-| **Content Editor** | Add content without mods (data pack + resource pack, Minecraft 1.21+): paintings from your images, music discs from a **Newgrounds ID** or your own audio file, tools/weapons and food based on existing items with your own damage, speed, durability, enchantments, effects and optional texture, plus a 3×3 crafting recipe. Spypaper can share the resource pack itself. New blocks are not possible without mods. See [Content Editor](#content-editor). |
+| **Content Editor** | Add content without mods (data pack + resource pack, Minecraft 1.21+): paintings from your images, music discs from a **Newgrounds ID**, a **SoundCloud** link or your own audio file, tools/weapons and food based on existing items with your own damage, speed, durability, enchantments, effects and optional texture, plus a 3×3 crafting recipe. Spypaper can share the resource pack itself. New blocks are not possible without mods. See [Content Editor](#content-editor). |
 | **Danger Zone** | PIN-protected page for irreversible actions: reset the world (choose Overworld/Nether/End and the seed), restore a world backup, reset player data, delete the server. See [Danger Zone](#danger-zone). |
 | **Crash watchdog** | Optional: restarts a server that shuts down without being stopped; gives up after 3 crashes in 10 minutes. Optional backup limit deletes the oldest backups automatically. |
 | **Live Map** | Shows the BlueMap 3D map inside the panel. If BlueMap isn't installed, it downloads the right version for your server software and Minecraft version from Modrinth and (with your consent) enables its texture download. |
@@ -184,7 +184,7 @@ Tab **Content Editor** in each server panel (Minecraft 1.21 or newer). Everythin
 | Type | What you set | Needs the resource pack |
 |---|---|---|
 | Painting | Image (scaled to 16 px per block), size 1–16 × 1–16 blocks, artist | yes |
-| Music Disc | **Newgrounds ID** (downloaded and converted to mono OGG) or your own MP3/OGG/WAV/FLAC, artist, disc look, comparator signal | yes |
+| Music Disc | **Newgrounds ID** (downloaded and converted to mono OGG), a **SoundCloud** link (title and artist are filled in and the page opens in your browser; download the file there if the artist allows it) or your own MP3/OGG/WAV/FLAC/AIFF, artist, disc look, comparator signal | yes |
 | Tool / Weapon | Base item, attack damage and speed, durability or unbreakable, mining speed bonus, enchantments, glint, optional 16×16 texture (1.21.4+) | only for a texture |
 | Food | Base item, nutrition, saturation, eating time, can always eat, effects, optional texture (1.21.2+) | only for a texture |
 
@@ -192,7 +192,7 @@ Every item can have a 3×3 crafting recipe. **Give to Player** runs `loot give <
 
 **Build Packs** writes `<world>/datapacks/spypaper_content/` and `spypaper_resourcepack.zip` in the server folder. Paintings and music discs appear after a server restart; tools and food after `/reload`. Players download the resource pack from an address: either let Spypaper share it (*Let Spypaper share the resource pack*, default port 8766; works on your home network and Tailscale, forward the port for players on the internet) or upload the zip somewhere and enter its URL in **Plugins → Resource Pack**. A server has only one resource pack, so this replaces any pack set there.
 
-Newgrounds tracks belong to their artists; only use tracks you have permission to use. The artist name is shown in the disc description.
+If Newgrounds is blocked in your country, use a SoundCloud link or your own file. Newgrounds and SoundCloud tracks belong to their artists; only use tracks you have permission to use. The artist name is shown in the disc description.
 
 ---
 
@@ -298,6 +298,7 @@ Spypaper-Releases/
    │  ├─ modrinth.py       Modrinth search/download, server resource pack
    │  ├─ content.py        Content Editor (data pack + resource pack builder)
    │  ├─ newgrounds.py     Newgrounds track download
+   │  ├─ soundcloud.py     SoundCloud track info (oEmbed)
    │  ├─ packhost.py       resource pack sharing (small HTTP server)
    │  ├─ skins.py, homes.py player heads (Mojang), player homes
    │  ├─ esplora_kb.py     Esplora's built-in knowledge base

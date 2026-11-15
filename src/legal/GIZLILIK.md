@@ -98,10 +98,11 @@ Spypaper Remote **varsayılan olarak kapalıdır**. Açarsanız Yazılım bilgis
 
 *Oyuncu kafalarını göster* açıksa (varsayılan) Oyuncular sayfası, oyuncuların görünüşünü (skin) Mojang'dan indirir: lisanslı oyuncular için `sessionserver.mojang.com`'a oyuncunun UUID'si, lisanssız oyuncular için `api.mojang.com`'a oyuncu adı gönderilir; görüntü `textures.minecraft.net`'ten alınır. Görüntüler 1 gün önbelleklenir. Bkz. [Microsoft Gizlilik Bildirimi](https://privacy.microsoft.com/privacystatement). ☰ → *Oyuncu kafalarını göster* ile kapatabilirsiniz.
 
-### 2.6 Modrinth ve Newgrounds (siz başlattığınızda)
+### 2.6 Modrinth, Newgrounds ve SoundCloud (siz başlattığınızda)
 
 - **Modrinth** sekmesinde arama yaptığınızda arama metniniz, seçtiğiniz Minecraft sürümü ve yükleyici `api.modrinth.com`'a gönderilir; eklenti/mod/kaynak paketi ve ikonlar `cdn.modrinth.com`'dan indirilir. Bkz. [Modrinth Gizlilik Politikası](https://modrinth.com/legal/privacy).
-- **İçerik Editörü**'nde Newgrounds ID'si girip *Newgrounds'tan Al*'a bastığınızda o ID'nin sayfası `www.newgrounds.com`'dan, ses dosyası `audio.ngfiles.com`'dan indirilir. Bkz. [Newgrounds Gizlilik Politikası](https://www.newgrounds.com/wiki/help-information/privacy-policy). Parçaların hakları sanatçılarına aittir; yalnızca kullanma izniniz olan parçaları ekleyin.
+- **İçerik Editörü**'nde Newgrounds ID'si girip *Getir*'e bastığınızda o ID'nin sayfası `www.newgrounds.com`'dan, ses dosyası `audio.ngfiles.com`'dan indirilir. Bkz. [Newgrounds Gizlilik Politikası](https://www.newgrounds.com/wiki/help-information/privacy-policy). Parçaların hakları sanatçılarına aittir; yalnızca kullanma izniniz olan parçaları ekleyin.
+- Aynı alana SoundCloud bağlantısı girip *Getir*'e bastığınızda yalnızca parça adı ve sanatçı, SoundCloud'un herkese açık oEmbed adresinden (`soundcloud.com/oembed`) alınır ve parçanın sayfası varsayılan tarayıcınızda açılır. Spypaper SoundCloud'dan ses indirmez; dosyayı, sanatçı izin verdiyse siz tarayıcıdan indirirsiniz. Bkz. [SoundCloud Gizlilik Politikası](https://soundcloud.com/pages/privacy).
 
 ### 2.7 Kaynak paketi paylaşımı
 
