@@ -262,7 +262,7 @@ def build(server_path, level, version, items):
         elif c["type"] == "disc":
             desc = f"{c.get('artist')} - {c['name']}" if c.get("artist") else c["name"]
             _write(os.path.join(dp, "data", "spypaper", "jukebox_song", f"{i}.json"), {
-                "sound_event": f"spypaper:music_disc.{i}", "description": _text(desc),
+                "sound_event": {"sound_id": f"spypaper:music_disc.{i}"}, "description": _text(desc),
                 "length_in_seconds": max(1.0, float(c.get("length", 60))),
                 "comparator_output": max(1, min(15, int(c.get("comparator", 1))))})
             sounds[f"music_disc.{i}"] = {"sounds": [{"name": f"spypaper:records/{i}", "stream": True}]}
