@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import re
+import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -176,14 +177,15 @@ def set_resource_pack(props, url, sha1, required=False, prompt=""):
     if sha1 and not re.fullmatch(r"[0-9a-fA-F]{40}", sha1):
         raise ModrinthError(N_("SHA-1 40 karakterlik bir onaltılık değer olmalı."))
     vals = {"resource-pack": url, "resource-pack-sha1": (sha1 or "").lower(),
-            "require-resource-pack": "true" if required else "false"}
+            "require-resource-pack": "true" if required else "false",
+            "resource-pack-id": str(uuid.uuid5(uuid.NAMESPACE_URL, url + (sha1 or "")))}
     if prompt:
         vals["resource-pack-prompt"] = json.dumps({"text": prompt[:200]}, ensure_ascii=False)
     props.save(vals)
 
 
 def clear_resource_pack(props):
-    props.save({"resource-pack": "", "resource-pack-sha1": "", "require-resource-pack": "false",
+    props.save({"resource-pack": "", "resource-pack-sha1": "", "require-resource-pack": "false", "resource-pack-id": "",
                 "resource-pack-prompt": ""})
 
 
