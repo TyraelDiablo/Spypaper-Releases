@@ -27,12 +27,15 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Günlük** | `logs/latest.log` ve arşivlenmiş `.log.gz` dosyalarından olaylar, oturumlar ve grafikler. Sunucu panel dışında açılmış olsa bile takip eder. |
 | **Esplora** | API anahtarıyla çalışan, yalnızca bu sunucunun yönetimine odaklı yapay zeka asistanı (Anthropic Claude, Google Gemini, OpenAI ve uyumlu servisler). Kategorili hazır sorular, mesaj balonları, durdurma ve yeniden oluşturma. Komut çalıştırmaz; önerdiği komutları sen **▶ Çalıştır** ile gönderirsin. |
 | **Oyuncular** | Can, açlık, zırh ve XP Minecraft'ın kendi göstergeleriyle; oyuncunun oyun modu. Envanter, zırh ve Ender sandığı; eşya ikonları (çit, merdiven gibi blok eşyalar oyunun 3D modellerinden çizilir), büyüler, kaplamalar, dayanıklılık. Eşya adları seçili dilde (Minecraft'ın kendi dil dosyalarıyla). Sık kullanılan oyuncu komutları. Minecraft 26.x'in yeni `world/players/` düzenini de okur. |
+| **Takımlar** | Takım oluştur ve sil (`/team`), üye ekle/çıkar; renk, görünen ad, ön ek/son ek, dost ateşi, isim etiketi ve ölüm mesajı görünürlüğü ile çarpışmayı ayarla. Takımlar `scoreboard.dat`'tan okunur, sunucu kapalıyken de görünür. |
 | **Eklentiler / Modlar** | Paper, Purpur ve Spigot'ta `plugins/`, Fabric, Quilt, Forge ve NeoForge'da `mods/` klasörünü yönetir: ekle, sil, devre dışı bırak. |
 | **Mod Dil Dosyaları** | Mod ve eklenti jar'larının içindeki İngilizce dil dosyalarını, yolu ne olursa olsun bulur (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…). JSON ve YAML, düz ya da iç içe. Çeviriyi sen yazarsın; panel jar'ın içine ve eklentinin kendi klasöründeki kopyaya kaydeder. Biçim kodu kontrolü (`%s`, `%player%`, `§a`, `&c`, `<red>`), dışa/içe aktarma, orijinali geri yükleme. |
 | **Sunucu Ayarları** | `server.properties` düzenleyici, Java yolu, RAM, jar, sunucu ikonu. |
 | **Whitelist & Ban** | Whitelist, ban ve op listeleri. |
 | **Bakım & Yedek** | Dünya (Overworld, Nether, End) yedeği ve bakım modu. Bakımda whitelist yedeklenip boşaltılır, böylece whitelist kullanan sunuculara da kimse giremez; OP olmayan oyuncular atılır, bakım bitince her şey geri gelir. Gün, saat ve süreli haftalık plan, oyun içi uyarılarla. Bkz. [Bakım](#bakım). |
 | **Notlar** | Her sunucu için kendi notların; kendiliğinden kaydedilir. |
+| **Tehlikeli Bölge** | Geri alınamayan işlemler için PIN korumalı sayfa: dünyayı sıfırla (Overworld/Nether/End ve seed seçerek), dünya yedeğini geri yükle, oyuncu verilerini sıfırla, sunucuyu sil. Bkz. [Tehlikeli Bölge](#tehlikeli-bölge). |
+| **Çökme bekçisi** | İsteğe bağlı: durdurulmadan kapanan sunucuyu yeniden başlatır; 10 dakikada 3 kez çökerse vazgeçer. İsteğe bağlı yedek sınırı en eski yedekleri kendiliğinden siler. |
 | **Canlı Harita** | BlueMap 3D haritası panelin içinde açılır. BlueMap kurulu değilse sunucunun yazılımına ve sürümüne uygun olanı Modrinth'ten indirip kurar, doku indirme iznini (onayınla) ayarlar. |
 | **Sunucu Yazılımı** | **Paper, Purpur, Vanilla, Fabric, Forge, NeoForge** için sürüm seçip indirme/kurma. Mümkün olduğunda SHA-256 / SHA-1 doğrulaması yapılır, eski jar `backups/jars/` klasörüne taşınır. |
 | **Spypaper Remote** | Sunucularını telefondan izle; bilgisayardan verdiğin izinlerle başlat/durdur, bakıma al ve ayarlarını değiştir. QR kodla eşleşir; mağaza, hesap ya da veritabanı gerekmez. Bkz. [Spypaper Remote](#spypaper-remote-telefon). |
@@ -156,6 +159,21 @@ Durum `config.json`'da ve `backups/whitelist_maintenance.json`'da tutulur; Spypa
 
 ---
 
+## Tehlikeli Bölge
+
+Her sunucu panelinin son sekmesi. Girmek için sunucunun PIN'i gerekir; sunucuda PIN yoksa yalnızca burada sorulan ayrı bir PIN belirlersin. Sayfadan çıkınca ya da 5 dakika sonra yeniden kilitlenir.
+
+| İşlem | Ne olur |
+|---|---|
+| Dünyayı Sıfırla | Seçilen boyutları (Overworld, Nether, End) siler. Sunucu bir sonraki açılışta yenilerini oluşturur. Rastgele, aynı ya da belirli bir seed seçilir; işareti kaldırmazsan önce yedek alınır. |
+| Yedekten Geri Yükle | Şu anki dünyanın yerine `backups/` içindeki bir yedeği koyar. İşareti kaldırmazsan önce şu anki dünyanın yedeği alınır. |
+| Oyuncu Verilerini Sıfırla | Envanterleri, konumları, istatistikleri ve ilerlemeleri siler; dünya kalır. |
+| Sunucuyu Sil | Sunucu klasörünü Windows Geri Dönüşüm Kutusu'na taşır ve sunucuyu listeden kaldırır. |
+
+Her işlem için sunucunun kapalı olması ve sunucunun adını yazman gerekir. Tehlikeli Bölge'ye Spypaper Remote'tan erişilemez. Spypaper; sunucuya benzemeyen bir klasörü, sürücü kökünü, kullanıcı klasörünü ya da kendi klasörünü silmeyi reddeder.
+
+---
+
 ## Spypaper Remote (telefon)
 
 Sunucularını telefondan izle; izin verirsen kontrol et. Mağazadan indirilecek bir uygulama yok: bilgisayardaki Spypaper küçük bir mobil web uygulaması sunar, telefon bunu tarayıcıda açar. Ana ekrana eklersen uygulama gibi açılır (Android ve iPhone).
@@ -250,6 +268,8 @@ Spypaper-Releases/
    │  ├─ files.py          eklenti/mod klasörü, server.properties, yedekler
    │  ├─ maintenance.py    bakım modu, whitelist yedekleme/geri yükleme, haftalık plan
    │  ├─ appupdate.py      Spypaper'ın kendi güncellemesi (GitHub Releases)
+   │  ├─ danger.py         Tehlikeli Bölge işlemleri (dünya sıfırlama, geri yükleme, silme)
+   │  ├─ teams.py          takımlar (scoreboard.dat, /team komutları)
    │  ├─ autostart.py      Windows ile başlatma
    │  ├─ gamefiles.py      Minecraft dil dosyaları ve ikonlar (yerel kurulum ya da Mojang)
    │  ├─ iconrender.py     blok eşya ikonlarını oyunun 3D modellerinden çizer
@@ -275,8 +295,9 @@ Spypaper-Releases/
 Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com/TyraelDiablo/Spypaper-Releases/issues) sayfasına yazabilirsin):
 
 - [ ] **Zamanlanmış görevler:** belirli saatte yeniden başlatma, geri sayım duyurusu, komut ve yedek
-- [ ] **Çökme bekçisi:** beklenmedik kapanmada otomatik yeniden başlatma, art arda çökmede durma
-- [ ] **Yedekten geri yükleme** ve yedek sayısı sınırı (eski yedekleri otomatik silme)
+- [x] **Çökme bekçisi:** beklenmedik kapanmada otomatik yeniden başlatma, art arda çökmede durma
+- [x] **Yedekten geri yükleme** ve yedek sayısı sınırı (eski yedekleri otomatik silme)
+- [x] **Takımlar** ve **Tehlikeli Bölge**
 - [ ] **Eklenti ve mod mağazası:** Modrinth ve Hangar'dan arama, kurma ve güncelleme uyarısı
 - [ ] **Discord bildirimleri:** açıldı, kapandı, çöktü, oyuncu girdi (webhook)
 - [ ] **Java yöneticisi:** Minecraft sürümüne uygun Java'yı algılama ve indirme

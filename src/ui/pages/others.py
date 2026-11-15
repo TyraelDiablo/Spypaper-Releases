@@ -155,7 +155,17 @@ class SettingsPage(Page):
         form.addRow(t("Jar dosyası"), self.jar)
         form.addRow(t("RAM (min / max)"), row(self.ram_min, self.ram_max, stretch_end=False))
         form.addRow(t("BlueMap adresi"), self.bluemap)
+        self.keep = QSpinBox()
+        self.keep.setRange(0, 999)
+        self.keep.setSpecialValueText(t("Sınırsız"))
+        self.keep.setToolTip(t("Yeni yedek alınınca en eski yedekler silinir"))
+        form.addRow(t("Saklanacak yedek"), self.keep)
         panel.add(form)
+        self.auto_restart = QCheckBox(t("Çökünce otomatik yeniden başlat"))
+        self.auto_restart.setToolTip(t("Sunucu durdurulmadan kapanırsa 10 saniye sonra yeniden başlatılır. "
+                                       "10 dakikada 3 kez çökerse durur."))
+        self.auto_restart.setCursor(Qt.PointingHandCursor)
+        panel.add(self.auto_restart)
         top.addWidget(panel, 2)
         self.col.addLayout(top)
 
@@ -185,6 +195,8 @@ class SettingsPage(Page):
         self.ram_min.setText(c.get("ram_min"))
         self.ram_max.setText(c.get("ram_max"))
         self.bluemap.setText(c.get("bluemap_url"))
+        self.keep.setValue(int(c.get("backup_keep") or 0))
+        self.auto_restart.setChecked(bool(c.get("auto_restart")))
 
         ip = self.app.properties.icon_path
         if ip:
@@ -242,6 +254,8 @@ class SettingsPage(Page):
         for key, w in (("java_path", self.java), ("jar_name", self.jar), ("ram_min", self.ram_min),
                        ("ram_max", self.ram_max), ("bluemap_url", self.bluemap)):
             c.data[key] = w.text().strip()
+        c.data["backup_keep"] = self.keep.value()
+        c.data["auto_restart"] = self.auto_restart.isChecked()
         c.save()
         if self.fields:
             vals = {k: (w.isChecked() if isinstance(w, QCheckBox) else w.text()) for k, (_, w) in self.fields.items()}

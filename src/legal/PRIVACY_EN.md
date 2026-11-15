@@ -36,7 +36,8 @@ This data is not copied elsewhere or uploaded by the Software. Backups are writt
 - **AI API key**: on Windows, encrypted with DPAPI bound to your Windows account. *On other systems the key is only base64-obfuscated; this is not encryption.*
 - The contact information you entered for PaperMC (if any)
 - **Spypaper Remote** paired devices (see 2.3), including the permissions you gave each device and its chosen language
-- Your server **notes** (plain text; don't write passwords) and the maintenance schedule
+- Your server **notes** (plain text; don't write passwords), the maintenance schedule and crash watchdog / backup limit settings
+- The **Danger Zone PIN** (set if the server has no PIN): stored only as a PBKDF2 hash, like the server PIN
 - While maintenance is running: the whitelist and MOTD from before maintenance. The whitelist is also written to `backups/whitelist_maintenance.json` in the server folder and deleted when maintenance ends.
 
 If you turn on *Start Spypaper with Windows*, the Software's path is written to the Windows registry (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`); turning it off removes it.

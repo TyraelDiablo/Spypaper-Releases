@@ -141,14 +141,35 @@ def read_name_list(server_path, file_name):
 class BackupManager:
     WORLD_DIRS = ("world", "world_nether", "world_the_end")
 
-    def __init__(self, server_path):
+    def __init__(self, server_path, keep=None):
         self.set_server_path(server_path)
+        self.keep = keep or (lambda: 0)          # saklanacak yedek sayısı (0 = sınırsız)
 
     def set_server_path(self, path):
         self.server_path = path
         self.folder = os.path.join(path, "backups")
 
-    def create(self, progress=None):
+    def prune(self, keep=None, protect=None):
+        """En yeni `keep` yedek kalır, eskiler silinir. Silinen dosya adlarını döndürür."""
+        keep = self.keep() if keep is None else keep
+        try:
+            keep = int(keep or 0)
+        except (TypeError, ValueError):
+            keep = 0
+        if keep <= 0:
+            return []
+        gone = []
+        for name, _, _ in self.list()[keep:]:
+            if protect and os.path.basename(protect) == name:
+                continue
+            try:
+                os.remove(os.path.join(self.folder, name))
+                gone.append(name)
+            except OSError:
+                pass
+        return gone
+
+    def create(self, progress=None, prefix="world_backup"):
         """Tüm dünya klasörlerini tek zip'e yedekler. progress(i, toplam) çağrılabilir."""
         worlds = [w for w in self.WORLD_DIRS if os.path.isdir(os.path.join(self.server_path, w))]
         if not worlds:
@@ -163,7 +184,7 @@ class BackupManager:
                     full = os.path.join(root, fn)
                     files.append((full, os.path.relpath(full, self.server_path)))
         os.makedirs(self.folder, exist_ok=True)
-        zip_path = os.path.join(self.folder, f"world_backup_{datetime.now():%Y%m%d_%H%M%S}.zip")
+        zip_path = os.path.join(self.folder, f"{prefix}_{datetime.now():%Y%m%d_%H%M%S}.zip")
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
             for i, (full, rel) in enumerate(files, 1):
                 try:
@@ -172,6 +193,7 @@ class BackupManager:
                     pass
                 if progress:
                     progress(i, len(files))
+        self.prune(protect=zip_path)
         return zip_path
 
     def list(self):

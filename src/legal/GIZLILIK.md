@@ -34,7 +34,8 @@ Bu veriler Yazılım tarafından ayrıca kopyalanmaz ya da bir yere yüklenmez. 
 - **Yapay zeka API anahtarı**: Windows'ta, Windows hesabınıza bağlı DPAPI ile şifrelenmiş halde. *Windows dışındaki sistemlerde anahtar yalnızca base64 ile gizlenir; bu bir şifreleme değildir.*
 - PaperMC için girdiğiniz iletişim bilgisi (girdiyseniz)
 - **Spypaper Remote** eşli cihazları: cihaz adı, eşlenme ve son bağlantı zamanı, cihaza verdiğiniz izinler, seçilen dil ile cihaz anahtarının yalnızca SHA-256 özeti (anahtarın kendisi saklanmaz)
-- Sunucu **notlarınız** (düz metin; parola yazmayın) ve otomatik bakım planı
+- Sunucu **notlarınız** (düz metin; parola yazmayın), otomatik bakım planı ve çökme bekçisi / yedek sınırı ayarları
+- **Tehlikeli Bölge PIN'i** (sunucuda PIN yoksa belirlenir): sunucu PIN'i gibi yalnızca PBKDF2 özeti olarak
 - Bakım sürerken: bakım öncesi whitelist ve MOTD. Whitelist ayrıca sunucu klasöründe `backups/whitelist_maintenance.json` dosyasına yazılır ve bakım bitince silinir.
 
 *Windows açılınca başlat* seçeneğini açarsanız Windows kayıt defterine (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`) Yazılımın yolu yazılır; seçeneği kapatınca silinir.

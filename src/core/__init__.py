@@ -26,7 +26,7 @@ class App:
         self.players = PlayerService(sp)
         self.plugins = PluginStore(sp, profile)
         self.properties = ServerProperties(sp)
-        self.backups = BackupManager(sp)
+        self.backups = BackupManager(sp, keep=lambda: profile.get("backup_keep"))
         self.logs = LogWatcher(sp)
         self.maintenance = Maintenance(profile, self.server, self.properties, self.backups, online=self.online_players)
         self.metrics = ProcessMetrics(self.server, profile)

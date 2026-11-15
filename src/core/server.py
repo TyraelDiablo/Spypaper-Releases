@@ -30,6 +30,11 @@ class ServerProcess:
         self.on_line = None   # fn(str)
         self.on_state = None  # fn(state)
         self.history = deque(maxlen=5000)   # arayüz yeniden kurulunca konsol buradan dolar
+        self.stop_requested = False
+        self.crashed = False                # son kapanış beklenmedik miydi (durdurulmadan kapandı)
+        self.exit_code = None
+        self.run_id = 0                     # her başlatmada artar
+        self.ended_run = 0                  # sona eren son çalıştırmanın numarası (çökme bekçisi için)
 
     # --- durum ---
     @property
@@ -78,11 +83,16 @@ class ServerProcess:
             raise ServerError("Sunucu başlatılamadı:\n{e}", e=e)
 
         self.history.clear()
+        self.stop_requested = False
+        self.crashed = False
+        self.exit_code = None
+        self.run_id += 1
         self._set_state(STARTING)
         threading.Thread(target=self._read_output, daemon=True).start()
 
     def stop(self):
         if self.is_running:
+            self.stop_requested = True
             self.send("stop")
             self._set_state(STOPPING)
 
@@ -110,6 +120,7 @@ class ServerProcess:
 
     def _read_output(self):
         proc = self.process
+        run = self.run_id
         while proc.poll() is None:
             line = proc.stdout.readline()
             if not line:
@@ -117,11 +128,18 @@ class ServerProcess:
             clean = line.rstrip()
             if "Done (" in clean or "For help, type" in clean:
                 self._set_state(RUNNING)
-            elif "Stopping server" in clean:
+            elif "Stopping server" in clean or "Stopping the server" in clean:
+                self.stop_requested = True          # konsoldan /stop da isteyerek durdurmadır
                 self._set_state(STOPPING)
             self.history.append(clean)
             if self.on_line:
                 self.on_line(clean)
+        try:
+            self.exit_code = proc.wait(timeout=10)
+        except Exception:
+            self.exit_code = None
+        self.crashed = not self.stop_requested
+        self.ended_run = run
         self._set_state(STOPPED)
 
 

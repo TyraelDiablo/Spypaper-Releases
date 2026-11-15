@@ -27,12 +27,15 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Log** | Events, sessions and charts from `logs/latest.log` and archived `.log.gz` files. Works even if the server was started outside the panel. |
 | **Esplora** | An AI assistant (bring your own API key: Anthropic Claude, Google Gemini, OpenAI and compatible services) scoped strictly to managing this server. Preset questions by category, chat bubbles, stop and regenerate. It never runs commands itself; you send the commands it suggests with **▶ Run**. |
 | **Players** | Health, hunger, armor and XP shown with Minecraft's own HUD bars, and the player's game mode. Inventory, armor and Ender chest with item icons (block items such as fences and stairs are rendered from the game's 3D models), enchantments, armor trims and durability. Item names in your language (from Minecraft's own language files). Common player commands. Supports Minecraft 26.x's new `world/players/` layout. |
+| **Teams** | Create and delete teams (`/team`), add and remove members, and set color, display name, prefix/suffix, friendly fire, name tag and death message visibility and collision. Teams are read from `scoreboard.dat`, so you can see them even while the server is stopped. |
 | **Plugins / Mods** | Manages `plugins/` on Paper, Purpur and Spigot, and `mods/` on Fabric, Quilt, Forge and NeoForge: add, remove, disable. |
 | **Mod Language Files** | Finds the English language files inside mod and plugin jars wherever they are (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…), JSON or YAML, flat or nested. You write the translation; the panel saves it into the jar and into the plugin's own data folder copy. Format code checks (`%s`, `%player%`, `§a`, `&c`, `<red>`), import/export, restore original. |
 | **Server Settings** | `server.properties` editor, Java path, RAM, jar, server icon. |
 | **Whitelist & Bans** | Whitelist, ban and op lists. |
 | **Maintenance & Backups** | World backups (Overworld, Nether, End) and maintenance mode. Maintenance saves and empties the whitelist so nobody gets in even on whitelisted servers, kicks non-OP players and restores everything when it ends. Weekly schedule (days, time, duration) with in-game warnings. See [Maintenance](#maintenance). |
 | **Notes** | Your own notes for each server, saved automatically. |
+| **Danger Zone** | PIN-protected page for irreversible actions: reset the world (choose Overworld/Nether/End and the seed), restore a world backup, reset player data, delete the server. See [Danger Zone](#danger-zone). |
+| **Crash watchdog** | Optional: restarts a server that shuts down without being stopped; gives up after 3 crashes in 10 minutes. Optional backup limit deletes the oldest backups automatically. |
 | **Live Map** | Shows the BlueMap 3D map inside the panel. If BlueMap isn't installed, it downloads the right version for your server software and Minecraft version from Modrinth and (with your consent) enables its texture download. |
 | **Server Software** | Pick a version and download/install **Paper, Purpur, Vanilla, Fabric, Forge or NeoForge**. Files are verified with SHA-256 / SHA-1 where available; the old jar is moved to `backups/jars/`. |
 | **Spypaper Remote** | Watch your servers from your phone; with the permissions you grant on the computer, start/stop them, run maintenance and change settings. Pair with a QR code; no app store, no account, no database. See [Spypaper Remote](#spypaper-remote-phone). |
@@ -158,6 +161,21 @@ The state is stored in `config.json` and in `backups/whitelist_maintenance.json`
 
 ---
 
+## Danger Zone
+
+The last tab of each server panel. Entering it requires the server's PIN; if the server has no PIN, you set a separate PIN that is only asked here. It locks again when you leave the page or after 5 minutes.
+
+| Action | What happens |
+|---|---|
+| Reset World | Deletes the selected dimensions (Overworld, Nether, End). The server creates new ones on next start. Choose a random seed, the same seed or a specific seed; a backup is made first unless you untick it. |
+| Restore from Backup | Replaces the current world with a backup from `backups/`. The current world is backed up first unless you untick it. |
+| Reset Player Data | Deletes inventories, positions, statistics and advancements; the world stays. |
+| Delete Server | Moves the server folder to the Windows Recycle Bin and removes the server from the list. |
+
+Every action requires the server to be stopped and asks you to type the server's name. The Danger Zone is not available from Spypaper Remote. Spypaper refuses to delete a folder that doesn't look like a server, a drive root, your user folder or Spypaper's own folder.
+
+---
+
 ## Spypaper Remote (phone)
 
 Watch your servers from your phone and, if you allow it, control them. There is no app store app: Spypaper on your computer serves a small mobile web app, and your phone opens it in the browser. Add it to the home screen and it opens like an app (Android and iPhone).
@@ -252,6 +270,8 @@ Spypaper-Releases/
    │  ├─ files.py          plugins/mods folder, server.properties, backups
    │  ├─ maintenance.py    maintenance mode, whitelist backup/restore, weekly schedule
    │  ├─ appupdate.py      Spypaper self-update (GitHub Releases)
+   │  ├─ danger.py         Danger Zone actions (world reset, restore, delete)
+   │  ├─ teams.py          teams (scoreboard.dat, /team commands)
    │  ├─ autostart.py      start with Windows
    │  ├─ gamefiles.py      Minecraft language files and icons (local install or Mojang)
    │  ├─ iconrender.py     renders block item icons from the game's 3D models
@@ -277,8 +297,9 @@ Spypaper-Releases/
 Planned next (order may change; share your ideas on [Issues](https://github.com/TyraelDiablo/Spypaper-Releases/issues)):
 
 - [ ] **Scheduled tasks:** restart at a set time, countdown announcements, commands and backups
-- [ ] **Crash watchdog:** automatic restart after an unexpected shutdown, stop after repeated crashes
-- [ ] **Restore from backup** and a backup limit (delete old backups automatically)
+- [x] **Crash watchdog:** automatic restart after an unexpected shutdown, stop after repeated crashes
+- [x] **Restore from backup** and a backup limit (delete old backups automatically)
+- [x] **Teams** and the **Danger Zone**
 - [ ] **Plugin and mod store:** search, install and update notices from Modrinth and Hangar
 - [ ] **Discord notifications:** server started, stopped, crashed, player joined (webhook)
 - [ ] **Java manager:** detect and download the right Java for your Minecraft version

@@ -34,6 +34,9 @@ SERVER_DEFAULTS = {
     "maintenance_schedule": {},   # core.maintenance.SCHEDULE_DEFAULTS
     "maintenance_state": {},
     "notes": "",               # kullanıcının bu sunucu için notları
+    "auto_restart": False,     # çökünce otomatik yeniden başlat
+    "backup_keep": 0,          # saklanacak yedek sayısı (0 = sınırsız)
+    "danger_pin_hash": "",     # sunucuda PIN yoksa yalnızca Tehlikeli Bölge için PIN
     "last_opened": "",
     "safe_mode": 0,            # 0 kapalı, 1 düşük, 2 orta, 3 yüksek (core.safemode)
     "pin_hash": "",            # boşsa PIN yok

@@ -1,4 +1,5 @@
 import os
+import time
 
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QPoint, QSize, Qt, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
@@ -10,7 +11,7 @@ from PySide6.QtWidgets import (
 from core import App, ServerError, detect_version
 from . import VERSION, i18n, icons, theme
 from .i18n import t
-from .theme import rgba
+from .theme import TOKENS, rgba
 from .widgets import ServerBridge, ask, button, err_text, label
 from .pages.console import ConsolePage
 from .pages.dashboard import DashboardPage
@@ -21,9 +22,14 @@ from .pages.others import AdminPage, MaintenancePage, PluginsPage, SettingsPage
 from .pages.esplora import EsploraPage
 from .pages.modtrans import ModTransPage
 from .pages.notes import NotesPage
+from .pages.teams import TeamsPage
+from .pages.danger import DangerPage
 
-PAGES = [DashboardPage, ConsolePage, LogsPage, EsploraPage, PlayersPage, PluginsPage, ModTransPage,
-         SettingsPage, AdminPage, MaintenancePage, MapPage, NotesPage]
+PAGES = [DashboardPage, ConsolePage, LogsPage, EsploraPage, PlayersPage, TeamsPage, PluginsPage, ModTransPage,
+         SettingsPage, AdminPage, MaintenancePage, MapPage, NotesPage, DangerPage]
+CRASH_LIMIT = 3            # bu kadar çökme...
+CRASH_WINDOW = 600         # ...bu kadar saniye içinde olursa otomatik yeniden başlatma durur
+RESTART_DELAY = 10
 
 
 def page_order(settings):
@@ -112,6 +118,8 @@ class ServerPanel(QWidget):
             b = self.nav.button(i)
             b.setVisible(i not in self.hidden)
             sv.addWidget(b)
+        danger_btn = self.nav.button(PAGES.index(DangerPage))
+        danger_btn.setIcon(icons.icon("triangle-alert", TOKENS["danger"], 16))
         self._nav_texts()
         sv.addStretch(1)
         path = label(app.config.server_path, "BrandSub", raw=True)
@@ -315,6 +323,7 @@ class MainWindow(QMainWindow):
         from .remote_dialog import RemoteController
         self.remote = RemoteController(self)        # Spypaper Remote (telefon), ayarda açıksa başlar
         self.remote.autostart()
+        self._handled_run, self._crashes = {}, {}
         # otomatik bakım: tüm sunucular için (paneli açık olmasa da) saniyede bir
         self.maint_timer = QTimer(self)
         self.maint_timer.timeout.connect(self.maintenance_tick)
@@ -393,7 +402,44 @@ class MainWindow(QMainWindow):
             app.maintenance.tr = t                  # oyunculara giden uyarılar panel dilinde
         return self.apps[sid]
 
+    def watchdog(self):
+        """Çökme bekçisi: 'Çökünce yeniden başlat' açık sunucu beklenmedik kapanırsa yeniden başlatır."""
+        now = time.time()
+        for sid, app in list(self.apps.items()):
+            srv = app.server
+            if not srv.ended_run or self._handled_run.get(sid) == srv.ended_run or srv.is_running:
+                continue
+            self._handled_run[sid] = srv.ended_run          # her kapanış bir kez işlenir
+            if not (srv.crashed and app.config.get("auto_restart")):
+                continue
+            hist = [x for x in self._crashes.get(sid, []) if now - x < CRASH_WINDOW] + [now]
+            self._crashes[sid] = hist
+            name = app.config.name
+            if len(hist) >= CRASH_LIMIT:
+                srv.history.append("[Spypaper] " + t("Sunucu {n} dakikada {k} kez çöktü; otomatik yeniden başlatma durduruldu.",
+                                                     n=CRASH_WINDOW // 60, k=len(hist)))
+                from .msgbox import warning
+                QTimer.singleShot(0, lambda n=name, k=len(hist): warning(self, t("Çökme bekçisi"), t(
+                    "'{name}' {n} dakikada {k} kez çöktü; otomatik yeniden başlatma durduruldu. Konsoldaki hataya bak.",
+                    name=n, n=CRASH_WINDOW // 60, k=k)))
+                continue
+            line = "[Spypaper] " + t("Sunucu beklenmedik şekilde kapandı; {s} saniye içinde yeniden başlatılıyor.", s=RESTART_DELAY)
+            srv.history.append(line)
+            if srv.on_line:
+                srv.on_line(line)
+            QTimer.singleShot(RESTART_DELAY * 1000, lambda a=app: self._auto_restart(a))
+
+    def _auto_restart(self, app):
+        if app.server.is_running or app.maintenance.active:
+            return
+        try:
+            app.server.start()
+            self.server_state_changed()
+        except Exception as e:
+            print(f"[bekçi] {app.config.name}: {e}")
+
     def maintenance_tick(self):
+        self.watchdog()
         for prof in self.settings.servers():
             if not prof.exists:
                 continue
