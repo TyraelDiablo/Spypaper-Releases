@@ -745,6 +745,7 @@
   "Ses dosyası boş.": "音声ファイルが空です。",
   "Ses dosyası okunamadı (MP3, OGG, WAV ya da FLAC olmalı).": "音声ファイルを読み込めませんでした（MP3、OGG、WAV、FLAC）。",
   "Ses dönüştürme için gereken bileşen (soundfile) bulunamadı.": "音声変換に必要なコンポーネント（soundfile）が見つかりません。",
+  "Ses dönüştürülüyor…": "音声を変換中…",
   "Ses hazır: {file} · {len} · kaynak: {src}": "音声の準備完了: {file} · {len} · 取得元: {src}",
   "Ses çalar": "音を鳴らす",
   "Sesi durdurur": "音を止める",

@@ -745,6 +745,7 @@
   "Ses dosyası boş.": "Аудіофайл порожній.",
   "Ses dosyası okunamadı (MP3, OGG, WAV ya da FLAC olmalı).": "Не вдалося прочитати аудіофайл (MP3, OGG, WAV або FLAC).",
   "Ses dönüştürme için gereken bileşen (soundfile) bulunamadı.": "Не знайдено компонент перетворення звуку (soundfile).",
+  "Ses dönüştürülüyor…": "Конвертація аудіо…",
   "Ses hazır: {file} · {len} · kaynak: {src}": "Звук готовий: {file} · {len} · джерело: {src}",
   "Ses çalar": "Відтворює звук",
   "Sesi durdurur": "Зупиняє звук",

@@ -706,13 +706,19 @@ class ContentPage(Page):
                               title=title or "?", artist=artist or "?"))
 
     def _convert(self, cid, title, artist, data, ng):
-        try:
-            name = f"{cid}.ogg"
-            length = C.to_ogg(data, self._dest(name))
-        except C.ContentError as e:
-            self.warn(t(e.template, **e.kw))
-            return
-        self._ng_done((title, artist, name, length, ng), None)
+        """Dönüştürme arka planda; uzun parçalarda arayüz donmasın."""
+        name = f"{cid}.ogg"
+        dest = self._dest(name)
+        self.d_ng_btn.setEnabled(False)
+        self.d_info.setText(t("Ses dönüştürülüyor…"))
+
+        def work():
+            try:
+                length = C.to_ogg(data, dest)
+                self.ng_done.emit((title, artist, name, length, ng), None)
+            except Exception as e:
+                self.ng_done.emit(None, e)
+        threading.Thread(target=work, daemon=True).start()
 
     def _ng_done(self, res, err):
         self.d_ng_btn.setEnabled(True)

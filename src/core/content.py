@@ -328,5 +328,10 @@ def to_ogg(data, dest, max_minutes=15):
     if peak > 1.0:
         mono = mono / peak
     os.makedirs(os.path.dirname(dest), exist_ok=True)
-    sf.write(dest, mono, sr, format="OGG", subtype="VORBIS")
+    # libsndfile uzun bir OGG'yi tek seferde yazarken çöküyor (segfault); parça parça yaz
+    tmp = dest + ".part"
+    with sf.SoundFile(tmp, "w", samplerate=sr, channels=1, format="OGG", subtype="VORBIS") as out:
+        for i in range(0, frames, 16384):
+            out.write(mono[i:i + 16384])
+    os.replace(tmp, dest)
     return round(frames / sr, 1)

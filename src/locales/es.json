@@ -745,6 +745,7 @@
   "Ses dosyası boş.": "El archivo de audio está vacío.",
   "Ses dosyası okunamadı (MP3, OGG, WAV ya da FLAC olmalı).": "No se pudo leer el archivo de audio (MP3, OGG, WAV o FLAC).",
   "Ses dönüştürme için gereken bileşen (soundfile) bulunamadı.": "Falta el componente de conversión de audio (soundfile).",
+  "Ses dönüştürülüyor…": "Convirtiendo audio…",
   "Ses hazır: {file} · {len} · kaynak: {src}": "Audio listo: {file} · {len} · fuente: {src}",
   "Ses çalar": "Reproduce un sonido",
   "Sesi durdurur": "Detiene un sonido",
