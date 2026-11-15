@@ -293,6 +293,9 @@ class MainWindow(QMainWindow):
         self.home_timer.timeout.connect(lambda: self.home.refresh_status() if self.view[0] == "home" else None)
         self.home_timer.start(2000)
         self.build()
+        from .remote_dialog import RemoteController
+        self.remote = RemoteController(self)        # Spypaper Remote (telefon), ayarda açıksa başlar
+        self.remote.autostart()
 
         last = settings.get("last_server")
         if settings.get("open_last_on_start") and settings.server(last):
@@ -483,4 +486,5 @@ class MainWindow(QMainWindow):
                 a.server.process.wait(timeout=30)
             except Exception:
                 pass
+        self.remote.shutdown()
         e.accept()

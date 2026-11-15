@@ -18,7 +18,7 @@ from datetime import datetime
 from .config import N_
 
 API = "https://fill.papermc.io/v3/projects/paper"
-VERSION = "2.2"
+VERSION = "2.3"
 
 
 class UpdateError(Exception):

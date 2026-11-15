@@ -138,6 +138,10 @@ class Drawer(QWidget):
         v.addWidget(section("Yapay Zeka"))
         v.addWidget(item("Yapay Zeka Ayarları", self._ai, "sparkles"))
 
+        # --- telefon ---
+        v.addWidget(section("Telefon"))
+        v.addWidget(item("Spypaper Remote", self._remote, "smartphone"))
+
         # --- genel ---
         v.addWidget(section("Genel"))
         v.addWidget(self._toggle("Açılışta son sunucuyu aç", "open_last_on_start",
@@ -216,6 +220,10 @@ class Drawer(QWidget):
     def _open_dir(path):
         os.makedirs(path, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+
+    def _remote(self):
+        from .remote_dialog import RemoteDialog
+        RemoteDialog(self.ctl, self).exec()
 
     def _gamefiles(self):
         from .gamefiles_dialog import GameFilesDialog

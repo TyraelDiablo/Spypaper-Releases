@@ -34,6 +34,7 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Bakım & Yedek** | Dünya (Overworld, Nether, End) yedeği, otomatik yedek ve bakım modu. |
 | **Canlı Harita** | BlueMap 3D haritası panelin içinde açılır. BlueMap kurulu değilse sunucunun yazılımına ve sürümüne uygun olanı Modrinth'ten indirip kurar, doku indirme iznini (onayınla) ayarlar. |
 | **Sunucu Yazılımı** | **Paper, Purpur, Vanilla, Fabric, Forge, NeoForge** için sürüm seçip indirme/kurma. Mümkün olduğunda SHA-256 / SHA-1 doğrulaması yapılır, eski jar `backups/jars/` klasörüne taşınır. |
+| **Spypaper Remote** | Sunucularını telefondan izle; başlat, durdur, yeniden başlat. QR kodla eşleşir; mağaza, hesap ya da veritabanı gerekmez. Bkz. [Spypaper Remote](#spypaper-remote-telefon). |
 | **Güvenlik** | 4 seviyeli güvenli mod (tehlikeli komutlar için onay, engelleme ya da salt okunur) ve sunucu başına isteğe bağlı PIN. |
 | **Görünüm** | 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller, [Lucide](https://lucide.dev) ikonları, Windows mesaj kutuları yerine panele özel uyarı/soru pencereleri. |
 
@@ -82,7 +83,7 @@ ya da
 
 ```bat
 cd src
-uv run --with nbtlib --with pyside6 --with psutil --with pyyaml python main.py
+uv run --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno python main.py
 ```
 
 ### Exe derleme
@@ -134,6 +135,32 @@ Forge (1.17+) ve NeoForge sunucuları jar ile değil, `libraries/.../win_args.tx
 > PaperMC, isteklerde iletişim bilgisi içeren bir User-Agent ister. ☰ → Genel bölümünden e-posta ya da site adresini girebilirsin.
 
 **Minecraft EULA:** Sunucu ilk kez başlatılırken `eula.txt` kabul edilmemişse panel sana sorar. Panel EULA'yı senin yerine kabul etmez.
+
+---
+
+## Spypaper Remote (telefon)
+
+Sunucularını telefondan izle; başlat, durdur ya da yeniden başlat. Mağazadan indirilecek bir uygulama yok: bilgisayardaki Spypaper küçük bir mobil web uygulaması sunar, telefon bunu tarayıcıda açar. Ana ekrana eklersen uygulama gibi açılır (Android ve iPhone).
+
+![Telefonda Spypaper Remote](docs/screenshots/remote.png)
+
+**Kurulum**
+
+1. Spypaper'da **☰ → Spypaper Remote**'u aç ve etkinleştir. Windows güvenlik duvarı sorarsa *Özel ağlar*'a izin ver.
+2. **Yeni Cihaz Eşle**'ye bas, çıkan QR kodu telefonun kamerasıyla okut. Açılan sayfada **Eşle**'ye dokun.
+3. Bu kadar. Telefon eşli kalır; aynı pencereden istediğin zaman kaldırabilirsin.
+
+**Telefonda neler var:** sunucu durumu, RAM/CPU, çevrimiçi oyuncular ve bugünkü girişler, her oyuncunun canı, açlığı, zırhı, seviyesi ve oyun modu (Minecraft tarzı göstergelerle), son log satırları, BlueMap canlı harita bağlantısı ve **Başlat / Durdur / Yeniden Başlat**. Serbest komut gönderme yoktur.
+
+**Güvenlik**
+
+- Remote varsayılan olarak kapalıdır ve yalnızca bilgisayarda Spypaper açıkken çalışır.
+- Eşleşme 2 dakika geçerli, tek kullanımlık bir kodla yapılır. Telefon anahtarını HttpOnly çerezde tutar; `config.json`'da yalnızca SHA-256 özeti durur. Veritabanı kullanılmaz.
+- Sunucuda PIN varsa telefonda da sorulur (5 yanlış denemede 5 dakika kilitlenir). Güvenli mod *Yüksek* (salt okunur) telefondan kontrolü engeller; telefon kontrolünü tamamen kapatıp yalnızca izleme de yapabilirsin.
+- Log satırlarındaki IP adresleri telefona gitmeden gizlenir.
+- Bağlantı kendi ağının içinde düz HTTP'dir. **Bunun için modemde port açma.** Dışarıdan (mobil veriyle) erişmek için bilgisayara ve telefona [Tailscale](https://tailscale.com) kur ve Remote penceresinde *(Tailscale)* yazan adresi seç; trafik Tailscale ile şifrelenir.
+
+![Masaüstünde Spypaper Remote penceresi](docs/screenshots/remote-desktop.png)
 
 ---
 
@@ -197,11 +224,13 @@ Spypaper-Releases/
    │  ├─ modtrans.py       mod/eklenti dil dosyası düzenleyici (JSON, YAML)
    │  ├─ creator.py        yeni sunucu oluşturma
    │  ├─ bluemap.py        BlueMap algılama, Modrinth'ten kurulum, ayarlar
+   │  ├─ remote.py         Spypaper Remote web sunucusu (eşleşme, telefon API'si)
    │  ├─ ai.py, esplora.py yapay zeka sağlayıcıları, Esplora kuralları ve hazır sorular
    │  ├─ safemode.py       güvenli mod ve PIN
    │  └─ secrets.py        API anahtarı şifreleme
    ├─ ui/                  PySide6 arayüzü (pencere, sayfalar, temalar, i18n, HUD, pencereler)
    │  └─ assets/           Spypaper logosu (SVG, PNG, ICO)
+   ├─ remote_web/          Spypaper Remote telefon uygulaması (HTML, CSS, JS)
    ├─ locales/             derlenmiş arayüz çevirileri
    ├─ tools/               çeviri ve Minecraft dil dosyası araçları
    └─ legal/               gizlilik, üçüncü taraf bildirimleri, lisans kopyası
@@ -222,13 +251,15 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 - [ ] **TPS / MSPT grafiği** Dashboard'da
 - [ ] **Yapılandırma dosyası editörü** (`paper-global.yml`, `config/*.toml`…) ve biçim denetimi
 - [ ] **Panelin kendini güncellemesi** (GitHub Releases)
-- [ ] **Uzaktan erişim** için web arayüzü
+- [x] **Spypaper Remote:** sunucuları telefondan izleme ve kontrol
+- [ ] Spypaper Remote: sohbet, oyuncu işlemleri ve bildirimler
 
 ---
 
 ## Sorun giderme
 
 - **Eşya adları İngilizce görünüyor ya da ikon yok:** Oyuncular sayfasında **Oyun Dosyalarını Al**'a bas. Sayfanın altında hangi dil dosyasının kullanıldığı yazar.
+- **Telefon Spypaper Remote'a bağlanamıyor:** telefon ve bilgisayar aynı Wi-Fi'da olmalı (misafir ağları genelde bunu engeller), Windows güvenlik duvarı Spypaper'a özel ağlarda izin vermeli ve Remote penceresindeki adres bilgisayarın yerel adresi olmalı (genelde `192.168…`). Port meşgulse Remote penceresinden değiştir.
 - **Sunucu başlamıyor:** Canlı Konsol'daki hatayı oku ya da Esplora'da *Sunucu neden açılmıyor?* sorusunu kullan. Java sürümünün Minecraft sürümüne uygun olduğundan emin ol.
 - **Forge/NeoForge kurulumu başarısız:** Java yolunun doğru olduğunu ve sunucu klasörüne yazma izni olduğunu kontrol et; kurulum çıktısının son satırları pencerede gösterilir.
 - **Gemini/OpenAI 429 hatası:** Sağlayıcının istek sınırı doldu; bir süre sonra tekrar dene.

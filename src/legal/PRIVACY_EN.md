@@ -77,7 +77,11 @@ Providers and their privacy policies:
 
 These providers process data under their own policies, and their servers may be located outside your country. Using Esplora is entirely up to you; no data is sent unless you enter an API key.
 
-### 2.3 Other connections
+### 2.3 Spypaper Remote (phone)
+
+Spypaper Remote is **off by default**. If you turn it on, the Software runs a small web server on your computer and shows only these summaries to devices you paired with a QR code: server status, RAM/CPU usage, player names with health/hunger/armor/level/game mode, and recent log lines. **IP addresses in log lines are hidden.** This data is not sent to any third party; it travels directly between your phone and your computer on your local network (or a network you set up yourself, such as Tailscale). The connection is unencrypted HTTP, so use it only on networks you trust and do not expose it to the internet through port forwarding. Paired devices are stored as a device name, pairing and last-seen times, and only a SHA-256 hash of the device key; you can remove them at any time in the Remote window.
+
+### 2.4 Other connections
 
 - The **Live Map** page opens the map address you configured (default `http://localhost:8100`).
 - Documentation links in the drawer open in your default browser.

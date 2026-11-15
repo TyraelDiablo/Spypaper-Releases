@@ -13,6 +13,7 @@ Spypaper is open-source software licensed under the GNU GPL v3 ([LICENSE.txt](LI
 | NumPy (nbtlib bağımlılığı / dependency) | BSD 3-Clause | https://github.com/numpy/numpy |
 | psutil | BSD 3-Clause | https://github.com/giampaolo/psutil |
 | PyYAML | MIT | https://github.com/yaml/pyyaml |
+| segno (QR kodu / QR codes) | BSD 3-Clause | https://github.com/heuer/segno |
 | Lucide (arayüz ikonları / UI icons) | ISC | https://github.com/lucide-icons/lucide |
 | Qt WebEngine (Chromium dahil / incl. Chromium) | GNU LGPL v3 + Chromium üçüncü taraf lisansları / third-party licenses | https://code.qt.io/cgit/qt/qtwebengine.git/ |
 | PyInstaller bootloader | GPL v2 + bootloader exception | https://github.com/pyinstaller/pyinstaller |
@@ -50,11 +51,12 @@ OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## BSD 3-Clause License (psutil, NumPy)
+## BSD 3-Clause License (psutil, NumPy, segno)
 
 ```
 psutil: Copyright (c) 2009, Jay Loden, Dave Daeschler, Giampaolo Rodola
 NumPy:  Copyright (c) 2005-2025, NumPy Developers
+segno:  Copyright (c) 2016 - 2025, Lars Heuer
 
 Redistribution and use in source and binary forms, with or without modification, are permitted
 provided that the following conditions are met:

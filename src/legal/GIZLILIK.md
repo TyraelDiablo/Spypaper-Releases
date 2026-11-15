@@ -33,6 +33,7 @@ Bu veriler Yazılım tarafından ayrıca kopyalanmaz ya da bir yere yüklenmez. 
 - **PIN**: düz metin olarak değil, PBKDF2-HMAC-SHA256 (200.000 tekrar, rastgele tuz) ile özetlenmiş halde
 - **Yapay zeka API anahtarı**: Windows'ta, Windows hesabınıza bağlı DPAPI ile şifrelenmiş halde. *Windows dışındaki sistemlerde anahtar yalnızca base64 ile gizlenir; bu bir şifreleme değildir.*
 - PaperMC için girdiğiniz iletişim bilgisi (girdiyseniz)
+- **Spypaper Remote** eşli cihazları: cihaz adı, eşlenme ve son bağlantı zamanı ile cihaz anahtarının yalnızca SHA-256 özeti (anahtarın kendisi saklanmaz)
 
 Esplora sohbet geçmişi **yalnızca bellekte** tutulur; Yazılım kapatıldığında silinir.
 
@@ -75,7 +76,11 @@ Sağlayıcılar ve gizlilik politikaları:
 
 Bu sağlayıcılar verileri kendi politikalarına göre işler ve sunucuları Türkiye dışında olabilir. Esplora'yı kullanmamak tamamen sizin elinizdedir; API anahtarı girmediğiniz sürece hiçbir veri gönderilmez.
 
-### 2.3 Diğer bağlantılar
+### 2.3 Spypaper Remote (telefon)
+
+Spypaper Remote **varsayılan olarak kapalıdır**. Açarsanız Yazılım bilgisayarınızda küçük bir web sunucusu çalıştırır ve yalnızca QR kodla eşlediğiniz cihazlara şu özetleri gösterir: sunucu durumu, RAM/CPU kullanımı, oyuncu adları ile can/açlık/zırh/seviye/oyun modu ve son log satırları. Log satırlarındaki **IP adresleri gizlenir**. Bu veriler hiçbir üçüncü tarafa gönderilmez; doğrudan telefonunuz ile bilgisayarınız arasında, yerel ağınızda (ya da kendi kurduğunuz Tailscale gibi bir ağ üzerinden) iletilir. Bağlantı şifrelenmemiş HTTP'dir; bu yüzden yalnızca güvendiğiniz ağlarda kullanın, internete port açarak yayınlamayın. Eşli cihazları Remote penceresinden istediğiniz zaman kaldırabilirsiniz.
+
+### 2.4 Diğer bağlantılar
 
 - **Canlı Harita** sayfası, ayarladığınız harita adresini (varsayılan `http://localhost:8100`) açar.
 - Çekmecedeki belge bağlantıları varsayılan tarayıcınızda açılır.

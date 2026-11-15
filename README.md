@@ -34,6 +34,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Maintenance & Backups** | World backups (Overworld, Nether, End), automatic backups and maintenance mode. |
 | **Live Map** | Shows the BlueMap 3D map inside the panel. If BlueMap isn't installed, it downloads the right version for your server software and Minecraft version from Modrinth and (with your consent) enables its texture download. |
 | **Server Software** | Pick a version and download/install **Paper, Purpur, Vanilla, Fabric, Forge or NeoForge**. Files are verified with SHA-256 / SHA-1 where available; the old jar is moved to `backups/jars/`. |
+| **Spypaper Remote** | Watch your servers from your phone and start, stop or restart them. Pair with a QR code; no app store, no account, no database. See [Spypaper Remote](#spypaper-remote-phone). |
 | **Security** | 4-level safe mode (confirm, block or read-only for dangerous commands) and an optional per-server PIN. |
 | **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons, themed in-app dialogs instead of Windows message boxes. |
 
@@ -84,7 +85,7 @@ or
 
 ```bat
 cd src
-uv run --with nbtlib --with pyside6 --with psutil --with pyyaml python main.py
+uv run --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno python main.py
 ```
 
 ### Building the exe
@@ -136,6 +137,32 @@ Forge (1.17+) and NeoForge servers start from an argument file instead of a jar 
 > PaperMC asks for a User-Agent with contact information. You can enter an e-mail address or website under ☰ → General.
 
 **Minecraft EULA:** if `eula.txt` hasn't been accepted when the server starts for the first time, the panel asks you. It never accepts the EULA on your behalf.
+
+---
+
+## Spypaper Remote (phone)
+
+Watch your servers from your phone and start, stop or restart them. There is no app store app: Spypaper on your computer serves a small mobile web app, and your phone opens it in the browser. Add it to the home screen and it opens like an app (Android and iPhone).
+
+![Spypaper Remote on a phone](docs/screenshots/remote.png)
+
+**Setting it up**
+
+1. In Spypaper open **☰ → Spypaper Remote** and turn it on. If Windows Firewall asks, allow access on *Private networks*.
+2. Click **Pair New Device** and scan the QR code with your phone's camera. Tap **Pair** on the page that opens.
+3. Done. The phone stays paired; you can remove it at any time from the same window.
+
+**What the phone can do:** server status, RAM/CPU, players online and today's joins, each player's health, hunger, armor, level and game mode (with Minecraft-style bars), the latest log lines, a link to the BlueMap live map, and **Start / Stop / Restart**. There is no free command input.
+
+**Security**
+
+- Remote is off by default and only works while Spypaper is open on your computer.
+- Pairing uses a one-time code that expires after 2 minutes. The phone keeps its key in an HttpOnly cookie; `config.json` only stores a SHA-256 hash of it. No database is involved.
+- If a server has a PIN, the phone asks for it too (5 wrong tries lock it for 5 minutes). Safe mode *High* (read-only) blocks control from the phone, and you can turn phone control off entirely and keep it watch-only.
+- IP addresses in log lines are hidden before they reach the phone.
+- The connection is plain HTTP inside your own network. **Do not open a port on your router for it.** To reach it from outside (mobile data), install [Tailscale](https://tailscale.com) on the computer and the phone and pick the address marked *(Tailscale)* in the Remote window; the traffic is then encrypted by Tailscale.
+
+![Spypaper Remote window on the desktop](docs/screenshots/remote-desktop.png)
 
 ---
 
@@ -199,11 +226,13 @@ Spypaper-Releases/
    │  ├─ modtrans.py       mod/plugin language file editor (JSON, YAML)
    │  ├─ creator.py        creating new servers
    │  ├─ bluemap.py        BlueMap detection, Modrinth install, configuration
+   │  ├─ remote.py         Spypaper Remote web server (pairing, phone API)
    │  ├─ ai.py, esplora.py AI providers, Esplora rules and preset questions
    │  ├─ safemode.py       safe mode and PIN
    │  └─ secrets.py        API key encryption
    ├─ ui/                  PySide6 interface (window, pages, themes, i18n, HUD, dialogs)
    │  └─ assets/           Spypaper logo (SVG, PNG, ICO)
+   ├─ remote_web/          Spypaper Remote phone app (HTML, CSS, JS)
    ├─ locales/             compiled interface translations
    ├─ tools/               translation and Minecraft language file tools
    └─ legal/               privacy notice, third-party notices, license copy
@@ -224,13 +253,15 @@ Planned next (order may change; share your ideas on [Issues](https://github.com/
 - [ ] **TPS / MSPT chart** on the Dashboard
 - [ ] **Config file editor** (`paper-global.yml`, `config/*.toml`…) with syntax checks
 - [ ] **Self-update** via GitHub Releases
-- [ ] **Web interface** for remote access
+- [x] **Spypaper Remote:** watch and control servers from your phone
+- [ ] Spypaper Remote: chat, player actions and notifications
 
 ---
 
 ## Troubleshooting
 
 - **Item names are in English or icons are missing:** click **Get Game Files** on the Players page. The bottom of the page shows which language file is in use.
+- **The phone can't reach Spypaper Remote:** the phone and computer must be on the same Wi-Fi (guest networks often block this), Windows Firewall must allow Spypaper on private networks, and the address in the Remote window must be your computer's local address (usually `192.168…`). If the port is busy, change it in the Remote window.
 - **The server won't start:** read the error in the Live Console or ask Esplora *"Why won't the server start?"*. Make sure your Java version matches your Minecraft version.
 - **Forge/NeoForge installation failed:** check that the Java path is correct and the server folder is writable; the last lines of the installer output are shown in the window.
 - **Gemini/OpenAI error 429:** the provider's rate limit was reached; try again later.
