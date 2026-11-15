@@ -31,12 +31,14 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Mod Language Files** | Finds the English language files inside mod and plugin jars wherever they are (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…), JSON or YAML, flat or nested. You write the translation; the panel saves it into the jar and into the plugin's own data folder copy. Format code checks (`%s`, `%player%`, `§a`, `&c`, `<red>`), import/export, restore original. |
 | **Server Settings** | `server.properties` editor, Java path, RAM, jar, server icon. |
 | **Whitelist & Bans** | Whitelist, ban and op lists. |
-| **Maintenance & Backups** | World backups (Overworld, Nether, End), automatic backups and maintenance mode. |
+| **Maintenance & Backups** | World backups (Overworld, Nether, End) and maintenance mode. Maintenance saves and empties the whitelist so nobody gets in even on whitelisted servers, kicks non-OP players and restores everything when it ends. Weekly schedule (days, time, duration) with in-game warnings. See [Maintenance](#maintenance). |
+| **Notes** | Your own notes for each server, saved automatically. |
 | **Live Map** | Shows the BlueMap 3D map inside the panel. If BlueMap isn't installed, it downloads the right version for your server software and Minecraft version from Modrinth and (with your consent) enables its texture download. |
 | **Server Software** | Pick a version and download/install **Paper, Purpur, Vanilla, Fabric, Forge or NeoForge**. Files are verified with SHA-256 / SHA-1 where available; the old jar is moved to `backups/jars/`. |
-| **Spypaper Remote** | Watch your servers from your phone and start, stop or restart them. Pair with a QR code; no app store, no account, no database. See [Spypaper Remote](#spypaper-remote-phone). |
+| **Spypaper Remote** | Watch your servers from your phone; with the permissions you grant on the computer, start/stop them, run maintenance and change settings. Pair with a QR code; no app store, no account, no database. See [Spypaper Remote](#spypaper-remote-phone). |
+| **Updates** | Checks GitHub Releases for a new Spypaper version at startup (can be turned off) and updates the exe in one click. |
 | **Security** | 4-level safe mode (confirm, block or read-only for dangerous commands) and an optional per-server PIN. |
-| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons, themed in-app dialogs instead of Windows message boxes. |
+| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons, themed in-app dialogs instead of Windows message boxes. **Panel Layout:** reorder or hide the panel's tabs and the Dashboard cards. Optional start with Windows. |
 
 ---
 
@@ -59,7 +61,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 
 - **Windows 10/11** (also runs on Linux and macOS from source; API key encryption uses Windows DPAPI and is Windows-only).
 - **Java** matching your Minecraft version (Java 21 for 1.20.5+, Java 25 for 26.x). The panel does not install Java.
-- To run from source: **Python 3.10+** and [uv](https://docs.astral.sh/uv/).
+- To run from source or build the exe: [uv](https://docs.astral.sh/uv/) (`winget install astral-sh.uv`). uv downloads a suitable Python by itself; `build.bat` builds with Python 3.12, because brand-new Python versions often lack ready-made packages for PySide6 and others.
 
 ---
 
@@ -73,6 +75,8 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 
 `config.json` is created next to the exe on first start. It holds your server profiles, settings and the encrypted API key, so **don't share it**.
 
+On startup Spypaper briefly shows *Checking for updates…*. If a new version is on GitHub Releases you can update right away (the exe is replaced and Spypaper restarts), later, or skip that version. Turn it off with **☰ → Check for updates on startup**; **☰ → Check for updates now** checks by hand.
+
 ### From source
 
 The source code lives in the `src` folder.
@@ -85,7 +89,7 @@ or
 
 ```bat
 cd src
-uv run --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno python main.py
+uv run --python 3.12 --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno python main.py
 ```
 
 ### Building the exe
@@ -94,7 +98,7 @@ uv run --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno pyt
 src\build.bat
 ```
 
-The result is `src\dist\Spypaper.exe`. The interface translations (`locales/`) and legal texts (`legal/`) are embedded in the exe. Qt WebEngine is included for the built-in map, so the exe is about 150 MB.
+The result is `src\dist\Spypaper.exe`. Attach only this exe to a release; never `config.json` or the Minecraft folders (`Icons`, `Translation`, `Languages`). The interface translations (`locales/`) and legal texts (`legal/`) are embedded in the exe. Qt WebEngine is included for the built-in map, so the exe is about 150 MB.
 
 ---
 
@@ -140,9 +144,23 @@ Forge (1.17+) and NeoForge servers start from an argument file instead of a jar 
 
 ---
 
+## Maintenance
+
+**Maintenance & Backups → Start Maintenance** (or the schedule) does the following:
+
+1. Saves `whitelist.json` and the whitelist on/off state, empties the whitelist and turns it on, so nobody can join, even on servers that already use a whitelist. OPs can still join.
+2. Kicks players who are not OP, changes the MOTD, saves the world and makes a backup.
+3. When maintenance ends, restores the whitelist (plus anyone you added during maintenance), its previous on/off state and the old MOTD.
+
+The state is stored in `config.json` and in `backups/whitelist_maintenance.json`, so nothing is lost if Spypaper closes or crashes during maintenance.
+
+**Scheduled maintenance:** choose the days, start time and duration (e.g. every Monday at 04:00 for 30 minutes). Players get warnings 10 min, 5 min, 1 min and 10 s before; maintenance ends by itself when the time is up. The schedule runs only while Spypaper is open (see *Start Spypaper with Windows* in ☰).
+
+---
+
 ## Spypaper Remote (phone)
 
-Watch your servers from your phone and start, stop or restart them. There is no app store app: Spypaper on your computer serves a small mobile web app, and your phone opens it in the browser. Add it to the home screen and it opens like an app (Android and iPhone).
+Watch your servers from your phone and, if you allow it, control them. There is no app store app: Spypaper on your computer serves a small mobile web app, and your phone opens it in the browser. Add it to the home screen and it opens like an app (Android and iPhone).
 
 ![Spypaper Remote on a phone](docs/screenshots/remote.png)
 
@@ -152,13 +170,25 @@ Watch your servers from your phone and start, stop or restart them. There is no 
 2. Click **Pair New Device** and scan the QR code with your phone's camera. Tap **Pair** on the page that opens.
 3. Done. The phone stays paired; you can remove it at any time from the same window.
 
-**What the phone can do:** server status, RAM/CPU, players online and today's joins, each player's health, hunger, armor, level and game mode (with Minecraft-style bars), the latest log lines, a link to the BlueMap live map, and **Start / Stop / Restart**. There is no free command input.
+**What every paired phone can see:** server status, RAM/CPU, players online and today's joins, each player's health, hunger, armor, level and game mode (with Minecraft-style bars), the latest log lines, maintenance status and a link to the BlueMap live map.
+
+**What a phone can do, only with your permission:** permissions are granted per device on the computer (**☰ → Spypaper Remote → Paired devices**):
+
+| Permission | Default for a new device | Allows |
+|---|---|---|
+| Start / stop | on | Start, Stop, Restart |
+| Maintenance | off | Start and end maintenance mode |
+| Server settings | off | RAM, maintenance schedule and `server.properties` |
+
+The Java path and jar name can only be changed on the computer, and RCON/query/management settings and passwords are never sent to the phone. There is no free command input.
+
+**Language:** the phone uses its own language if Spypaper has it, otherwise English. You can pick another language under the gear icon on the phone.
 
 **Security**
 
 - Remote is off by default and only works while Spypaper is open on your computer.
 - Pairing uses a one-time code that expires after 2 minutes. The phone keeps its key in an HttpOnly cookie; `config.json` only stores a SHA-256 hash of it. No database is involved.
-- If a server has a PIN, the phone asks for it too (5 wrong tries lock it for 5 minutes). Safe mode *High* (read-only) blocks control from the phone, and you can turn phone control off entirely and keep it watch-only.
+- If a server has a PIN, the phone asks for it for every change (5 wrong tries lock it for 5 minutes). Safe mode *High* (read-only) blocks changes from the phone, and *Allow changes from phones* turns all of them off at once (watch-only).
 - IP addresses in log lines are hidden before they reach the phone.
 - The connection is plain HTTP inside your own network. **Do not open a port on your router for it.** To reach it from outside (mobile data), install [Tailscale](https://tailscale.com) on the computer and the phone and pick the address marked *(Tailscale)* in the Remote window; the traffic is then encrypted by Tailscale.
 
@@ -185,7 +215,7 @@ The API key is stored in `config.json`; on Windows it is encrypted with DPAPI, b
 
 ## Interface translations
 
-UI strings are written in Turkish in the code and translated through the tables in `src/tools/translations/*.tsv`.
+UI strings are written in Turkish in the code and translated through the tables in `src/tools/translations/*.tsv`. If a translation is missing, the English text is shown.
 
 ```bat
 cd src
@@ -220,7 +250,9 @@ Spypaper-Releases/
    │  ├─ logwatch.py       latest.log tracking, events, metrics
    │  ├─ logtrans.py       translating server messages into the panel language
    │  ├─ files.py          plugins/mods folder, server.properties, backups
-   │  ├─ maintenance.py    maintenance mode and automatic backups
+   │  ├─ maintenance.py    maintenance mode, whitelist backup/restore, weekly schedule
+   │  ├─ appupdate.py      Spypaper self-update (GitHub Releases)
+   │  ├─ autostart.py      start with Windows
    │  ├─ gamefiles.py      Minecraft language files and icons (local install or Mojang)
    │  ├─ iconrender.py     renders block item icons from the game's 3D models
    │  ├─ modtrans.py       mod/plugin language file editor (JSON, YAML)
@@ -252,8 +284,10 @@ Planned next (order may change; share your ideas on [Issues](https://github.com/
 - [ ] **Java manager:** detect and download the right Java for your Minecraft version
 - [ ] **TPS / MSPT chart** on the Dashboard
 - [ ] **Config file editor** (`paper-global.yml`, `config/*.toml`…) with syntax checks
-- [ ] **Self-update** via GitHub Releases
+- [x] **Self-update** via GitHub Releases
+- [x] **Scheduled maintenance** with whitelist protection
 - [x] **Spypaper Remote:** watch and control servers from your phone
+- [x] Spypaper Remote: per-device permissions, maintenance, server settings and language
 - [ ] Spypaper Remote: chat, player actions and notifications
 
 ---
@@ -262,6 +296,10 @@ Planned next (order may change; share your ideas on [Issues](https://github.com/
 
 - **Item names are in English or icons are missing:** click **Get Game Files** on the Players page. The bottom of the page shows which language file is in use.
 - **The phone can't reach Spypaper Remote:** the phone and computer must be on the same Wi-Fi (guest networks often block this), Windows Firewall must allow Spypaper on private networks, and the address in the Remote window must be your computer's local address (usually `192.168…`). If the port is busy, change it in the Remote window.
+- **`'uv' is not recognized` when building:** install uv (`winget install astral-sh.uv`) and open a new terminal.
+- **"Failed to build pyyaml" or similar when building:** your Python is too new for some packages. `build.bat` uses Python 3.12 through uv; if you run the commands by hand, add `--python 3.12`.
+- **"Minecraft 26.1 and newer requires … Java 25":** install Java 25 (`winget install EclipseAdoptium.Temurin.25.JDK`), then restart Spypaper (or sign out of Windows once). If an older Java is still used, put the full path to Java 25's `java.exe` in **Server Settings → Java**, without quotes.
+- **"Couldn't check for updates":** the computer is offline or the releases repository is private; Spypaper starts normally anyway.
 - **The server won't start:** read the error in the Live Console or ask Esplora *"Why won't the server start?"*. Make sure your Java version matches your Minecraft version.
 - **Forge/NeoForge installation failed:** check that the Java path is correct and the server folder is writable; the last lines of the installer output are shown in the window.
 - **Gemini/OpenAI error 429:** the provider's rate limit was reached; try again later.

@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDialog, QFrame, QHBoxLayout, QLabel, QPushButton, QSpinBox, QVBoxLayout, QWidget,
 )
 
-from core import remote as R
+from core import N_, remote as R
 from core.gamefiles import status as gf_status
 from . import i18n, icons
 from .i18n import t
@@ -74,6 +74,24 @@ class _Provider(R.Provider):
 
     def language(self):
         return i18n.current(), i18n.is_rtl()
+
+    def languages(self):
+        return i18n.available()
+
+    def table(self, lang):
+        return i18n.table_for(lang)
+
+    def is_rtl(self, lang):
+        return lang in i18n.RTL
+
+    def settings_get(self, sid):
+        return self.c.invoker.call(lambda: self.c.settings_get(sid))
+
+    def settings_save(self, sid, data):
+        return self.c.invoker.call(lambda: self.c.settings_save(sid, data))
+
+    def maintenance(self, sid, on):
+        return self.c.invoker.call(lambda: self.c.maintenance(sid, on))
 
     def icons_dir(self):
         try:
@@ -161,6 +179,47 @@ class RemoteController(QObject):
         self.ctl.server_state_changed()
         return None
 
+    # --- telefondan ayarlar ve bakım (ana thread) ---
+    def settings_get(self, sid):
+        prof = self.ctl.settings.server(sid)
+        if not prof or not prof.exists:
+            return {}
+        app = self.ctl.app_for(sid)
+        return {"ram_min": prof.get("ram_min"), "ram_max": prof.get("ram_max"),
+                "java": prof.get("java_path"), "jar": prof.get("jar_name"),
+                "schedule": app.maintenance.schedule, "props": app.properties.load(),
+                "running": app.server.is_running}
+
+    def settings_save(self, sid, data):
+        prof = self.ctl.settings.server(sid)
+        if not prof or not prof.exists:
+            return t("Sunucu klasörü bulunamadı.")
+        app = self.ctl.app_for(sid)
+        if "ram" in data:
+            prof.data["ram_min"], prof.data["ram_max"] = data["ram"]["min"], data["ram"]["max"]
+            prof.save()
+        if "schedule" in data:
+            app.maintenance.set_schedule(data["schedule"])
+        if data.get("props"):
+            try:
+                app.properties.save(data["props"])
+            except Exception as e:
+                return t(str(e))
+        self.ctl.remote_changed(sid)
+        return None
+
+    def maintenance(self, sid, on):
+        prof = self.ctl.settings.server(sid)
+        if not prof or not prof.exists:
+            return t("Sunucu klasörü bulunamadı.")
+        m = self.ctl.app_for(sid).maintenance
+        if on and not m.active:
+            m.enable(wait=False)
+        elif not on and m.active:
+            m.disable()
+        self.ctl.remote_changed(sid)
+        return None
+
     def _restart_tick(self, sid):
         until = self._restart.get(sid)
         app = self.ctl.apps.get(sid)
@@ -229,7 +288,7 @@ class RemoteDialog(QDialog):
         tl = QVBoxLayout()
         tl.setSpacing(2)
         tl.addWidget(label("Spypaper Remote", "PageTitle"))
-        tl.addWidget(label("Sunucularını telefondan izle; başlat, durdur ve yeniden başlat.", "Muted", wrap=True))
+        tl.addWidget(label("Sunucularını telefondan izle; izin verdiğin cihazlardan başlat, durdur, bakıma al ve ayarlarını değiştir.", "Muted", wrap=True))
         head.addLayout(tl, 1)
         v.addLayout(head)
 
@@ -259,10 +318,11 @@ class RemoteDialog(QDialog):
         opts.addWidget(self.port)
         v.addLayout(opts)
 
-        self.allow = QCheckBox(t("Telefondan başlat / durdur / yeniden başlat izni ver"))
+        self.allow = QCheckBox(t("Telefonlardan değişiklik yapılabilsin"))
         self.allow.setChecked(bool(self.rc.server.data.get("allow_control", True)))
-        self.allow.setToolTip(t("Kapalıyken telefon yalnızca izler. PIN'li sunucularda telefonda da PIN sorulur."))
-        self.allow.toggled.connect(lambda on: self.rc.server.set_option("allow_control", bool(on)))
+        self.allow.setToolTip(t("Kapalıyken bütün cihazlar yalnızca izler. Açıkken her cihaz, aşağıda ona verdiğin "
+                                "izinler kadarını yapabilir. PIN'li sunucularda telefonda da PIN sorulur."))
+        self.allow.toggled.connect(lambda on: (self.rc.server.set_option("allow_control", bool(on)), self._refresh()))
         v.addWidget(self.allow)
 
         # --- QR ---
@@ -414,6 +474,23 @@ class RemoteDialog(QDialog):
             col.addWidget(label(d.get("name", ""), raw=True))
             col.addWidget(label(t("Eşlendi: {a} · Son bağlantı: {b}", a=_ago(d.get("created")),
                                   b=_ago(d.get("last_seen"))), "Muted", raw=True))
+            perms = {**R.PERMS, **(d.get("perms") or {})}
+            ph = QHBoxLayout()
+            ph.setSpacing(14)
+            for key, text, tip in (
+                    ("control", N_("Başlat / durdur"), N_("Sunucuyu başlatma, durdurma ve yeniden başlatma")),
+                    ("maintenance", N_("Bakım"), N_("Bakım modunu başlatma ve bitirme")),
+                    ("settings", N_("Sunucu ayarları"), N_("RAM, otomatik bakım planı ve server.properties"))):
+                cb = QCheckBox(t(text))
+                cb.setToolTip(t(tip))
+                cb.setCursor(Qt.PointingHandCursor)
+                cb.setChecked(bool(perms.get(key)))
+                cb.setEnabled(self.allow.isChecked())
+                cb.toggled.connect(lambda on, i=d.get("id"), k=key: self.rc.server.set_perm(i, k, on))
+                ph.addWidget(cb)
+            ph.addStretch(1)
+            col.addSpacing(4)
+            col.addLayout(ph)
             h.addLayout(col, 1)
             rm = QPushButton(t("Kaldır"))
             rm.setProperty("variant", "danger")

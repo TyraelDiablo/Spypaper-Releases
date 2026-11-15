@@ -6,7 +6,8 @@ Kaynak dil Türkçe; anahtar Türkçe metnin kendisidir (gettext tarzı):
 Çeviriler: locales/<kod>.json (exe'ye gömülü).
 Exe'nin yanındaki Languages/<kod>.json gömülü dosyanın üzerine yazar,
 yeni dil eklemek için de oraya dosya koymak yeterli ("_name" anahtarı = dilin adı).
-Eksik çeviri Türkçe kaynağa düşer.
+Eksik çeviri önce İngilizceye, o da yoksa Türkçe kaynağa düşer
+(Türkçe bilmeyen biri yarım çeviride Türkçe değil İngilizce görsün).
 """
 import json
 import os
@@ -56,12 +57,20 @@ def load(lang):
     global _lang
     _lang = lang
     _table.clear()
+    _table.update(table_for(lang))
+
+
+def table_for(lang):
+    """Bir dilin çeviri tablosu (eksikler İngilizceden). Türkçe için boş tablo."""
+    out = {}
     if lang == "tr":
-        return
-    for d in _dirs():
-        p = os.path.join(d, f"{lang}.json")
-        if os.path.exists(p):
-            _table.update({k: v for k, v in _read(p).items() if v and not k.startswith("_")})
+        return out
+    for code in (("en", lang) if lang != "en" else ("en",)):
+        for d in _dirs():
+            p = os.path.join(d, f"{code}.json")
+            if os.path.exists(p):
+                out.update({k: v for k, v in _read(p).items() if v and not k.startswith("_")})
+    return out
 
 
 def current():

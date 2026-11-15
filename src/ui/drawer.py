@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QWidget,
 )
 
-from core import N_, get_base_dir
+from core import N_, autostart, get_base_dir
 from . import VERSION, i18n
 from .i18n import t
 from . import icons
@@ -96,7 +96,7 @@ class Drawer(QWidget):
         self.lang.setCurrentIndex(max(0, self.lang.findData(s.get("language"))))
         self.lang.currentIndexChanged.connect(lambda i: ctl.set_setting("language", self.lang.itemData(i)))
         v.addWidget(self.lang)
-        hint = label("Çeviri eksikse Türkçe gösterilir. Languages klasörüne JSON ekleyerek dil ekleyebilirsin.", "Muted", wrap=True)
+        hint = label("Çeviri eksikse İngilizce gösterilir. Languages klasörüne JSON ekleyerek dil ekleyebilirsin.", "Muted", wrap=True)
         v.addWidget(hint)
 
         # --- görünüm ---
@@ -122,6 +122,7 @@ class Drawer(QWidget):
             lambda val: None if self.scale.isSliderDown() else ctl.set_setting("font_scale", round(val / 100, 2)))
         self.scale.sliderReleased.connect(lambda: ctl.set_setting("font_scale", round(self.scale.value() / 100, 2)))
         v.addWidget(self.scale)
+        v.addWidget(item("Panel Düzeni (sekmeler ve kartlar)", self._layout, "settings"))
 
         # --- erişilebilirlik ---
         v.addWidget(section("Erişilebilirlik"))
@@ -148,6 +149,15 @@ class Drawer(QWidget):
                                  "Kapalıyken uygulama ana ekranla açılır"))
         v.addWidget(self._toggle("Çıkarken çalışan sunucuları sor", "confirm_on_close",
                                  "Kapalıysa sunucular sormadan durdurulur"))
+        v.addWidget(self._toggle("Açılışta güncellemeleri denetle", "check_updates",
+                                 "Spypaper açılırken GitHub'da yeni sürüm olup olmadığına bakar"))
+        if autostart.supported():
+            boot = QCheckBox(t("Windows açılınca Spypaper'ı başlat"))
+            boot.setToolTip(t("Spypaper Remote ve otomatik bakım yalnızca Spypaper açıkken çalışır."))
+            boot.setCursor(Qt.PointingHandCursor)
+            boot.setChecked(autostart.enabled())
+            boot.toggled.connect(autostart.set_enabled)
+            v.addWidget(boot)
         lim = QComboBox()
         for n in (1000, 2000, 5000, 10000, 20000, 50000):
             lim.addItem(f"{n:,}".replace(",", "."), n)
@@ -174,6 +184,7 @@ class Drawer(QWidget):
         for name, url in LINKS:
             v.addWidget(item(name, lambda _=False, u=url: webbrowser.open(u), "external-link"))
         v.addWidget(item("Oyun Dosyaları (dil ve ikon)", self._gamefiles, "package"))
+        v.addWidget(item("Güncellemeleri şimdi denetle", self._check_update, "circle-arrow-up"))
         v.addWidget(item("Lisans ve Gizlilik", self._legal, "scale"))
         v.addWidget(item("Hakkında", self._about, "info"))
         v.addStretch(1)
@@ -220,6 +231,35 @@ class Drawer(QWidget):
     def _open_dir(path):
         os.makedirs(path, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+
+    def _layout(self):
+        from .layout_dialog import LayoutDialog
+        LayoutDialog(self.ctl, self).exec()
+
+    def _check_update(self):
+        from core import appupdate
+        from .msgbox import error, info
+        from .splash import offer
+        from PySide6.QtWidgets import QApplication
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            res = appupdate.check()
+        except Exception as e:
+            res = e
+        finally:
+            QApplication.restoreOverrideCursor()
+        if isinstance(res, Exception):
+            error(self, t("Güncelleme"), t(res.template, **res.kw) if hasattr(res, "template") else str(res))
+            return
+        if not appupdate.is_newer(res["version"]):
+            info(self, t("Güncelleme"), t("Spypaper güncel (v{v}).", v=VERSION))
+            return
+        if any(a.server.is_running for a in self.ctl.apps.values()) and appupdate.frozen():
+            info(self, t("Güncelleme"), t("Spypaper {new} yayınlandı (şu an {cur}).", new=res["version"], cur=VERSION)
+                 + "\n\n" + t("Güncellemeden önce çalışan sunucuları durdur."))
+            return
+        if offer(self.ctl, self.ctl.settings, res):
+            self.ctl.close()
 
     def _remote(self):
         from .remote_dialog import RemoteDialog

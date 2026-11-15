@@ -15,6 +15,11 @@ const ICONS = {
   cpu: '<rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/>',
   ram: '<path d="M6 19v-3"/><path d="M10 19v-3"/><path d="M14 19v-3"/><path d="M18 19v-3"/><path d="M8 11V9"/><path d="M16 11V9"/><path d="M12 11V9"/><path d="M2 15h20"/><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z"/>',
   phone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+  gear: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  sliders: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
 };
 const svg = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ""}</svg>`;
 
@@ -27,6 +32,7 @@ const T = (k, vars) => {
   return s;
 };
 const GAMEMODES = ["Hayatta Kalma", "Yaratıcı", "Macera", "İzleyici"];
+const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
 async function api(path, opts = {}) {
   const init = { credentials: "same-origin", cache: "no-store", ...opts };
@@ -234,6 +240,40 @@ function playerRow(p) {
   </div>`;
 }
 
+async function askPin(s) {
+  if (!s.pin) return undefined;
+  const pin = await dialog({ title: s.name, text: T("Bu sunucu PIN ile korunuyor."), input: true });
+  return pin === null ? null : pin;
+}
+
+async function guarded(s, path, body) {
+  const pin = await askPin(s);
+  if (pin === null) return false;
+  st.busy = true;
+  try {
+    await api(path, { body: { ...body, pin } });
+    banner("");
+    return true;
+  } catch (e) {
+    if (e.status === 401 && !(e.data && e.data.need_pin)) { showUnpaired(); return false; }
+    await dialog({ title: s.name, text: e.message });
+    return false;
+  } finally {
+    st.busy = false;
+  }
+}
+
+async function maintToggle(s) {
+  if (st.busy) return;
+  const on = !s.maintenance.active;
+  if (on) {
+    const ok = await dialog({ title: s.name, text: T("Bakım modu başlatılsın mı?"), ok: T("Bakım Modunu Başlat"), okClass: "danger" });
+    if (!ok) return;
+  }
+  await guarded(s, `/api/servers/${encodeURIComponent(s.id)}/maintenance`, { on });
+  showDetail(s.id, false);
+}
+
 async function action(s, act) {
   if (st.busy) return;
   if (act !== "start") {
@@ -270,6 +310,8 @@ async function showDetail(id, toBottom) {
     setBar(s.name, T("Son güncelleme: {t}", { t: s.time }), true);
     const running = ["running", "starting"].includes(s.state);
     const canCtl = s.control && s.state !== "external";
+    const perms = s.perms || {};
+    if (st.tab === "settings" && !perms.settings) st.tab = "players";
     const tab = st.tab;
     v.innerHTML = `
       <div class="card">
@@ -293,11 +335,23 @@ async function showDetail(id, toBottom) {
         </div>
         ${s.map_url ? `<a class="btn" style="margin-top:10px;width:100%;text-decoration:none" href="${esc(s.map_url)}" target="_blank" rel="noopener noreferrer">${svg("map")}${esc(T("Haritayı Aç"))}</a>` : ""}
       </div>
+      ${s.maintenance ? `<div class="card maint ${s.maintenance.active ? "on" : ""}">
+        <div class="row">
+          <span class="maint-ic">${svg("wrench")}</span>
+          <div class="grow">
+            <div class="name" style="font-size:15px">${esc(T(s.maintenance.active ? "Bakım modu aktif" : "Normal mod"))}</div>
+            <div class="muted small">${esc(s.maintenance.text)}</div>
+          </div>
+        </div>
+        ${perms.maintenance ? `<button class="btn ${s.maintenance.active ? "primary" : "danger"}" id="a-maint" style="margin-top:10px;width:100%">${esc(T(s.maintenance.active ? "Bakım Modunu Bitir" : "Bakım Modunu Başlat"))}</button>` : ""}
+      </div>` : ""}
       <div class="tabs" role="tablist">
         <button class="tab ${tab === "players" ? "on" : ""}" data-tab="players">${svg("users")}${esc(T("Oyuncular"))}</button>
         <button class="tab ${tab === "log" ? "on" : ""}" data-tab="log">${svg("log")}${esc(T("Günlük"))}</button>
+        ${perms.settings ? `<button class="tab ${tab === "settings" ? "on" : ""}" data-tab="settings">${svg("sliders")}${esc(T("Ayarlar"))}</button>` : ""}
       </div>
       <div id="tabbody"></div>`;
+    if ($("a-maint")) $("a-maint").onclick = () => maintToggle(s);
     $("a-start").onclick = () => action(s, "start");
     $("a-stop").onclick = () => action(s, "stop");
     $("a-restart").onclick = () => action(s, "restart");
@@ -309,6 +363,9 @@ async function showDetail(id, toBottom) {
         : `<div class="card empty">${esc(T("Henüz oyuncu yok."))}</div>`;
       await loadSprites();
       body.querySelectorAll("canvas.hud").forEach((c, i) => drawHud(c, list[i]));
+    } else if (tab === "settings") {
+      await renderSettings(s, body);
+      return;                                    // düzenlenirken sayfa kendiliğinden yenilenmesin
     } else {
       const lg = await api(`/api/servers/${encodeURIComponent(id)}/log`);
       body.innerHTML = lg.missing ? `<div class="card empty">${esc(T("Log dosyası bulunamadı."))}</div>`
@@ -325,11 +382,128 @@ async function showDetail(id, toBottom) {
   if (st.view === "detail:" + id) schedule(() => showDetail(id), 3000);
 }
 
+async function renderSettings(s, body) {
+  let d;
+  try { d = await api(`/api/servers/${encodeURIComponent(s.id)}/settings`); }
+  catch (e) { body.innerHTML = `<div class="card empty">${esc(e.message)}</div>`; return; }
+  const sc = d.schedule || {};
+  const props = d.props || {};
+  const keys = Object.keys(props);
+  const propRow = (k) => {
+    const v = props[k];
+    const bool = v === "true" || v === "false";
+    return `<label class="prop" data-k="${esc(k)}"><span class="pk">${esc(k)}</span>${bool
+      ? `<input type="checkbox" class="pv sw" ${v === "true" ? "checked" : ""}>`
+      : `<input class="pv" value="${esc(v)}" autocomplete="off" spellcheck="false">`}</label>`;
+  };
+  body.innerHTML = `
+    <div class="card">
+      <div class="sec">${esc(T("RAM (min / max)"))}</div>
+      <div class="row"><input id="ram-min" value="${esc(d.ram_min)}" autocomplete="off"><input id="ram-max" value="${esc(d.ram_max)}" autocomplete="off"></div>
+      <div class="kv"><span class="muted">${esc(T("Java"))}</span><span class="mono">${esc(d.java)}</span></div>
+      <div class="kv"><span class="muted">${esc(T("Jar dosyası"))}</span><span class="mono">${esc(d.jar)}</span></div>
+      <div class="muted small">${esc(T("Bunlar yalnızca bilgisayardan değiştirilebilir."))}</div>
+    </div>
+    <div class="card">
+      <div class="sec">${esc(T("Otomatik bakım"))}</div>
+      <label class="check"><input type="checkbox" id="sc-on" ${sc.enabled ? "checked" : ""}> ${esc(T("Otomatik bakımı aç"))}</label>
+      <div class="days">${DAYS.map((n, i) => `<button type="button" class="day ${(sc.days || []).includes(i) ? "on" : ""}" data-d="${i}" aria-pressed="${(sc.days || []).includes(i)}">${esc(T(n))}</button>`).join("")}</div>
+      <div class="row">
+        <label class="field grow"><span>${esc(T("Başlangıç saati"))}</span><input type="time" id="sc-time" value="${esc(sc.time || "04:00")}"></label>
+        <label class="field grow"><span>${esc(T("Süre (dk)"))}</span><input type="number" id="sc-dur" min="5" max="1440" step="5" value="${esc(sc.duration || 30)}"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="sc-bk" ${sc.backup !== false ? "checked" : ""}> ${esc(T("Bakım başlarken yedek al"))}</label>
+    </div>
+    ${keys.length ? `<div class="card">
+      <div class="sec">server.properties</div>
+      <div class="muted small" style="margin-bottom:8px">${esc(T("Değişikliklerin çoğu sunucu yeniden başlatılınca geçerli olur"))}</div>
+      <input id="psearch" placeholder="${esc(T("Ayar ara…"))}" autocomplete="off">
+      <div class="props">${keys.map(propRow).join("")}</div>
+    </div>` : ""}
+    <button class="btn primary" id="s-save" style="width:100%">${esc(T("Kaydet"))}</button>`;
+  body.querySelectorAll(".day").forEach((b) => b.onclick = () => { b.classList.toggle("on"); b.setAttribute("aria-pressed", b.classList.contains("on")); });
+  if ($("psearch")) $("psearch").oninput = () => {
+    const q = $("psearch").value.toLowerCase();
+    body.querySelectorAll(".prop").forEach((el) => { el.hidden = !el.dataset.k.toLowerCase().includes(q); });
+  };
+  $("s-save").onclick = async () => {
+    if (st.busy) return;
+    const changed = {};
+    body.querySelectorAll(".prop").forEach((el) => {
+      const inp = el.querySelector(".pv");
+      const val = inp.type === "checkbox" ? String(inp.checked) : inp.value;
+      if (val !== props[el.dataset.k]) changed[el.dataset.k] = val;
+    });
+    const payload = {
+      ram: { min: $("ram-min").value.trim(), max: $("ram-max").value.trim() },
+      schedule: {
+        enabled: $("sc-on").checked, time: $("sc-time").value || "04:00", duration: Number($("sc-dur").value) || 30,
+        backup: $("sc-bk").checked, days: [...body.querySelectorAll(".day.on")].map((b) => Number(b.dataset.d)),
+      },
+      props: changed,
+    };
+    $("s-save").disabled = true;
+    const ok = await guarded(s, `/api/servers/${encodeURIComponent(s.id)}/settings`, payload);
+    $("s-save").disabled = false;
+    if (ok) {
+      Object.assign(props, changed);
+      await dialog({ title: s.name, text: T("Kaydedildi.") });
+    }
+  };
+}
+
+async function showSettings() {
+  clearTimeout(st.timer);
+  st.view = "settings";
+  try {                                          // izinler bilgisayardan değişmiş olabilir
+    const q = new URLSearchParams({ nav: (navigator.languages || [navigator.language || ""]).join(",") });
+    st.me = await api("/api/me?" + q.toString());
+  } catch (e) {
+    if (e.status === 401) return showUnpaired();
+  }
+  if (!st.me.paired) return showUnpaired();
+  if (st.view !== "settings") return;
+  setBar(T("Ayarlar"), st.me.device, true);
+  const me = st.me;
+  const langs = me.langs || [];
+  const perms = me.perms || {};
+  const permRow = (k, label) => `<div class="kv"><span>${esc(T(label))}</span><span class="perm ${perms[k] ? "on" : ""}">${svg(perms[k] ? "check" : "x")}</span></div>`;
+  $("view").innerHTML = `
+    <div class="card">
+      <label class="field"><span>${esc(T("Dil"))}</span>
+        <select id="lang">
+          <option value="">${esc(T("Otomatik (telefonun dili)"))}</option>
+          ${langs.map(([c, n]) => `<option value="${esc(c)}" ${me.lang_pref === c ? "selected" : ""}>${esc(n)}</option>`).join("")}
+        </select>
+      </label>
+    </div>
+    <div class="card">
+      <div class="sec">${esc(T("Bu cihazın izinleri"))}</div>
+      ${permRow("control", "Başlat / durdur")}
+      ${permRow("maintenance", "Bakım")}
+      ${permRow("settings", "Sunucu ayarları")}
+      <div class="muted small" style="margin-top:8px">${esc(T("İzinler bilgisayardaki Spypaper'dan verilir: ☰ → Spypaper Remote → Eşli cihazlar."))}</div>
+    </div>
+    <button class="btn danger" id="unpair" style="width:100%">${svg("logout")}${esc(T("Bu cihazın eşleşmesini kaldır"))}</button>`;
+  $("lang").onchange = async () => {
+    try { await api("/api/me/lang", { body: { lang: $("lang").value } }); } catch (_) { /* yok say */ }
+    await boot();
+  };
+  $("unpair").onclick = async () => {
+    const ok = await dialog({ title: T("Bu cihazın eşleşmesini kaldır"), text: T("Eşleşme kaldırılsın mı? Tekrar bağlanmak için yeni QR gerekir."), okClass: "danger" });
+    if (!ok) return;
+    try { await api("/api/logout", { body: {} }); } catch (_) { /* zaten düşmüş */ }
+    st.me.paired = false;
+    location.hash = "";
+    showUnpaired();
+  };
+}
+
 function showUnpaired() {
   clearTimeout(st.timer);
   st.view = "unpaired";
   setBar(T("Spypaper Remote"), "", false);
-  $("logout").hidden = true;
+  $("gear").hidden = true;
   banner("");
   $("view").innerHTML = `<div class="card pair">
     <img src="/icon.svg" alt="">
@@ -370,6 +544,8 @@ function showPair(code) {
 function route() {
   clearTimeout(st.timer);
   if (!st.me || !st.me.paired) return;
+  $("gear").hidden = location.hash === "#settings";
+  if (location.hash === "#settings") return showSettings();
   const m = location.hash.match(/^#s\/([A-Za-z0-9_-]+)/);
   if (m) showDetail(m[1], st.tab === "log");
   else showList();
@@ -377,18 +553,15 @@ function route() {
 
 async function boot() {
   $("back").innerHTML = svg("back");
-  $("logout").innerHTML = svg("logout");
+  $("gear").innerHTML = svg("gear");
   $("back").onclick = () => { location.hash = ""; };
-  $("logout").onclick = async () => {
-    const ok = await dialog({ title: T("Bu cihazın eşleşmesini kaldır"), text: T("Eşleşme kaldırılsın mı? Tekrar bağlanmak için yeni QR gerekir."), okClass: "danger" });
-    if (!ok) return;
-    try { await api("/api/logout", { body: {} }); } catch (_) { /* zaten düşmüş */ }
-    st.me.paired = false;
-    showUnpaired();
-  };
+  $("gear").onclick = () => { location.hash = "#settings"; };
   const code = new URLSearchParams(location.search).get("code") || "";
+  const q = new URLSearchParams();
+  if (code) q.set("code", code);
+  q.set("nav", (navigator.languages || [navigator.language || ""]).join(","));
   try {
-    st.me = await api("/api/me" + (code ? "?code=" + encodeURIComponent(code) : ""));
+    st.me = await api("/api/me?" + q.toString());
   } catch (e) {
     banner("Spypaper?");
     setTimeout(boot, 4000);
@@ -400,8 +573,8 @@ async function boot() {
   $("back").setAttribute("aria-label", "←");
   if (!st.me.paired) return code ? showPair(code) : showUnpaired();
   if (code) history.replaceState(null, "", "/");
-  $("logout").hidden = false;
-  $("logout").setAttribute("aria-label", T("Bu cihazın eşleşmesini kaldır"));
+  $("gear").hidden = false;
+  $("gear").setAttribute("aria-label", T("Ayarlar"));
   route();
 }
 

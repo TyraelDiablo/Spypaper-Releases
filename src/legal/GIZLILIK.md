@@ -1,13 +1,13 @@
 # Spypaper Gizlilik Bildirimi
 
-**Sürüm 1.0 · Yürürlük tarihi: 14.11.2026**
+**Sürüm 1.1 · Yürürlük tarihi: 15.11.2026**
 
 Bu bildirim, Spypaper'ın ("Yazılım") hangi verileri işlediğini, nerede sakladığını ve hangi durumlarda üçüncü taraflara gönderdiğini açıklar.
 
 ## Kısaca
 
 - Spypaper **bilgisayarınızda çalışır**. Geliştiriciye (Serkan Aynacı) hiçbir veri göndermez. Telemetri, kullanım istatistiği, reklam ya da çökme raporu gönderimi **yoktur**.
-- Dış bağlantılar yalnızca **sizin başlattığınız** işlemlerde kurulur: sunucu yazılımı güncelleme ve Esplora'ya soru sorma.
+- Dış bağlantılar sunucu yazılımı güncelleme ve Esplora'ya soru sorma gibi **sizin başlattığınız** işlemlerde kurulur. Tek istisna, açılışta GitHub'da yeni Spypaper sürümü olup olmadığına bakılmasıdır (bkz. 2.4); bu denetim ayarlardan kapatılabilir.
 - Esplora'yı kullanırsanız sunucunuza ait bilgiler (oyuncu adları ve loglar dahil) **seçtiğiniz yapay zeka sağlayıcısına** gönderilir.
 
 ## 1. Bilgisayarınızda işlenen veriler
@@ -33,7 +33,11 @@ Bu veriler Yazılım tarafından ayrıca kopyalanmaz ya da bir yere yüklenmez. 
 - **PIN**: düz metin olarak değil, PBKDF2-HMAC-SHA256 (200.000 tekrar, rastgele tuz) ile özetlenmiş halde
 - **Yapay zeka API anahtarı**: Windows'ta, Windows hesabınıza bağlı DPAPI ile şifrelenmiş halde. *Windows dışındaki sistemlerde anahtar yalnızca base64 ile gizlenir; bu bir şifreleme değildir.*
 - PaperMC için girdiğiniz iletişim bilgisi (girdiyseniz)
-- **Spypaper Remote** eşli cihazları: cihaz adı, eşlenme ve son bağlantı zamanı ile cihaz anahtarının yalnızca SHA-256 özeti (anahtarın kendisi saklanmaz)
+- **Spypaper Remote** eşli cihazları: cihaz adı, eşlenme ve son bağlantı zamanı, cihaza verdiğiniz izinler, seçilen dil ile cihaz anahtarının yalnızca SHA-256 özeti (anahtarın kendisi saklanmaz)
+- Sunucu **notlarınız** (düz metin; parola yazmayın) ve otomatik bakım planı
+- Bakım sürerken: bakım öncesi whitelist ve MOTD. Whitelist ayrıca sunucu klasöründe `backups/whitelist_maintenance.json` dosyasına yazılır ve bakım bitince silinir.
+
+*Windows açılınca başlat* seçeneğini açarsanız Windows kayıt defterine (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`) Yazılımın yolu yazılır; seçeneği kapatınca silinir.
 
 Esplora sohbet geçmişi **yalnızca bellekte** tutulur; Yazılım kapatıldığında silinir.
 
@@ -78,9 +82,13 @@ Bu sağlayıcılar verileri kendi politikalarına göre işler ve sunucuları T�
 
 ### 2.3 Spypaper Remote (telefon)
 
-Spypaper Remote **varsayılan olarak kapalıdır**. Açarsanız Yazılım bilgisayarınızda küçük bir web sunucusu çalıştırır ve yalnızca QR kodla eşlediğiniz cihazlara şu özetleri gösterir: sunucu durumu, RAM/CPU kullanımı, oyuncu adları ile can/açlık/zırh/seviye/oyun modu ve son log satırları. Log satırlarındaki **IP adresleri gizlenir**. Bu veriler hiçbir üçüncü tarafa gönderilmez; doğrudan telefonunuz ile bilgisayarınız arasında, yerel ağınızda (ya da kendi kurduğunuz Tailscale gibi bir ağ üzerinden) iletilir. Bağlantı şifrelenmemiş HTTP'dir; bu yüzden yalnızca güvendiğiniz ağlarda kullanın, internete port açarak yayınlamayın. Eşli cihazları Remote penceresinden istediğiniz zaman kaldırabilirsiniz.
+Spypaper Remote **varsayılan olarak kapalıdır**. Açarsanız Yazılım bilgisayarınızda küçük bir web sunucusu çalıştırır ve yalnızca QR kodla eşlediğiniz cihazlara şu özetleri gösterir: sunucu durumu, RAM/CPU kullanımı, oyuncu adları ile can/açlık/zırh/seviye/oyun modu ve son log satırları. Log satırlarındaki **IP adresleri gizlenir**. Bilgisayarda o cihaza izin verdiyseniz telefon sunucu ayarlarını (RAM, otomatik bakım planı, `server.properties`) görebilir ve değiştirebilir; RCON/sorgu/yönetim ayarları ve parolalar telefona gönderilmez. Telefon, panelin dili yerine kendi dilini (tarayıcının bildirdiği dil) kullanır. Bu veriler hiçbir üçüncü tarafa gönderilmez; doğrudan telefonunuz ile bilgisayarınız arasında, yerel ağınızda (ya da kendi kurduğunuz Tailscale gibi bir ağ üzerinden) iletilir. Bağlantı şifrelenmemiş HTTP'dir; bu yüzden yalnızca güvendiğiniz ağlarda kullanın, internete port açarak yayınlamayın. Eşli cihazları Remote penceresinden istediğiniz zaman kaldırabilirsiniz.
 
-### 2.4 Diğer bağlantılar
+### 2.4 Spypaper güncelleme denetimi
+
+*Açılışta güncellemeleri denetle* seçeneği açıksa (varsayılan) Yazılım her açılışta GitHub'a (`api.github.com`) Spypaper'ın en son sürümünü sorar. Bu istekte yalnızca standart bağlantı bilgileri (IP adresiniz) ve Spypaper'ın sürümünü içeren bir User-Agent gönderilir; sunucularınıza, oyuncularınıza ya da ayarlarınıza ait hiçbir veri gönderilmez. Güncellemeyi kabul ederseniz yeni exe GitHub'dan indirilir ve SHA-256 özetiyle doğrulanır. GitHub'ın verileri nasıl işlediği için [GitHub Gizlilik Bildirimi](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)'ne bakın. Denetimi ☰ → *Açılışta güncellemeleri denetle* ile kapatabilirsiniz.
+
+### 2.5 Diğer bağlantılar
 
 - **Canlı Harita** sayfası, ayarladığınız harita adresini (varsayılan `http://localhost:8100`) açar.
 - Çekmecedeki belge bağlantıları varsayılan tarayıcınızda açılır.

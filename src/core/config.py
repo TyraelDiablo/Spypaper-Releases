@@ -31,7 +31,9 @@ SERVER_DEFAULTS = {
     "ram_min": "2G",
     "ram_max": "4G",
     "bluemap_url": "http://localhost:8100",
-    "maintenance_interval_hours": 120,
+    "maintenance_schedule": {},   # core.maintenance.SCHEDULE_DEFAULTS
+    "maintenance_state": {},
+    "notes": "",               # kullanıcının bu sunucu için notları
     "last_opened": "",
     "safe_mode": 0,            # 0 kapalı, 1 düşük, 2 orta, 3 yüksek (core.safemode)
     "pin_hash": "",            # boşsa PIN yok
@@ -51,6 +53,11 @@ APP_DEFAULTS = {
     "log_poll_seconds": 1,
     "update_contact": "",
     "translate_logs": True,
+    "check_updates": True,     # açılışta Spypaper güncellemesi denetlensin (core.appupdate)
+    "skip_version": "",
+    "page_order": [],          # sunucu panelindeki sekmelerin sırası (sayfa sınıf adları)
+    "hidden_pages": [],
+    "dashboard_hidden": [],    # gösterge panelinde gizlenen kartlar
     "ai": {},                  # yapay zeka ayarları (core.ai)
     "servers": [],
     "last_server": "",

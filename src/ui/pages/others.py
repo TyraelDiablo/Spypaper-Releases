@@ -2,11 +2,12 @@
 import os
 import threading
 
-from PySide6.QtCore import Qt, QTimer, QUrl, Signal
+from PySide6.QtCore import QTime, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QColor, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox, QFileDialog, QFormLayout, QGridLayout, QHBoxLayout, QLineEdit,
-    QListWidget, QProgressBar, QScrollArea, QSpinBox, QTableWidgetItem, QVBoxLayout, QWidget,
+    QListWidget, QProgressBar, QPushButton, QScrollArea, QSpinBox, QTableWidgetItem, QTimeEdit, QVBoxLayout,
+    QWidget,
 )
 
 from core import N_, ServerError
@@ -150,15 +151,10 @@ class SettingsPage(Page):
         self.ram_min = QLineEdit()
         self.ram_max = QLineEdit()
         self.bluemap = QLineEdit()
-        self.interval = QSpinBox()
-        self.interval.setRange(1, 24 * 60)
-        self.interval.setSuffix(" " + t("saat"))
-        self.interval.setButtonSymbols(QSpinBox.NoButtons)
         form.addRow(t("Java"), self.java)
         form.addRow(t("Jar dosyası"), self.jar)
         form.addRow(t("RAM (min / max)"), row(self.ram_min, self.ram_max, stretch_end=False))
         form.addRow(t("BlueMap adresi"), self.bluemap)
-        form.addRow(t("Otomatik bakım"), self.interval)
         panel.add(form)
         top.addWidget(panel, 2)
         self.col.addLayout(top)
@@ -189,7 +185,6 @@ class SettingsPage(Page):
         self.ram_min.setText(c.get("ram_min"))
         self.ram_max.setText(c.get("ram_max"))
         self.bluemap.setText(c.get("bluemap_url"))
-        self.interval.setValue(int(float(c.get("maintenance_interval_hours"))))
 
         ip = self.app.properties.icon_path
         if ip:
@@ -247,7 +242,6 @@ class SettingsPage(Page):
         for key, w in (("java_path", self.java), ("jar_name", self.jar), ("ram_min", self.ram_min),
                        ("ram_max", self.ram_max), ("bluemap_url", self.bluemap)):
             c.data[key] = w.text().strip()
-        c.data["maintenance_interval_hours"] = self.interval.value()
         c.save()
         if self.fields:
             vals = {k: (w.isChecked() if isinstance(w, QCheckBox) else w.text()) for k, (_, w) in self.fields.items()}
@@ -319,6 +313,17 @@ class AdminPage(Page):
 
 
 # ---------------------------------------------------------------- Bakım
+DAYS = [N_("Pzt"), N_("Sal"), N_("Çar"), N_("Per"), N_("Cum"), N_("Cmt"), N_("Paz")]
+
+
+def fmt_left(td):
+    s = int(td.total_seconds())
+    d, s = divmod(s, 86400)
+    h, s = divmod(s, 3600)
+    mi, s = divmod(s, 60)
+    return t("{d} gün {time}", d=d, time=f"{h:02}:{mi:02}:{s:02}") if d else f"{h:02}:{mi:02}:{s:02}"
+
+
 class MaintenancePage(Page):
     title = "Bakım & Yedek"
     backup_progress = Signal(int, int)
@@ -328,18 +333,57 @@ class MaintenancePage(Page):
         super().__init__(app, bridge)
         top = QHBoxLayout()
         top.setSpacing(14)
+        left = QVBoxLayout()
+        left.setSpacing(14)
 
         st = Card("Durum")
         self.state_lbl = label("", "BigValue")
-        self.timer_lbl = label("", "Muted")
+        self.timer_lbl = label("", "Muted", wrap=True)
         st.add(self.state_lbl)
         st.add(self.timer_lbl)
         self.btn_on = button("Bakım Modunu Başlat", "danger", self.enable)
         self.btn_off = button("Bakım Modunu Bitir", "primary", self.disable)
-        st.add(row(self.btn_on, self.btn_off, button("Sayacı Sıfırla", "ghost", self.reset)))
-        st.add(label("Bakım modu: MOTD değişir, whitelist açılır ve otomatik yedek alınır.", "Muted", wrap=True))
-        st.end()
-        top.addWidget(st, 1)
+        st.add(row(self.btn_on, self.btn_off))
+        st.add(label("Bakımda whitelist yedeklenip boşaltılır ve açılır; OP olmayan oyuncular atılır, MOTD değişir "
+                     "ve yedek alınır. Bakım bitince whitelist ve eski ayarlar geri gelir.", "Muted", wrap=True))
+        left.addWidget(st)
+
+        plan = Card("Otomatik Bakım", "Seçili günlerde, belirlenen saatte başlar; süre dolunca kendiliğinden biter")
+        self.plan_on = QCheckBox(t("Otomatik bakımı aç"))
+        self.plan_on.setCursor(Qt.PointingHandCursor)
+        plan.add(self.plan_on)
+        self.day_btns = []
+        days = QHBoxLayout()
+        days.setSpacing(4)
+        for name in DAYS:
+            b = QPushButton(t(name))
+            b.setObjectName("Segment")
+            b.setCheckable(True)
+            b.setCursor(Qt.PointingHandCursor)
+            self.day_btns.append(b)
+            days.addWidget(b)
+        days.addStretch(1)
+        plan.add(days)
+        self.time = QTimeEdit()
+        self.time.setDisplayFormat("HH:mm")
+        self.duration = QSpinBox()
+        self.duration.setRange(5, 24 * 60)
+        self.duration.setSingleStep(5)
+        self.duration.setSuffix(" " + t("dk"))
+        form = QFormLayout()
+        form.setSpacing(8)
+        form.addRow(t("Başlangıç saati"), self.time)
+        form.addRow(t("Süre"), self.duration)
+        plan.add(form)
+        self.plan_backup = QCheckBox(t("Bakım başlarken yedek al"))
+        self.plan_backup.setCursor(Qt.PointingHandCursor)
+        plan.add(self.plan_backup)
+        plan.add(label("Oyunculara 10 dk, 5 dk, 1 dk ve 10 sn önce uyarı gönderilir. "
+                       "Plan yalnızca Spypaper açıkken çalışır.", "Muted", wrap=True))
+        plan.add(row(None, button("Planı Kaydet", "primary", self.save_plan), stretch_end=False))
+        left.addWidget(plan)
+        left.addStretch(1)
+        top.addLayout(left, 1)
 
         bk = Card("Dünya Yedekleri", "world, world_nether ve world_the_end tek zip'te")
         self.btn_backup = button("Şimdi Yedek Al", "primary", self.backup)
@@ -350,43 +394,67 @@ class MaintenancePage(Page):
         bk.add(self.progress)
         self.table = table(["Yedek", "Boyut", "Tarih"], stretch_col=0)
         bk.add(self.table, 1)
-        top.addWidget(bk, 2)
+        top.addWidget(bk, 1)
         self.root.addLayout(top, 1)
 
         self.backup_progress.connect(self._on_progress)
         self.backup_done.connect(self._on_backup_done)
         self.tick = QTimer(self)
-        self.tick.timeout.connect(self._tick)
+        self.tick.timeout.connect(self._tick)       # yalnızca gösterim; bakımı pencerenin zamanlayıcısı yürütür
         self.tick.start(1000)
+        self._load_plan()
         self._tick()
 
     def on_show(self):
         fill_table(self.table, [(n, human_size(s), f"{d:%d.%m.%Y %H:%M}") for n, s, d in self.app.backups.list()],
                    align_center=(1, 2))
+        self._load_plan()
+        self._tick()
+
+    def _load_plan(self):
+        s = self.app.maintenance.schedule
+        self.plan_on.setChecked(s["enabled"])
+        for i, b in enumerate(self.day_btns):
+            b.setChecked(i in s["days"])
+        h, m = (int(x) for x in s["time"].split(":"))
+        self.time.setTime(QTime(h, m))
+        self.duration.setValue(s["duration"])
+        self.plan_backup.setChecked(s["backup"])
+
+    def save_plan(self):
+        if self.read_only():
+            return
+        days = [i for i, b in enumerate(self.day_btns) if b.isChecked()]
+        if self.plan_on.isChecked() and not days:
+            self.warn("En az bir gün seç.")
+            return
+        self.app.maintenance.set_schedule({
+            "enabled": self.plan_on.isChecked(), "days": days, "time": self.time.time().toString("HH:mm"),
+            "duration": self.duration.value(), "backup": self.plan_backup.isChecked()})
+        self._tick()
+        self.info("Plan kaydedildi.")
 
     def _tick(self):
         m = self.app.maintenance
-        if m.tick():
-            self.on_show()
         if m.active:
             self.state_lbl.setText(t("Bakım modu aktif"))
             self.state_lbl.setStyleSheet(f"color:{color('danger')}")
-            self.timer_lbl.setText(t("Oyuncular yalnızca whitelist ile girebilir"))
+            until = m.until()
+            self.timer_lbl.setText(t("Otomatik bitiş: {time}", time=f"{until:%d.%m %H:%M}") if until
+                                   else t("Bakım elle bitirilene kadar sürer."))
         else:
             self.state_lbl.setText(t("Normal mod"))
             self.state_lbl.setStyleSheet(f"color:{color('accent')}")
-            s = int(m.remaining().total_seconds())
-            d, s = divmod(s, 86400)
-            h, s = divmod(s, 3600)
-            mi, s = divmod(s, 60)
-            self.timer_lbl.setText(t("Sonraki otomatik bakım: {d} gün {time}", d=d, time=f"{h:02}:{mi:02}:{s:02}"))
+            left, nxt = m.remaining(), m.next_start()
+            self.timer_lbl.setText(t("Sonraki otomatik bakım: {when} ({left} kaldı)", when=f"{nxt:%d.%m %H:%M}",
+                                     left=fmt_left(left)) if nxt else t("Otomatik bakım kapalı."))
         self.btn_on.setEnabled(not m.active)
         self.btn_off.setEnabled(m.active)
 
     def enable(self):
         if self.read_only():
             return
-        if not self.confirm("Bakım modu başlatılsın mı?\nMOTD değişecek, whitelist açılacak ve yedek alınacak."):
+        if not self.confirm("Bakım modu başlatılsın mı?\nWhitelist boşaltılacak, OP olmayan oyuncular atılacak ve yedek alınacak."):
             return
         path = self.app.maintenance.enable()
         self._tick()
@@ -397,10 +465,6 @@ class MaintenancePage(Page):
         if self.read_only():
             return
         self.app.maintenance.disable()
-        self._tick()
-
-    def reset(self):
-        self.app.maintenance.reset_timer()
         self._tick()
 
     def backup(self):

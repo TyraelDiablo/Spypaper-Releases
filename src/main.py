@@ -22,6 +22,12 @@ def main(config_path=None):
     from ui.icons import app_icon
     qt.setWindowIcon(app_icon())
     settings = Settings(config_path)
+    from ui import i18n, theme, splash
+    i18n.load(settings.get("language"))               # açılış ekranı da panel dilinde ve temasında
+    theme.apply(settings.get("theme"), settings.get("high_contrast"), settings.get("font_scale"))
+    qt.setStyleSheet(theme.stylesheet())
+    if splash.run(settings):                          # güncelleme kuruldu: yeni exe başladı
+        sys.exit(0)
     win = MainWindow(settings)          # dil ve tema burada yüklenir
     win.show()
     sys.exit(qt.exec())

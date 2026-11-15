@@ -20,9 +20,21 @@ from .pages.map import MapPage
 from .pages.others import AdminPage, MaintenancePage, PluginsPage, SettingsPage
 from .pages.esplora import EsploraPage
 from .pages.modtrans import ModTransPage
+from .pages.notes import NotesPage
 
 PAGES = [DashboardPage, ConsolePage, LogsPage, EsploraPage, PlayersPage, PluginsPage, ModTransPage,
-         SettingsPage, AdminPage, MaintenancePage, MapPage]
+         SettingsPage, AdminPage, MaintenancePage, MapPage, NotesPage]
+
+
+def page_order(settings):
+    """Kenar çubuğundaki sayfa sırası (PAGES indeksleri) ve gizlenenler."""
+    names = [c.__name__ for c in PAGES]
+    order = [names.index(n) for n in (settings.get("page_order") or []) if n in names]
+    order += [i for i in range(len(PAGES)) if i not in order]           # yeni eklenen sayfalar sona
+    hidden = {names.index(n) for n in (settings.get("hidden_pages") or []) if n in names}
+    if len(hidden) >= len(PAGES):
+        hidden = set()
+    return order, hidden
 
 
 def ask_pin(parent, profile, purpose=""):
@@ -86,6 +98,7 @@ class ServerPanel(QWidget):
         self.nav = QButtonGroup(self)
         self.stack = QStackedWidget()
         self.pages = []
+        self.order, self.hidden = page_order(ctl.settings)
         for i, cls in enumerate(PAGES):
             page = cls(app, self.bridge)
             self.pages.append(page)
@@ -95,6 +108,9 @@ class ServerPanel(QWidget):
             b.setCheckable(True)
             b.setCursor(Qt.PointingHandCursor)
             self.nav.addButton(b, i)
+        for i in self.order:                        # kullanıcının sırası; gizlenenler kenar çubuğunda görünmez
+            b = self.nav.button(i)
+            b.setVisible(i not in self.hidden)
             sv.addWidget(b)
         self._nav_texts()
         sv.addStretch(1)
@@ -147,7 +163,7 @@ class ServerPanel(QWidget):
         self.on_state(app.server.state)
         self.current = 0
         self._safe_text()
-        self.go(0)
+        self.go(self.first_page())
 
     # --- güvenli mod ---
     def _safe_text(self):
@@ -197,6 +213,9 @@ class ServerPanel(QWidget):
     def _nav_texts(self):
         for i in range(len(self.pages)):
             self.nav.button(i).setText(self._page_title(i).replace("&", "&&"))
+
+    def first_page(self):
+        return next((i for i in self.order if i not in self.hidden), 0)
 
     def go(self, i):
         self.current = i
@@ -296,6 +315,10 @@ class MainWindow(QMainWindow):
         from .remote_dialog import RemoteController
         self.remote = RemoteController(self)        # Spypaper Remote (telefon), ayarda açıksa başlar
         self.remote.autostart()
+        # otomatik bakım: tüm sunucular için (paneli açık olmasa da) saniyede bir
+        self.maint_timer = QTimer(self)
+        self.maint_timer.timeout.connect(self.maintenance_tick)
+        self.maint_timer.start(1000)
 
         last = settings.get("last_server")
         if settings.get("open_last_on_start") and settings.server(last):
@@ -366,8 +389,28 @@ class MainWindow(QMainWindow):
 
     def app_for(self, sid):
         if sid not in self.apps:
-            self.apps[sid] = App(self.settings.server(sid))
+            app = self.apps[sid] = App(self.settings.server(sid))
+            app.maintenance.tr = t                  # oyunculara giden uyarılar panel dilinde
         return self.apps[sid]
+
+    def maintenance_tick(self):
+        for prof in self.settings.servers():
+            if not prof.exists:
+                continue
+            if not (prof.get("maintenance_state") or {}).get("active") and \
+                    not (prof.get("maintenance_schedule") or {}).get("enabled"):
+                continue
+            app = self.app_for(prof.id)
+            if prof.id not in self.panels and app.server.is_running:
+                try:                                # paneli açık değilse içerideki oyuncuları bilmek için
+                    app.logs.poll()
+                except Exception:
+                    pass
+            try:
+                if app.maintenance.tick():
+                    self.server_state_changed()
+            except Exception as e:
+                print(f"[bakım] {prof.name}: {e}")
 
     def open_server(self, sid, page=0, check_pin=True):
         prof = self.settings.server(sid)
@@ -387,7 +430,7 @@ class MainWindow(QMainWindow):
             self.stack.addWidget(panel)
         panel = self.panels[sid]
         self.stack.setCurrentWidget(panel)
-        panel.go(page if page < len(PAGES) else 0)
+        panel.go(page if 0 < page < len(PAGES) else panel.first_page())
         self.view = ("server", sid, page)
         self.settings.touch(sid)
         self.setWindowTitle(f"{prof.name} — Spypaper")
@@ -406,6 +449,13 @@ class MainWindow(QMainWindow):
         app = self.apps.get(sid)
         if app and not app.server.is_running:
             self.apps.pop(sid, None)
+
+    def remote_changed(self, sid):
+        """Telefondan ayar/bakım değişti: o sunucunun açık sayfası yenilensin."""
+        p = self.panels.get(sid)
+        if p and p.isVisible():
+            p.pages[p.current].on_show()
+        self.server_state_changed()
 
     def server_state_changed(self):
         if self.view[0] == "home":

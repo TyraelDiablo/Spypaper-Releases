@@ -27,10 +27,18 @@ class App:
         self.plugins = PluginStore(sp, profile)
         self.properties = ServerProperties(sp)
         self.backups = BackupManager(sp)
-        self.maintenance = Maintenance(profile, self.server, self.properties, self.backups)
         self.logs = LogWatcher(sp)
+        self.maintenance = Maintenance(profile, self.server, self.properties, self.backups, online=self.online_players)
         self.metrics = ProcessMetrics(self.server, profile)
         self.logtrans = LogTranslator(self.players.translations)
+
+    def online_players(self):
+        """Log'daki giriş/çıkışlara göre şu an içerideki oyuncular (log'u panel okur, burada okunmaz:
+        okunursa panelin olay akışı o satırları kaçırır)."""
+        if not self.server.is_running:
+            return []
+        from .logwatch import online_timeline
+        return sorted(online_timeline(self.logs.events)[1])
 
     @property
     def id(self):

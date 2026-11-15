@@ -65,6 +65,8 @@ class MapPage(Page):
         card.add(self.info_title)
         card.add(self.info_text)
         card.add(self.bar)
+        for b in (self.btn_install, self.btn_accept, self.btn_start):
+            b.hide()                      # durum belli olana kadar hiçbiri görünmesin
         card.add(row(None, self.btn_install, self.btn_accept, self.btn_start, stretch_end=True))
         iv.addLayout(row(None, card, stretch_end=True))
         iv.addStretch(2)
@@ -134,7 +136,11 @@ class MapPage(Page):
             self._show_info(N_("Web sunucusu kapalı"),
                             t("BlueMap'in webserver.conf dosyasında web sunucusu kapatılmış (enabled: false)."))
             return
-        self.state.setText(t("Bağlanılıyor…"))
+        # bağlantı denenirken kart boş kalmasın; harita zaten yüklüyse onu göstermeye devam et
+        if self.stack.currentIndex() == 0 or not self.loaded_url:
+            self._show_info(N_("Bağlanılıyor…"), t("{url} adresindeki haritaya bağlanılıyor.", url=self.url()))
+        else:
+            self.state.setText(t("Bağlanılıyor…"))
         self._probe()
 
     def _custom_url(self):

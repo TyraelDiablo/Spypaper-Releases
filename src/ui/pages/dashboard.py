@@ -64,6 +64,15 @@ class StatCard(Card):
         self.sub.setText(sub)
 
 
+# Panel Düzeni penceresinde gizlenebilen kartlar (anahtar, başlık)
+DASH_CARDS = [
+    ("online", N_("Çevrimiçi")), ("joins", N_("Bugün Giren")), ("deaths", N_("Bugün Ölüm")),
+    ("chat", N_("Sohbet Mesajı")), ("lag", N_("Gecikme Uyarısı")), ("uptime", N_("Çalışma Süresi")),
+    ("online_chart", N_("Çevrimiçi Oyuncular")), ("feed", N_("Son Olaylar")), ("hourly", N_("Saatlik Etkinlik")),
+    ("week", N_("Son 7 Gün")), ("resources", N_("Sunucu Kaynakları")), ("top", N_("En çok oynayanlar")),
+]
+
+
 class DashboardPage(Page):
     title = "Dashboard"
 
@@ -127,6 +136,15 @@ class DashboardPage(Page):
         self.top_lbl = label("", "Muted")
         self.top_lbl.setTextFormat(Qt.RichText)
         self.root.addWidget(self.top_lbl)
+
+        hidden = set(app.config.settings.get("dashboard_hidden") or [])
+        widgets = {"online": self.c_online, "joins": self.c_players, "deaths": self.c_deaths, "chat": self.c_chat,
+                   "lag": self.c_lag, "uptime": self.c_uptime, "online_chart": oc, "feed": feed, "hourly": hc,
+                   "week": wc, "resources": rc, "top": self.top_lbl}
+        for key, w in widgets.items():
+            if key in hidden:
+                w.setVisible(False)
+                w.setProperty("user_hidden", True)
 
         bridge.events.connect(self.on_events)
         self.mtimer = QTimer(self)

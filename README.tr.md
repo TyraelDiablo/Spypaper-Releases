@@ -31,12 +31,14 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Mod Dil Dosyaları** | Mod ve eklenti jar'larının içindeki İngilizce dil dosyalarını, yolu ne olursa olsun bulur (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…). JSON ve YAML, düz ya da iç içe. Çeviriyi sen yazarsın; panel jar'ın içine ve eklentinin kendi klasöründeki kopyaya kaydeder. Biçim kodu kontrolü (`%s`, `%player%`, `§a`, `&c`, `<red>`), dışa/içe aktarma, orijinali geri yükleme. |
 | **Sunucu Ayarları** | `server.properties` düzenleyici, Java yolu, RAM, jar, sunucu ikonu. |
 | **Whitelist & Ban** | Whitelist, ban ve op listeleri. |
-| **Bakım & Yedek** | Dünya (Overworld, Nether, End) yedeği, otomatik yedek ve bakım modu. |
+| **Bakım & Yedek** | Dünya (Overworld, Nether, End) yedeği ve bakım modu. Bakımda whitelist yedeklenip boşaltılır, böylece whitelist kullanan sunuculara da kimse giremez; OP olmayan oyuncular atılır, bakım bitince her şey geri gelir. Gün, saat ve süreli haftalık plan, oyun içi uyarılarla. Bkz. [Bakım](#bakım). |
+| **Notlar** | Her sunucu için kendi notların; kendiliğinden kaydedilir. |
 | **Canlı Harita** | BlueMap 3D haritası panelin içinde açılır. BlueMap kurulu değilse sunucunun yazılımına ve sürümüne uygun olanı Modrinth'ten indirip kurar, doku indirme iznini (onayınla) ayarlar. |
 | **Sunucu Yazılımı** | **Paper, Purpur, Vanilla, Fabric, Forge, NeoForge** için sürüm seçip indirme/kurma. Mümkün olduğunda SHA-256 / SHA-1 doğrulaması yapılır, eski jar `backups/jars/` klasörüne taşınır. |
-| **Spypaper Remote** | Sunucularını telefondan izle; başlat, durdur, yeniden başlat. QR kodla eşleşir; mağaza, hesap ya da veritabanı gerekmez. Bkz. [Spypaper Remote](#spypaper-remote-telefon). |
+| **Spypaper Remote** | Sunucularını telefondan izle; bilgisayardan verdiğin izinlerle başlat/durdur, bakıma al ve ayarlarını değiştir. QR kodla eşleşir; mağaza, hesap ya da veritabanı gerekmez. Bkz. [Spypaper Remote](#spypaper-remote-telefon). |
+| **Güncelleme** | Açılışta GitHub Releases'ta yeni Spypaper sürümü olup olmadığına bakar (kapatılabilir) ve exe'yi tek tıkla günceller. |
 | **Güvenlik** | 4 seviyeli güvenli mod (tehlikeli komutlar için onay, engelleme ya da salt okunur) ve sunucu başına isteğe bağlı PIN. |
-| **Görünüm** | 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller, [Lucide](https://lucide.dev) ikonları, Windows mesaj kutuları yerine panele özel uyarı/soru pencereleri. |
+| **Görünüm** | 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller, [Lucide](https://lucide.dev) ikonları, Windows mesaj kutuları yerine panele özel uyarı/soru pencereleri. **Panel Düzeni:** paneldeki sekmeleri ve Dashboard kartlarını sırala ya da gizle. İsteğe bağlı Windows ile başlatma. |
 
 ---
 
@@ -57,7 +59,7 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 
 - **Windows 10/11** (geliştirme sırasında Linux ve macOS'ta da çalışır; API anahtarı şifrelemesi yalnızca Windows'ta DPAPI ile yapılır).
 - **Java**: Minecraft sürümüne uygun (1.20.5 ve sonrası için Java 21, 26.x için Java 25). Panel Java'yı kendisi kurmaz.
-- Kaynaktan çalıştırmak için: **Python 3.10+** ve [uv](https://docs.astral.sh/uv/).
+- Kaynaktan çalıştırmak ya da exe derlemek için: [uv](https://docs.astral.sh/uv/) (`winget install astral-sh.uv`). Uygun Python'u uv kendisi indirir; `build.bat` Python 3.12 ile derler, çünkü çok yeni Python sürümlerinde PySide6 gibi paketlerin hazır derlenmiş hali genelde henüz yoktur.
 
 ---
 
@@ -71,6 +73,8 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 
 `config.json` ilk açılışta exe'nin yanında oluşur. Sunucu profilleri, ayarlar ve şifrelenmiş API anahtarı buradadır, **paylaşma**.
 
+Spypaper açılırken kısa bir süre *Güncellemeler denetleniyor…* yazar. GitHub Releases'ta yeni sürüm varsa hemen güncelleyebilir (exe değiştirilir ve Spypaper yeniden açılır), sonraya bırakabilir ya da o sürümü atlayabilirsin. **☰ → Açılışta güncellemeleri denetle** ile kapatılır; **☰ → Güncellemeleri şimdi denetle** elle denetler.
+
 ### Kaynaktan
 
 Kaynak kod `src` klasöründedir.
@@ -83,7 +87,7 @@ ya da
 
 ```bat
 cd src
-uv run --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno python main.py
+uv run --python 3.12 --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno python main.py
 ```
 
 ### Exe derleme
@@ -92,7 +96,7 @@ uv run --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno pyt
 src\build.bat
 ```
 
-Çıktı `src\dist\Spypaper.exe` olur. Dil dosyaları (`locales/`) ve yasal metinler (`legal/`) exe'nin içine gömülür. Gömülü harita için Qt WebEngine de pakete girdiğinden exe 150 MB civarındadır.
+Çıktı `src\dist\Spypaper.exe` olur. Release'e yalnızca bu exe'yi ekle; `config.json`'ı ve Minecraft klasörlerini (`Icons`, `Translation`, `Languages`) asla ekleme. Dil dosyaları (`locales/`) ve yasal metinler (`legal/`) exe'nin içine gömülür. Gömülü harita için Qt WebEngine de pakete girdiğinden exe 150 MB civarındadır.
 
 ---
 
@@ -138,9 +142,23 @@ Forge (1.17+) ve NeoForge sunucuları jar ile değil, `libraries/.../win_args.tx
 
 ---
 
+## Bakım
+
+**Bakım & Yedek → Bakım Modunu Başlat** (ya da plan) şunları yapar:
+
+1. `whitelist.json`'ı ve whitelist'in açık/kapalı durumunu saklar, whitelist'i boşaltıp açar. Böylece zaten whitelist kullanan sunuculara da kimse giremez. OP'ler yine girebilir.
+2. OP olmayan oyuncuları atar, MOTD'yi değiştirir, dünyayı kaydedip yedek alır.
+3. Bakım bitince whitelist'i (bakım sırasında eklediklerinle birlikte), önceki açık/kapalı durumunu ve eski MOTD'yi geri getirir.
+
+Durum `config.json`'da ve `backups/whitelist_maintenance.json`'da tutulur; Spypaper bakım sırasında kapansa ya da çökse bile hiçbir şey kaybolmaz.
+
+**Otomatik bakım:** günleri, başlangıç saatini ve süreyi seç (ör. her Pazartesi 04:00'te 30 dakika). Oyunculara 10 dk, 5 dk, 1 dk ve 10 sn önce uyarı gider; süre dolunca bakım kendiliğinden biter. Plan yalnızca Spypaper açıkken çalışır (☰'deki *Windows açılınca Spypaper'ı başlat* seçeneğine bak).
+
+---
+
 ## Spypaper Remote (telefon)
 
-Sunucularını telefondan izle; başlat, durdur ya da yeniden başlat. Mağazadan indirilecek bir uygulama yok: bilgisayardaki Spypaper küçük bir mobil web uygulaması sunar, telefon bunu tarayıcıda açar. Ana ekrana eklersen uygulama gibi açılır (Android ve iPhone).
+Sunucularını telefondan izle; izin verirsen kontrol et. Mağazadan indirilecek bir uygulama yok: bilgisayardaki Spypaper küçük bir mobil web uygulaması sunar, telefon bunu tarayıcıda açar. Ana ekrana eklersen uygulama gibi açılır (Android ve iPhone).
 
 ![Telefonda Spypaper Remote](docs/screenshots/remote.png)
 
@@ -150,13 +168,25 @@ Sunucularını telefondan izle; başlat, durdur ya da yeniden başlat. Mağazada
 2. **Yeni Cihaz Eşle**'ye bas, çıkan QR kodu telefonun kamerasıyla okut. Açılan sayfada **Eşle**'ye dokun.
 3. Bu kadar. Telefon eşli kalır; aynı pencereden istediğin zaman kaldırabilirsin.
 
-**Telefonda neler var:** sunucu durumu, RAM/CPU, çevrimiçi oyuncular ve bugünkü girişler, her oyuncunun canı, açlığı, zırhı, seviyesi ve oyun modu (Minecraft tarzı göstergelerle), son log satırları, BlueMap canlı harita bağlantısı ve **Başlat / Durdur / Yeniden Başlat**. Serbest komut gönderme yoktur.
+**Eşli her telefonun görebildikleri:** sunucu durumu, RAM/CPU, çevrimiçi oyuncular ve bugünkü girişler, her oyuncunun canı, açlığı, zırhı, seviyesi ve oyun modu (Minecraft tarzı göstergelerle), son log satırları, bakım durumu ve BlueMap canlı harita bağlantısı.
+
+**Telefonun yalnızca izin verirsen yapabildikleri:** izinler her cihaz için bilgisayardan verilir (**☰ → Spypaper Remote → Eşli cihazlar**):
+
+| İzin | Yeni cihazda | İzin verdiği |
+|---|---|---|
+| Başlat / durdur | açık | Başlat, Durdur, Yeniden Başlat |
+| Bakım | kapalı | Bakım modunu başlatma ve bitirme |
+| Sunucu ayarları | kapalı | RAM, otomatik bakım planı ve `server.properties` |
+
+Java yolu ve jar adı yalnızca bilgisayardan değiştirilebilir; RCON/sorgu/yönetim ayarları ve parolalar telefona hiç gönderilmez. Serbest komut gönderme yoktur.
+
+**Dil:** Spypaper'da telefonun dili varsa o kullanılır, yoksa İngilizce. Telefondaki dişli simgesinden başka bir dil seçebilirsin.
 
 **Güvenlik**
 
 - Remote varsayılan olarak kapalıdır ve yalnızca bilgisayarda Spypaper açıkken çalışır.
 - Eşleşme 2 dakika geçerli, tek kullanımlık bir kodla yapılır. Telefon anahtarını HttpOnly çerezde tutar; `config.json`'da yalnızca SHA-256 özeti durur. Veritabanı kullanılmaz.
-- Sunucuda PIN varsa telefonda da sorulur (5 yanlış denemede 5 dakika kilitlenir). Güvenli mod *Yüksek* (salt okunur) telefondan kontrolü engeller; telefon kontrolünü tamamen kapatıp yalnızca izleme de yapabilirsin.
+- Sunucuda PIN varsa telefonda her değişiklikte sorulur (5 yanlış denemede 5 dakika kilitlenir). Güvenli mod *Yüksek* (salt okunur) telefondan değişikliği engeller; *Telefonlardan değişiklik yapılabilsin* kutusu hepsini birden kapatır (yalnızca izleme).
 - Log satırlarındaki IP adresleri telefona gitmeden gizlenir.
 - Bağlantı kendi ağının içinde düz HTTP'dir. **Bunun için modemde port açma.** Dışarıdan (mobil veriyle) erişmek için bilgisayara ve telefona [Tailscale](https://tailscale.com) kur ve Remote penceresinde *(Tailscale)* yazan adresi seç; trafik Tailscale ile şifrelenir.
 
@@ -183,7 +213,7 @@ API anahtarı `config.json` içinde saklanır; Windows'ta kullanıcı hesabına 
 
 ## Arayüz çevirileri
 
-Arayüz metinleri Türkçe yazılır ve `src/tools/translations/*.tsv` tablolarıyla diğer dillere çevrilir.
+Arayüz metinleri Türkçe yazılır ve `src/tools/translations/*.tsv` tablolarıyla diğer dillere çevrilir. Çevirisi eksik olan metin İngilizce gösterilir.
 
 ```bat
 cd src
@@ -218,7 +248,9 @@ Spypaper-Releases/
    │  ├─ logwatch.py       latest.log takibi, olaylar, metrikler
    │  ├─ logtrans.py       sunucu mesajlarını panel diline çevirme
    │  ├─ files.py          eklenti/mod klasörü, server.properties, yedekler
-   │  ├─ maintenance.py    bakım modu ve otomatik yedek
+   │  ├─ maintenance.py    bakım modu, whitelist yedekleme/geri yükleme, haftalık plan
+   │  ├─ appupdate.py      Spypaper'ın kendi güncellemesi (GitHub Releases)
+   │  ├─ autostart.py      Windows ile başlatma
    │  ├─ gamefiles.py      Minecraft dil dosyaları ve ikonlar (yerel kurulum ya da Mojang)
    │  ├─ iconrender.py     blok eşya ikonlarını oyunun 3D modellerinden çizer
    │  ├─ modtrans.py       mod/eklenti dil dosyası düzenleyici (JSON, YAML)
@@ -250,8 +282,10 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 - [ ] **Java yöneticisi:** Minecraft sürümüne uygun Java'yı algılama ve indirme
 - [ ] **TPS / MSPT grafiği** Dashboard'da
 - [ ] **Yapılandırma dosyası editörü** (`paper-global.yml`, `config/*.toml`…) ve biçim denetimi
-- [ ] **Panelin kendini güncellemesi** (GitHub Releases)
+- [x] **Panelin kendini güncellemesi** (GitHub Releases)
+- [x] **Otomatik bakım** ve whitelist koruması
 - [x] **Spypaper Remote:** sunucuları telefondan izleme ve kontrol
+- [x] Spypaper Remote: cihaz başına izinler, bakım, sunucu ayarları ve dil seçimi
 - [ ] Spypaper Remote: sohbet, oyuncu işlemleri ve bildirimler
 
 ---
@@ -260,6 +294,10 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 
 - **Eşya adları İngilizce görünüyor ya da ikon yok:** Oyuncular sayfasında **Oyun Dosyalarını Al**'a bas. Sayfanın altında hangi dil dosyasının kullanıldığı yazar.
 - **Telefon Spypaper Remote'a bağlanamıyor:** telefon ve bilgisayar aynı Wi-Fi'da olmalı (misafir ağları genelde bunu engeller), Windows güvenlik duvarı Spypaper'a özel ağlarda izin vermeli ve Remote penceresindeki adres bilgisayarın yerel adresi olmalı (genelde `192.168…`). Port meşgulse Remote penceresinden değiştir.
+- **Derlerken `'uv' is not recognized`:** uv'yi kur (`winget install astral-sh.uv`) ve yeni bir terminal aç.
+- **Derlerken "Failed to build pyyaml" gibi bir hata:** Python sürümün bazı paketler için fazla yeni. `build.bat` uv ile Python 3.12 kullanır; komutları elle çalıştırıyorsan `--python 3.12` ekle.
+- **"Minecraft 26.1 and newer requires … Java 25":** Java 25'i kur (`winget install EclipseAdoptium.Temurin.25.JDK`), sonra Spypaper'ı yeniden aç (ya da Windows'ta bir kez oturumu kapatıp aç). Hâlâ eski Java kullanılıyorsa **Sunucu Ayarları → Java** alanına Java 25'in `java.exe` tam yolunu tırnaksız yaz.
+- **"Güncelleme denetlenemedi":** bilgisayar çevrimdışı ya da sürüm reposu gizli; Spypaper yine normal açılır.
 - **Sunucu başlamıyor:** Canlı Konsol'daki hatayı oku ya da Esplora'da *Sunucu neden açılmıyor?* sorusunu kullan. Java sürümünün Minecraft sürümüne uygun olduğundan emin ol.
 - **Forge/NeoForge kurulumu başarısız:** Java yolunun doğru olduğunu ve sunucu klasörüne yazma izni olduğunu kontrol et; kurulum çıktısının son satırları pencerede gösterilir.
 - **Gemini/OpenAI 429 hatası:** Sağlayıcının istek sınırı doldu; bir süre sonra tekrar dene.
