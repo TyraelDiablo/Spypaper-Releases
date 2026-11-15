@@ -13,6 +13,8 @@ def main(config_path=None):
     qt = QApplication(sys.argv)
     qt.setApplicationName("Spypaper")
     qt.setStyle("Fusion")
+    from ui import wheelguard
+    wheelguard.install(qt)              # kaydırırken açılır liste / sayı kutuları değişmesin
     if sys.platform == "win32":          # görev çubuğunda python ikonu yerine Spypaper ikonu
         try:
             import ctypes

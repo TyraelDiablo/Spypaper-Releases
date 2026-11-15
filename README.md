@@ -23,17 +23,18 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Home screen** | Lists all your servers as cards; quick start/stop, edit and open folder without entering the panel. |
 | **New server** | Create a server from scratch: pick the software and Minecraft version, set RAM, port, MOTD, game mode and difficulty; Spypaper downloads the server and prepares the folder. |
 | **Dashboard** | Live RAM/CPU, online players, today's joins, deaths, lag warnings and errors, hourly activity chart. |
-| **Live Console** | Colored console, command history, optional translation of server messages into the panel language. |
+| **Live Console** | Colored console, command history, optional translation of server messages into the panel language. **Command suggestions as you type:** command names with descriptions, the syntax of the current argument (e.g. `give <player> <item> [count]`) and values to pick from (player names, items, effects, enchantments, game rules, game modes…). Tab or ↑↓ + Enter to accept. |
 | **Log** | Events, sessions and charts from `logs/latest.log` and archived `.log.gz` files. Works even if the server was started outside the panel. |
-| **Esplora** | An AI assistant (bring your own API key: Anthropic Claude, Google Gemini, OpenAI and compatible services) scoped strictly to managing this server. Preset questions by category, chat bubbles, stop and regenerate. It never runs commands itself; you send the commands it suggests with **▶ Run**. |
-| **Players** | Health, hunger, armor and XP shown with Minecraft's own HUD bars, and the player's game mode. Inventory, armor and Ender chest with item icons (block items such as fences and stairs are rendered from the game's 3D models), enchantments, armor trims and durability. Item names in your language (from Minecraft's own language files). Common player commands. Supports Minecraft 26.x's new `world/players/` layout. |
+| **Esplora** | An AI assistant (bring your own API key: Anthropic Claude, Google Gemini, OpenAI and compatible services) scoped strictly to managing this server. It gets a built-in expert knowledge base (Java versions, performance tuning, common errors, command syntax by version, networking, permissions…), the **Server Info** you write about your server, and the relevant configuration files (secrets masked). Preset questions by category, chat bubbles, stop and regenerate. It never runs commands itself; you send the commands it suggests with **▶ Run**. |
+| **Players** | Health, hunger, armor and XP shown with Minecraft's own HUD bars, and the player's game mode. Inventory, armor and Ender chest with item icons (block items such as fences and stairs are rendered from the game's 3D models), enchantments, armor trims and durability. Item names in your language (from Minecraft's own language files). Common player commands. Supports Minecraft 26.x's new `world/players/` layout. Player heads next to names, account type (premium Mojang/Microsoft account or offline/cracked launcher, from the UUID). **Homes:** up to 10 saved positions per player (XYZ + dimension, or the player's current position) with a Teleport button. |
 | **Teams** | Create and delete teams (`/team`), add and remove members, and set color, display name, prefix/suffix, friendly fire, name tag and death message visibility and collision. Teams are read from `scoreboard.dat`, so you can see them even while the server is stopped. |
-| **Plugins / Mods** | Manages `plugins/` on Paper, Purpur and Spigot, and `mods/` on Fabric, Quilt, Forge and NeoForge: add, remove, disable. |
+| **Plugins / Mods** | Manages `plugins/` on Paper, Purpur and Spigot, and `mods/` on Fabric, Quilt, Forge and NeoForge: add, remove, disable. **Modrinth:** search plugins/mods filtered by your server's Minecraft version and loader, install with required dependencies (files verified with SHA-512). **Resource Pack:** pick a resource pack from Modrinth or enter a URL to set as the server resource pack (SHA-1, required/optional). |
 | **Mod Language Files** | Finds the English language files inside mod and plugin jars wherever they are (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…), JSON or YAML, flat or nested. You write the translation; the panel saves it into the jar and into the plugin's own data folder copy. Format code checks (`%s`, `%player%`, `§a`, `&c`, `<red>`), import/export, restore original. |
 | **Server Settings** | `server.properties` editor, Java path, RAM, jar, server icon. |
 | **Whitelist & Bans** | Whitelist, ban and op lists. |
 | **Maintenance & Backups** | World backups (Overworld, Nether, End) and maintenance mode. Maintenance saves and empties the whitelist so nobody gets in even on whitelisted servers, kicks non-OP players and restores everything when it ends. Weekly schedule (days, time, duration) with in-game warnings. See [Maintenance](#maintenance). |
 | **Notes** | Your own notes for each server, saved automatically. |
+| **Content Editor** | Add content without mods (data pack + resource pack, Minecraft 1.21+): paintings from your images, music discs from a **Newgrounds ID** or your own audio file, tools/weapons and food based on existing items with your own damage, speed, durability, enchantments, effects and optional texture, plus a 3×3 crafting recipe. Spypaper can share the resource pack itself. New blocks are not possible without mods. See [Content Editor](#content-editor). |
 | **Danger Zone** | PIN-protected page for irreversible actions: reset the world (choose Overworld/Nether/End and the seed), restore a world backup, reset player data, delete the server. See [Danger Zone](#danger-zone). |
 | **Crash watchdog** | Optional: restarts a server that shuts down without being stopped; gives up after 3 crashes in 10 minutes. Optional backup limit deletes the oldest backups automatically. |
 | **Live Map** | Shows the BlueMap 3D map inside the panel. If BlueMap isn't installed, it downloads the right version for your server software and Minecraft version from Modrinth and (with your consent) enables its texture download. |
@@ -41,7 +42,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Spypaper Remote** | Watch your servers from your phone; with the permissions you grant on the computer, start/stop them, run maintenance and change settings. Pair with a QR code; no app store, no account, no database. See [Spypaper Remote](#spypaper-remote-phone). |
 | **Updates** | Checks GitHub Releases for a new Spypaper version at startup (can be turned off) and updates the exe in one click. |
 | **Security** | 4-level safe mode (confirm, block or read-only for dangerous commands) and an optional per-server PIN. |
-| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons, themed in-app dialogs instead of Windows message boxes. **Panel Layout:** reorder or hide the panel's tabs and the Dashboard cards. Optional start with Windows. |
+| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons, themed in-app dialogs instead of Windows message boxes. **Panel Layout:** reorder or hide the panel's tabs and the Dashboard cards. Animated page transitions and a sliding indicator for the selected tab (off with *Reduce motion*). Scrolling over settings no longer changes dropdowns or number fields by accident. Optional start with Windows. |
 
 ---
 
@@ -92,7 +93,7 @@ or
 
 ```bat
 cd src
-uv run --python 3.12 --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno python main.py
+uv run --python 3.12 --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno --with soundfile python main.py
 ```
 
 ### Building the exe
@@ -176,6 +177,25 @@ Every action requires the server to be stopped and asks you to type the server's
 
 ---
 
+## Content Editor
+
+Tab **Content Editor** in each server panel (Minecraft 1.21 or newer). Everything is a vanilla data pack plus a resource pack, so it works on Paper, Purpur, Vanilla, Fabric and the rest, and players don't need mods.
+
+| Type | What you set | Needs the resource pack |
+|---|---|---|
+| Painting | Image (scaled to 16 px per block), size 1–16 × 1–16 blocks, artist | yes |
+| Music Disc | **Newgrounds ID** (downloaded and converted to mono OGG) or your own MP3/OGG/WAV/FLAC, artist, disc look, comparator signal | yes |
+| Tool / Weapon | Base item, attack damage and speed, durability or unbreakable, mining speed bonus, enchantments, glint, optional 16×16 texture (1.21.4+) | only for a texture |
+| Food | Base item, nutrition, saturation, eating time, can always eat, effects, optional texture (1.21.2+) | only for a texture |
+
+Every item can have a 3×3 crafting recipe. **Give to Player** runs `loot give <player> loot spypaper:<id>`.
+
+**Build Packs** writes `<world>/datapacks/spypaper_content/` and `spypaper_resourcepack.zip` in the server folder. Paintings and music discs appear after a server restart; tools and food after `/reload`. Players download the resource pack from an address: either let Spypaper share it (*Let Spypaper share the resource pack*, default port 8766; works on your home network and Tailscale, forward the port for players on the internet) or upload the zip somewhere and enter its URL in **Plugins → Resource Pack**. A server has only one resource pack, so this replaces any pack set there.
+
+Newgrounds tracks belong to their artists; only use tracks you have permission to use. The artist name is shown in the disc description.
+
+---
+
 ## Spypaper Remote (phone)
 
 Watch your servers from your phone and, if you allow it, control them. There is no app store app: Spypaper on your computer serves a small mobile web app, and your phone opens it in the browser. Add it to the home screen and it opens like an app (Android and iPhone).
@@ -225,7 +245,9 @@ The Java path and jar name can only be changed on the computer, and RCON/query/m
 | Google Gemini | `gemini-3.8-flash` | If a model is retired and the service suggests a new one, the panel switches automatically |
 | OpenAI / compatible | `gpt-4o-mini` | Use the *Server URL* field for OpenRouter, LM Studio, Ollama, etc. |
 
-**Privacy:** when you ask Esplora something, your question plus the server name, version, settings, plugin/mod list, player names, recent log lines and the latest crash report (if any) are sent to the AI provider you chose. See the [Privacy Notice](src/legal/PRIVACY_EN.md).
+**Server Info:** Esplora → **Server Info** lets you tell Esplora about your server (rules, staff, economy, how plugins are used, known issues). Esplora also gets the relevant parts of a built-in knowledge base and, when the question is about them, the server's configuration files (`spigot.yml`, `config/paper-world-defaults.yml`, the config of a plugin you name…) with passwords, tokens and webhook URLs replaced by `***`.
+
+**Privacy:** when you ask Esplora something, your question plus the server name, version, settings, plugin/mod list, player names, recent log lines, the latest crash report (if any), your Server Info and the relevant configuration files (secrets masked) are sent to the AI provider you chose. See the [Privacy Notice](src/legal/PRIVACY_EN.md).
 
 The API key is stored in `config.json`; on Windows it is encrypted with DPAPI, bound to your user account.
 
@@ -272,6 +294,13 @@ Spypaper-Releases/
    │  ├─ appupdate.py      Spypaper self-update (GitHub Releases)
    │  ├─ danger.py         Danger Zone actions (world reset, restore, delete)
    │  ├─ teams.py          teams (scoreboard.dat, /team commands)
+   │  ├─ commands.py       console command syntax and suggestions
+   │  ├─ modrinth.py       Modrinth search/download, server resource pack
+   │  ├─ content.py        Content Editor (data pack + resource pack builder)
+   │  ├─ newgrounds.py     Newgrounds track download
+   │  ├─ packhost.py       resource pack sharing (small HTTP server)
+   │  ├─ skins.py, homes.py player heads (Mojang), player homes
+   │  ├─ esplora_kb.py     Esplora's built-in knowledge base
    │  ├─ autostart.py      start with Windows
    │  ├─ gamefiles.py      Minecraft language files and icons (local install or Mojang)
    │  ├─ iconrender.py     renders block item icons from the game's 3D models
@@ -300,7 +329,10 @@ Planned next (order may change; share your ideas on [Issues](https://github.com/
 - [x] **Crash watchdog:** automatic restart after an unexpected shutdown, stop after repeated crashes
 - [x] **Restore from backup** and a backup limit (delete old backups automatically)
 - [x] **Teams** and the **Danger Zone**
-- [ ] **Plugin and mod store:** search, install and update notices from Modrinth and Hangar
+- [x] **Plugin and mod store:** search and install from Modrinth (with dependencies) and server resource packs
+- [ ] Plugin/mod update notices, Hangar
+- [x] **Content Editor:** paintings, music discs, tools/weapons, food and recipes without mods
+- [x] Console command suggestions, player heads and homes
 - [ ] **Discord notifications:** server started, stopped, crashed, player joined (webhook)
 - [ ] **Java manager:** detect and download the right Java for your Minecraft version
 - [ ] **TPS / MSPT chart** on the Dashboard
@@ -321,6 +353,8 @@ Planned next (order may change; share your ideas on [Issues](https://github.com/
 - **"Failed to build pyyaml" or similar when building:** your Python is too new for some packages. `build.bat` uses Python 3.12 through uv; if you run the commands by hand, add `--python 3.12`.
 - **"Minecraft 26.1 and newer requires … Java 25":** install Java 25 (`winget install EclipseAdoptium.Temurin.25.JDK`), then restart Spypaper (or sign out of Windows once). If an older Java is still used, put the full path to Java 25's `java.exe` in **Server Settings → Java**, without quotes.
 - **"Couldn't check for updates":** the computer is offline or the releases repository is private; Spypaper starts normally anyway.
+- **Player heads show letters instead of faces:** the player has no Mojang account with that name (offline/cracked), Mojang can't be reached, or *Show player heads* is off.
+- **Players don't get the Content Editor's paintings/music:** build the packs, restart the server, and make sure players can reach the resource pack address (port 8766 by default when Spypaper shares it).
 - **The server won't start:** read the error in the Live Console or ask Esplora *"Why won't the server start?"*. Make sure your Java version matches your Minecraft version.
 - **Forge/NeoForge installation failed:** check that the Java path is correct and the server folder is writable; the last lines of the installer output are shown in the window.
 - **Gemini/OpenAI error 429:** the provider's rate limit was reached; try again later.

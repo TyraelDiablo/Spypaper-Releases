@@ -1,6 +1,6 @@
 # Spypaper Privacy Notice
 
-**Version 1.1 · Effective date: 15 November 2026**
+**Version 1.2 · Effective date: 15 November 2026**
 
 > If this English version conflicts with the Turkish version ([GIZLILIK.md](GIZLILIK.md)), the Turkish version prevails.
 
@@ -9,7 +9,7 @@ This notice explains what data Spypaper ("Software") processes, where it is stor
 ## In short
 
 - Spypaper **runs on your computer**. It sends no data to the developer (Serkan Aynacı). There is **no** telemetry, usage analytics, advertising or crash reporting.
-- External connections are made for actions **you start**, such as updating server software and asking Esplora a question. The one exception is the startup check for a new Spypaper version on GitHub (see 2.4), which you can turn off.
+- External connections are made for actions **you start**, such as updating server software and asking Esplora a question. There are two exceptions: the startup check for a new Spypaper version on GitHub (see 2.4) and downloading player heads from Mojang (see 2.5); both can be turned off.
 - If you use Esplora, information about your server (including player names and logs) is sent to **the AI provider you choose**.
 
 ## 1. Data processed on your computer
@@ -38,7 +38,10 @@ This data is not copied elsewhere or uploaded by the Software. Backups are writt
 - **Spypaper Remote** paired devices (see 2.3), including the permissions you gave each device and its chosen language
 - Your server **notes** (plain text; don't write passwords), the maintenance schedule and crash watchdog / backup limit settings
 - The **Danger Zone PIN** (set if the server has no PIN): stored only as a PBKDF2 hash, like the server PIN
+- Player **homes** (name, dimension, coordinates), the **server info** you write for Esplora, and Content Editor items
 - While maintenance is running: the whitelist and MOTD from before maintenance. The whitelist is also written to `backups/whitelist_maintenance.json` in the server folder and deleted when maintenance ends.
+
+Player head images are cached in `cache/skins/` next to the Software and Modrinth icons in `cache/modrinth/`. Images and audio you add in the Content Editor are kept in `spypaper_content/` in the server folder.
 
 If you turn on *Start Spypaper with Windows*, the Software's path is written to the Windows registry (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`); turning it off removes it.
 
@@ -73,6 +76,8 @@ When you send Esplora a question (typed or via a preset button), the following i
 - A summary of the day (player, death, lag and error counts)
 - The last **60 log lines** (which may contain chat messages and player names) and recent error/warning lines
 - The first lines of the **most recent crash report** from the last 7 days (if any)
+- The **server info** you wrote for Esplora (Esplora → Server Info)
+- When relevant to the question, parts of the server's **configuration files** (e.g. `spigot.yml`, `config/paper-world-defaults.yml`, the `config.yml` of a plugin named in the question). Values such as passwords, tokens, API keys, database credentials and webhook URLs are replaced with `***` before sending; still, don't put personal data in configuration files.
 
 Providers and their privacy policies:
 
@@ -91,7 +96,20 @@ Spypaper Remote is **off by default**. If you turn it on, the Software runs a sm
 
 If *Check for updates on startup* is on (the default), the Software asks GitHub (`api.github.com`) for the latest Spypaper version each time it starts. The request contains only standard connection data (your IP address) and a User-Agent with Spypaper's version; no data about your servers, players or settings is sent. If you accept an update, the new exe is downloaded from GitHub and verified with its SHA-256 hash. See the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) for how GitHub handles data. You can turn the check off in ☰ → *Check for updates on startup*.
 
-### 2.5 Other connections
+### 2.5 Player heads (Mojang)
+
+If *Show player heads* is on (the default), the Players page downloads players' skins from Mojang: for premium players the player's UUID is sent to `sessionserver.mojang.com`, for offline players the player name is sent to `api.mojang.com`; the image comes from `textures.minecraft.net`. Images are cached for 1 day. See the [Microsoft Privacy Statement](https://privacy.microsoft.com/privacystatement). Turn it off with ☰ → *Show player heads*.
+
+### 2.6 Modrinth and Newgrounds (when you start it)
+
+- When you search in the **Modrinth** tab, your search text, the selected Minecraft version and loader are sent to `api.modrinth.com`; plugins/mods/resource packs and icons are downloaded from `cdn.modrinth.com`. See the [Modrinth Privacy Policy](https://modrinth.com/legal/privacy).
+- When you enter a Newgrounds ID in the **Content Editor** and click *Get from Newgrounds*, that ID's page is downloaded from `www.newgrounds.com` and the audio from `audio.ngfiles.com`. See the [Newgrounds Privacy Policy](https://www.newgrounds.com/wiki/help-information/privacy-policy). Tracks belong to their artists; only add tracks you have permission to use.
+
+### 2.7 Resource pack sharing
+
+If you turn on *Let Spypaper share the resource pack* in the Content Editor, the Software runs a small web server on the port you choose (default 8766) that only serves the generated resource pack file. The IP addresses of players downloading the pack reach your computer through this connection but are not stored. This option is off by default.
+
+### 2.8 Other connections
 
 - The **Live Map** page opens the map address you configured (default `http://localhost:8100`).
 - Documentation links in the drawer open in your default browser.

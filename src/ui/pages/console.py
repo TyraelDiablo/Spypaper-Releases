@@ -1,26 +1,49 @@
 import html
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLineEdit, QPlainTextEdit
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QLabel, QLineEdit, QListWidget, QListWidgetItem, QPlainTextEdit
 
-from core import classify_log_line
-from ..theme import log_colors
+from core import classify_log_line, commands
+from ..theme import TOKENS, log_colors
 from ..i18n import t
 from ..widgets import Page, button, row
 
 
 
 class HistoryLineEdit(QLineEdit):
+    nav = Signal(int)          # öneri listesi açıkken ↑ ↓
+    accept_suggestion = Signal()
+    dismiss = Signal()
+
     def __init__(self):
         super().__init__()
         self.history, self.index = [], -1
+        self.popup_open = lambda: False
+        self.popup_chosen = lambda: False
 
     def push(self, text):
         if text and (not self.history or self.history[-1] != text):
             self.history.append(text)
         self.index = -1
 
+    def event(self, e):
+        # Tab odak değiştirmesin; öneriyi kabul etsin
+        if e.type() == e.Type.KeyPress and e.key() == Qt.Key_Tab and self.popup_open():
+            self.accept_suggestion.emit()
+            return True
+        return super().event(e)
+
     def keyPressEvent(self, e):
+        if self.popup_open():
+            if e.key() in (Qt.Key_Up, Qt.Key_Down):
+                self.nav.emit(-1 if e.key() == Qt.Key_Up else 1)
+                return
+            if e.key() == Qt.Key_Escape:
+                self.dismiss.emit()
+                return
+            if e.key() in (Qt.Key_Return, Qt.Key_Enter) and self.popup_chosen():
+                self.accept_suggestion.emit()
+                return
         if e.key() == Qt.Key_Up and self.history:
             self.index = min(self.index + 1, len(self.history) - 1)
             self.setText(self.history[-1 - self.index])
@@ -43,9 +66,32 @@ class ConsolePage(Page):
         self.out.setMaximumBlockCount(int(app.config.settings.get("console_max_lines")))
         self.root.addWidget(self.out, 1)
 
+        self.sugg = QListWidget()
+        self.sugg.setObjectName("Suggest")
+        self.sugg.setFocusPolicy(Qt.NoFocus)
+        self.sugg.setUniformItemSizes(True)
+        self.sugg.setStyleSheet(f"QListWidget#Suggest {{ background:{TOKENS['surface_2']}; border:1px solid {TOKENS['border']};"
+                                f" border-radius:8px; padding:2px; }} QListWidget#Suggest::item {{ padding:3px 8px; }}")
+        self.sugg.itemClicked.connect(lambda it: self._apply(it))
+        self.sugg.hide()
+        self.root.addWidget(self.sugg)
+        self.hint = QLabel()
+        self.hint.setTextFormat(Qt.RichText)
+        self.hint.setStyleSheet(f"color:{TOKENS['text_muted']}; font-family: Consolas, 'Cascadia Mono', monospace;")
+        self.hint.hide()
+        self.root.addWidget(self.hint)
+
         self.input = HistoryLineEdit()
-        self.input.setPlaceholderText(t("Komut yaz (örn. say merhaba, time set day)  —  ↑ ↓ geçmiş"))
+        self.input.setPlaceholderText(t("Komut yaz (örn. say merhaba, time set day)  —  Tab: öneriyi al · ↑ ↓ geçmiş"))
         self.input.returnPressed.connect(self.submit)
+        self.input.textEdited.connect(self.update_suggestions)
+        self.input.nav.connect(self._nav)
+        self.input.accept_suggestion.connect(lambda: self._apply(self.sugg.currentItem() or self.sugg.item(0)))
+        self.input.dismiss.connect(self._hide_sugg)
+        self.input.popup_open = lambda: self.sugg.isVisible() and self.sugg.count() > 0
+        self.input.popup_chosen = lambda: self._chosen
+        self._chosen = False
+        self._ctx_cache = None
         self.root.addLayout(row(
             self.input,
             button("Gönder", "primary", self.submit),
@@ -64,6 +110,71 @@ class ConsolePage(Page):
             f'<span style="color:{log_colors()[kind]}; white-space:pre-wrap">{html.escape(text)}</span>'
         )
 
+    # --- öneriler ---
+    def _ctx(self):
+        if self._ctx_cache is None:
+            players = []
+            try:
+                players = [p.name for p in self.app.players.list_players() if not p.name.startswith("Bilinmeyen")]
+            except Exception:
+                pass
+            try:
+                items = ["minecraft:" + iid for iid, _ in self.app.players.translations.search_items("", limit=3000)]
+            except Exception:
+                items = []
+            self._ctx_cache = {"players": players, "items": items}
+        return self._ctx_cache
+
+    def on_show(self):
+        self._ctx_cache = None                       # oyuncu listesi değişmiş olabilir
+
+    def update_suggestions(self, text=None):
+        text = self.input.text() if text is None else text
+        self._chosen = False
+        if not text.strip():
+            self._hide_sugg()
+            return
+        res = commands.suggest(text, self._ctx(), t)
+        self.sugg.clear()
+        for full, shown, desc in res["items"]:
+            it = QListWidgetItem(f"{shown}    —  {desc}")
+            it.setData(Qt.UserRole, full)
+            self.sugg.addItem(it)
+        if self.sugg.count():
+            self.sugg.setCurrentRow(0)
+            rows = min(self.sugg.count(), commands.MAX)
+            self.sugg.setFixedHeight(rows * self.sugg.sizeHintForRow(0) + 8)
+        self.sugg.setVisible(self.sugg.count() > 0)
+        if res["hint"]:
+            usage, spans = res["hint"]
+            out, last = [], 0
+            for a, b in spans:
+                out.append(html.escape(usage[last:a]))
+                out.append(f'<b style="color:{TOKENS["accent"]}">{html.escape(usage[a:b])}</b>')
+                last = b
+            out.append(html.escape(usage[last:]))
+            self.hint.setText("".join(out))
+            self.hint.show()
+        else:
+            self.hint.hide()
+
+    def _hide_sugg(self):
+        self.sugg.hide()
+        self._chosen = False
+
+    def _nav(self, step):
+        n = self.sugg.count()
+        if n:
+            self.sugg.setCurrentRow((self.sugg.currentRow() + step) % n)
+            self._chosen = True
+
+    def _apply(self, item):
+        if not item:
+            return
+        self.input.setText(item.data(Qt.UserRole))
+        self.input.setFocus()
+        self.update_suggestions()
+
     def submit(self):
         text = self.input.text().strip()
         if not text:
@@ -71,3 +182,5 @@ class ConsolePage(Page):
         if self.send(text):
             self.input.push(text)
             self.input.clear()
+            self._hide_sugg()
+            self.hint.hide()

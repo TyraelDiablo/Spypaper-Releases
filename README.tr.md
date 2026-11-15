@@ -23,17 +23,18 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Ana ekran** | Birden çok sunucuyu kartlar halinde listeler; paneli açmadan hızlı başlat/durdur, düzenle, klasörü aç. |
 | **Yeni sunucu** | Sıfırdan sunucu oluştur: yazılımı ve Minecraft sürümünü seç; RAM, port, MOTD, oyun modu ve zorluğu ayarla; Spypaper sunucuyu indirip klasörü hazırlar. |
 | **Dashboard** | Anlık RAM/CPU, çevrimiçi oyuncular, günlük giriş, ölüm, gecikme ve hata sayıları, saatlik etkinlik grafiği. |
-| **Canlı Konsol** | Renkli konsol, komut geçmişi, sunucu mesajlarının panel diline çevrilmesi (isteğe bağlı). |
+| **Canlı Konsol** | Renkli konsol, komut geçmişi, sunucu mesajlarının panel diline çevrilmesi (isteğe bağlı). **Yazdıkça komut önerisi:** açıklamalı komut adları, o anki argümanın sözdizimi (ör. `give <oyuncu> <eşya> [miktar]`) ve seçilecek değerler (oyuncu adları, eşyalar, efektler, büyüler, oyun kuralları, oyun modları…). Tab ya da ↑↓ + Enter ile seçilir. |
 | **Günlük** | `logs/latest.log` ve arşivlenmiş `.log.gz` dosyalarından olaylar, oturumlar ve grafikler. Sunucu panel dışında açılmış olsa bile takip eder. |
-| **Esplora** | API anahtarıyla çalışan, yalnızca bu sunucunun yönetimine odaklı yapay zeka asistanı (Anthropic Claude, Google Gemini, OpenAI ve uyumlu servisler). Kategorili hazır sorular, mesaj balonları, durdurma ve yeniden oluşturma. Komut çalıştırmaz; önerdiği komutları sen **▶ Çalıştır** ile gönderirsin. |
-| **Oyuncular** | Can, açlık, zırh ve XP Minecraft'ın kendi göstergeleriyle; oyuncunun oyun modu. Envanter, zırh ve Ender sandığı; eşya ikonları (çit, merdiven gibi blok eşyalar oyunun 3D modellerinden çizilir), büyüler, kaplamalar, dayanıklılık. Eşya adları seçili dilde (Minecraft'ın kendi dil dosyalarıyla). Sık kullanılan oyuncu komutları. Minecraft 26.x'in yeni `world/players/` düzenini de okur. |
+| **Esplora** | API anahtarıyla çalışan, yalnızca bu sunucunun yönetimine odaklı yapay zeka asistanı (Anthropic Claude, Google Gemini, OpenAI ve uyumlu servisler). Kategorili hazır sorular, mesaj balonları, durdurma ve yeniden oluşturma. Komut çalıştırmaz; önerdiği komutları sen **▶ Çalıştır** ile gönderirsin. Gömülü bir uzman bilgi bankası, yazdığın **Sunucu Bilgileri** ve ilgili yapılandırma dosyalarıyla (gizli değerler maskelenir) cevap verir. |
+| **Oyuncular** | Can, açlık, zırh ve XP Minecraft'ın kendi göstergeleriyle; oyuncunun oyun modu. Envanter, zırh ve Ender sandığı; eşya ikonları (çit, merdiven gibi blok eşyalar oyunun 3D modellerinden çizilir), büyüler, kaplamalar, dayanıklılık. Eşya adları seçili dilde (Minecraft'ın kendi dil dosyalarıyla). Sık kullanılan oyuncu komutları. Minecraft 26.x'in yeni `world/players/` düzenini de okur. İsimlerin yanında oyuncu kafası; hesap türü (UUID'den: lisanslı Mojang/Microsoft hesabı ya da lisanssız başlatıcı). **Evler:** oyuncu başına en fazla 10 kayıtlı konum (XYZ + boyut ya da oyuncunun şu anki konumu) ve Işınla düğmesi. |
 | **Takımlar** | Takım oluştur ve sil (`/team`), üye ekle/çıkar; renk, görünen ad, ön ek/son ek, dost ateşi, isim etiketi ve ölüm mesajı görünürlüğü ile çarpışmayı ayarla. Takımlar `scoreboard.dat`'tan okunur, sunucu kapalıyken de görünür. |
-| **Eklentiler / Modlar** | Paper, Purpur ve Spigot'ta `plugins/`, Fabric, Quilt, Forge ve NeoForge'da `mods/` klasörünü yönetir: ekle, sil, devre dışı bırak. |
+| **Eklentiler / Modlar** | Paper, Purpur ve Spigot'ta `plugins/`, Fabric, Quilt, Forge ve NeoForge'da `mods/` klasörünü yönetir: ekle, sil, devre dışı bırak. **Modrinth:** sunucunun Minecraft sürümüne ve yükleyicisine göre süzülmüş eklenti/mod arama, gerekli bağımlılıklarıyla kurma (dosyalar SHA-512 ile doğrulanır). **Kaynak Paketi:** Modrinth'ten bir kaynak paketi seç ya da adres gir, sunucu kaynak paketi olsun (SHA-1, zorunlu/isteğe bağlı). |
 | **Mod Dil Dosyaları** | Mod ve eklenti jar'larının içindeki İngilizce dil dosyalarını, yolu ne olursa olsun bulur (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…). JSON ve YAML, düz ya da iç içe. Çeviriyi sen yazarsın; panel jar'ın içine ve eklentinin kendi klasöründeki kopyaya kaydeder. Biçim kodu kontrolü (`%s`, `%player%`, `§a`, `&c`, `<red>`), dışa/içe aktarma, orijinali geri yükleme. |
 | **Sunucu Ayarları** | `server.properties` düzenleyici, Java yolu, RAM, jar, sunucu ikonu. |
 | **Whitelist & Ban** | Whitelist, ban ve op listeleri. |
 | **Bakım & Yedek** | Dünya (Overworld, Nether, End) yedeği ve bakım modu. Bakımda whitelist yedeklenip boşaltılır, böylece whitelist kullanan sunuculara da kimse giremez; OP olmayan oyuncular atılır, bakım bitince her şey geri gelir. Gün, saat ve süreli haftalık plan, oyun içi uyarılarla. Bkz. [Bakım](#bakım). |
 | **Notlar** | Her sunucu için kendi notların; kendiliğinden kaydedilir. |
+| **İçerik Editörü** | Mod olmadan içerik ekle (veri paketi + kaynak paketi, Minecraft 1.21+): kendi resimlerinden tablo, **Newgrounds ID**'si ya da kendi ses dosyandan müzik diski, var olan eşyalardan hasarı, hızı, dayanıklılığı, büyüleri, efektleri ve isteğe bağlı dokusu senin belirlediğin alet/silah ve yiyecek; 3×3 tarif. Kaynak paketini Spypaper kendisi paylaşabilir. Mod olmadan yeni blok eklenemez. Bkz. [İçerik Editörü](#i̇çerik-editörü). |
 | **Tehlikeli Bölge** | Geri alınamayan işlemler için PIN korumalı sayfa: dünyayı sıfırla (Overworld/Nether/End ve seed seçerek), dünya yedeğini geri yükle, oyuncu verilerini sıfırla, sunucuyu sil. Bkz. [Tehlikeli Bölge](#tehlikeli-bölge). |
 | **Çökme bekçisi** | İsteğe bağlı: durdurulmadan kapanan sunucuyu yeniden başlatır; 10 dakikada 3 kez çökerse vazgeçer. İsteğe bağlı yedek sınırı en eski yedekleri kendiliğinden siler. |
 | **Canlı Harita** | BlueMap 3D haritası panelin içinde açılır. BlueMap kurulu değilse sunucunun yazılımına ve sürümüne uygun olanı Modrinth'ten indirip kurar, doku indirme iznini (onayınla) ayarlar. |
@@ -41,7 +42,7 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Spypaper Remote** | Sunucularını telefondan izle; bilgisayardan verdiğin izinlerle başlat/durdur, bakıma al ve ayarlarını değiştir. QR kodla eşleşir; mağaza, hesap ya da veritabanı gerekmez. Bkz. [Spypaper Remote](#spypaper-remote-telefon). |
 | **Güncelleme** | Açılışta GitHub Releases'ta yeni Spypaper sürümü olup olmadığına bakar (kapatılabilir) ve exe'yi tek tıkla günceller. |
 | **Güvenlik** | 4 seviyeli güvenli mod (tehlikeli komutlar için onay, engelleme ya da salt okunur) ve sunucu başına isteğe bağlı PIN. |
-| **Görünüm** | 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller, [Lucide](https://lucide.dev) ikonları, Windows mesaj kutuları yerine panele özel uyarı/soru pencereleri. **Panel Düzeni:** paneldeki sekmeleri ve Dashboard kartlarını sırala ya da gizle. İsteğe bağlı Windows ile başlatma. |
+| **Görünüm** | 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller, [Lucide](https://lucide.dev) ikonları, Windows mesaj kutuları yerine panele özel uyarı/soru pencereleri. **Panel Düzeni:** paneldeki sekmeleri ve Dashboard kartlarını sırala ya da gizle. Sayfa geçiş animasyonları ve seçili sekmede kayan gösterge (*Animasyonları azalt* ile kapanır). Ayarlarda kaydırırken açılır listeler ve sayı kutuları artık kazara değişmez. İsteğe bağlı Windows ile başlatma. |
 
 ---
 
@@ -90,7 +91,7 @@ ya da
 
 ```bat
 cd src
-uv run --python 3.12 --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno python main.py
+uv run --python 3.12 --with nbtlib --with pyside6 --with psutil --with pyyaml --with segno --with soundfile python main.py
 ```
 
 ### Exe derleme
@@ -174,6 +175,25 @@ Her işlem için sunucunun kapalı olması ve sunucunun adını yazman gerekir. 
 
 ---
 
+## İçerik Editörü
+
+Her sunucu panelindeki **İçerik Editörü** sekmesi (Minecraft 1.21 ve üstü). Her şey vanilla bir veri paketi ve bir kaynak paketidir; Paper, Purpur, Vanilla, Fabric ve diğerlerinde çalışır, oyuncuların mod kurması gerekmez.
+
+| Tür | Ayarlanan | Kaynak paketi gerekir mi |
+|---|---|---|
+| Tablo | Resim (blok başına 16 piksele ölçeklenir), 1–16 × 1–16 blok boyut, ressam | evet |
+| Müzik Diski | **Newgrounds ID** (indirilip tek kanallı OGG'ye çevrilir) ya da kendi MP3/OGG/WAV/FLAC dosyan, sanatçı, disk görünümü, karşılaştırıcı sinyali | evet |
+| Alet / Silah | Temel eşya, saldırı hasarı ve hızı, dayanıklılık ya da kırılmaz, kazma hızı bonusu, büyüler, parıltı, isteğe bağlı 16×16 doku (1.21.4+) | yalnızca doku için |
+| Yiyecek | Temel eşya, besin, doygunluk, yeme süresi, tokken yenebilme, efektler, isteğe bağlı doku (1.21.2+) | yalnızca doku için |
+
+Her içeriğe 3×3 tarif eklenebilir. **Oyuncuya Ver**, `loot give <oyuncu> loot spypaper:<kimlik>` komutunu gönderir.
+
+**Paketleri Oluştur**, `<dünya>/datapacks/spypaper_content/` klasörünü ve sunucu klasörüne `spypaper_resourcepack.zip` dosyasını yazar. Tablolar ve müzik diskleri sunucu yeniden başlatılınca, aletler ve yiyecekler `/reload` ile gelir. Oyuncular kaynak paketini bir adresten indirir: ya Spypaper paylaşsın (*Kaynak paketini Spypaper paylaşsın*, varsayılan port 8766; ev ağında ve Tailscale'de çalışır, internetteki oyuncular için portu yönlendir) ya da zip'i bir yere yükleyip adresini **Eklentiler → Kaynak Paketi**'ne yaz. Bir sunucunun tek kaynak paketi olur; bu, orada ayarlı paketin yerini alır.
+
+Newgrounds'taki parçaların hakları sanatçılarına aittir; yalnızca kullanma iznin olan parçaları kullan. Sanatçının adı diskin açıklamasında görünür.
+
+---
+
 ## Spypaper Remote (telefon)
 
 Sunucularını telefondan izle; izin verirsen kontrol et. Mağazadan indirilecek bir uygulama yok: bilgisayardaki Spypaper küçük bir mobil web uygulaması sunar, telefon bunu tarayıcıda açar. Ana ekrana eklersen uygulama gibi açılır (Android ve iPhone).
@@ -223,7 +243,9 @@ Java yolu ve jar adı yalnızca bilgisayardan değiştirilebilir; RCON/sorgu/yö
 | Google Gemini | `gemini-3.8-flash` | Kapatılan bir model için servis yeni model önerirse panel otomatik geçer |
 | OpenAI / uyumlu | `gpt-4o-mini` | OpenRouter, LM Studio, Ollama vb. için *Sunucu adresi* alanını kullan |
 
-**Gizlilik:** Esplora'ya soru sorduğunda; sorun, sunucu adı, sürümü, ayarları, eklenti/mod listesi, oyuncu adları, son log satırları ve varsa son çökme raporu seçtiğin yapay zeka sağlayıcısına gönderilir. Ayrıntılar için [GIZLILIK.md](src/legal/GIZLILIK.md).
+**Sunucu Bilgileri:** Esplora → **Sunucu Bilgileri** ile Esplora'ya sunucunu anlatırsın (kurallar, yetkililer, ekonomi, eklentileri nasıl kullandığın, bilinen sorunlar). Esplora ayrıca gömülü bilgi bankasının ilgili bölümlerini ve soru onlarla ilgiliyse sunucunun yapılandırma dosyalarını (`spigot.yml`, `config/paper-world-defaults.yml`, adını verdiğin eklentinin ayarı…) alır; parola, token ve webhook adresleri `***` ile değiştirilir.
+
+**Gizlilik:** Esplora'ya soru sorduğunda; sorun, sunucu adı, sürümü, ayarları, eklenti/mod listesi, oyuncu adları, son log satırları, varsa son çökme raporu, Sunucu Bilgilerin ve ilgili yapılandırma dosyaları (gizli değerler maskelenmiş) seçtiğin yapay zeka sağlayıcısına gönderilir. Ayrıntılar için [GIZLILIK.md](src/legal/GIZLILIK.md).
 
 API anahtarı `config.json` içinde saklanır; Windows'ta kullanıcı hesabına bağlı olarak DPAPI ile şifrelenir.
 
@@ -270,6 +292,13 @@ Spypaper-Releases/
    │  ├─ appupdate.py      Spypaper'ın kendi güncellemesi (GitHub Releases)
    │  ├─ danger.py         Tehlikeli Bölge işlemleri (dünya sıfırlama, geri yükleme, silme)
    │  ├─ teams.py          takımlar (scoreboard.dat, /team komutları)
+   │  ├─ commands.py       konsol komut sözdizimi ve önerileri
+   │  ├─ modrinth.py       Modrinth arama/indirme, sunucu kaynak paketi
+   │  ├─ content.py        İçerik Editörü (veri paketi + kaynak paketi üretici)
+   │  ├─ newgrounds.py     Newgrounds parça indirme
+   │  ├─ packhost.py       kaynak paketi paylaşımı (küçük HTTP sunucusu)
+   │  ├─ skins.py, homes.py oyuncu kafaları (Mojang), oyuncu evleri
+   │  ├─ esplora_kb.py     Esplora'nın gömülü bilgi bankası
    │  ├─ autostart.py      Windows ile başlatma
    │  ├─ gamefiles.py      Minecraft dil dosyaları ve ikonlar (yerel kurulum ya da Mojang)
    │  ├─ iconrender.py     blok eşya ikonlarını oyunun 3D modellerinden çizer
@@ -298,7 +327,10 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 - [x] **Çökme bekçisi:** beklenmedik kapanmada otomatik yeniden başlatma, art arda çökmede durma
 - [x] **Yedekten geri yükleme** ve yedek sayısı sınırı (eski yedekleri otomatik silme)
 - [x] **Takımlar** ve **Tehlikeli Bölge**
-- [ ] **Eklenti ve mod mağazası:** Modrinth ve Hangar'dan arama, kurma ve güncelleme uyarısı
+- [x] **Eklenti ve mod mağazası:** Modrinth'ten arama ve kurma (bağımlılıklarıyla), sunucu kaynak paketi
+- [ ] Eklenti/mod güncelleme uyarısı, Hangar
+- [x] **İçerik Editörü:** mod olmadan tablo, müzik diski, alet/silah, yiyecek ve tarif
+- [x] Konsolda komut önerileri, oyuncu kafaları ve evler
 - [ ] **Discord bildirimleri:** açıldı, kapandı, çöktü, oyuncu girdi (webhook)
 - [ ] **Java yöneticisi:** Minecraft sürümüne uygun Java'yı algılama ve indirme
 - [ ] **TPS / MSPT grafiği** Dashboard'da
@@ -319,6 +351,8 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 - **Derlerken "Failed to build pyyaml" gibi bir hata:** Python sürümün bazı paketler için fazla yeni. `build.bat` uv ile Python 3.12 kullanır; komutları elle çalıştırıyorsan `--python 3.12` ekle.
 - **"Minecraft 26.1 and newer requires … Java 25":** Java 25'i kur (`winget install EclipseAdoptium.Temurin.25.JDK`), sonra Spypaper'ı yeniden aç (ya da Windows'ta bir kez oturumu kapatıp aç). Hâlâ eski Java kullanılıyorsa **Sunucu Ayarları → Java** alanına Java 25'in `java.exe` tam yolunu tırnaksız yaz.
 - **"Güncelleme denetlenemedi":** bilgisayar çevrimdışı ya da sürüm reposu gizli; Spypaper yine normal açılır.
+- **Oyuncu kafası yerine harf görünüyor:** oyuncunun bu adla bir Mojang hesabı yok (lisanssız), Mojang'a ulaşılamıyor ya da *Oyuncu kafalarını göster* kapalı.
+- **İçerik Editörü'nün tabloları/müzikleri oyuncularda görünmüyor:** paketleri oluştur, sunucuyu yeniden başlat ve oyuncuların kaynak paketi adresine ulaşabildiğinden emin ol (Spypaper paylaşıyorsa varsayılan port 8766).
 - **Sunucu başlamıyor:** Canlı Konsol'daki hatayı oku ya da Esplora'da *Sunucu neden açılmıyor?* sorusunu kullan. Java sürümünün Minecraft sürümüne uygun olduğundan emin ol.
 - **Forge/NeoForge kurulumu başarısız:** Java yolunun doğru olduğunu ve sunucu klasörüne yazma izni olduğunu kontrol et; kurulum çıktısının son satırları pencerede gösterilir.
 - **Gemini/OpenAI 429 hatası:** Sağlayıcının istek sınırı doldu; bir süre sonra tekrar dene.

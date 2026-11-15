@@ -223,6 +223,8 @@ def segmented(names, on_change):
             b.setChecked(True)
     group.idClicked.connect(on_change)
     box.group = group
+    from .motion import SlideBar
+    box.slide = SlideBar(group, box, "under", 2)
     return box
 
 

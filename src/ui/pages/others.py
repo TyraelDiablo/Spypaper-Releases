@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 from core import N_, ServerError
 from core.files import read_name_list
 from ..i18n import t
-from ..widgets import Card, Page, button, color, fill_table, human_size, label, row, table
+from ..widgets import Card, Page, button, color, fill_table, human_size, label, row, segmented, table
 
 
 def open_folder(path):
@@ -40,9 +40,31 @@ class PluginsPage(Page):
         self.btn_delete = button("Sil", "danger", self.delete)
         self.hint = label("", "Muted")
         card.add(row(self.btn_toggle, self.btn_delete, None, self.hint, stretch_end=False))
-        self.root.addWidget(card, 1)
+        from PySide6.QtWidgets import QStackedWidget
+        self.tabs = segmented([N_("Yüklü"), N_("Modrinth"), N_("Kaynak Paketi")], self._tab)
+        self.root.addWidget(self.tabs, 0, Qt.AlignLeft)
+        self.stack = QStackedWidget()
+        self.stack.addWidget(card)
+        self.root.addWidget(self.stack, 1)
+        self.browser = self.packs = None
         self.items = []
         self._sel()
+
+    def _tab(self, i):
+        from ..modrinth_view import ModrinthBrowser, ResourcePackView
+        if i == 1 and self.browser is None:
+            self.browser = ModrinthBrowser(self)
+            self.browser.changed.connect(self.on_show)
+            self.stack.addWidget(self.browser)
+        if i == 2 and self.packs is None:
+            self.packs = ResourcePackView(self)
+            self.stack.addWidget(self.packs)
+        w = {0: self.card, 1: self.browser, 2: self.packs}[i]
+        self.stack.setCurrentWidget(w)
+        if i == 1:
+            self.browser.prepare()
+        elif i == 2:
+            self.packs.prepare()
 
     def page_title(self):
         return t("Modlar") if self.app.plugins.modded else t("Eklentiler")

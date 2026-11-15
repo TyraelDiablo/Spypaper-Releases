@@ -14,9 +14,18 @@ Spypaper is open-source software licensed under the GNU GPL v3 ([LICENSE.txt](LI
 | psutil | BSD 3-Clause | https://github.com/giampaolo/psutil |
 | PyYAML | MIT | https://github.com/yaml/pyyaml |
 | segno (QR kodu / QR codes) | BSD 3-Clause | https://github.com/heuer/segno |
+| python-soundfile (ses dönüştürme / audio conversion) | BSD 3-Clause | https://github.com/bastibe/python-soundfile |
+| libsndfile (soundfile içinde / bundled with soundfile; Ogg, Vorbis, FLAC, Opus, mpg123, LAME dahil / incl.) | GNU LGPL v2.1 (+ BSD / LGPL bileşenler / components) | https://github.com/libsndfile/libsndfile |
+| CFFI (soundfile bağımlılığı / dependency) | MIT | https://github.com/python-cffi/cffi |
 | Lucide (arayüz ikonları / UI icons) | ISC | https://github.com/lucide-icons/lucide |
 | Qt WebEngine (Chromium dahil / incl. Chromium) | GNU LGPL v3 + Chromium üçüncü taraf lisansları / third-party licenses | https://code.qt.io/cgit/qt/qtwebengine.git/ |
 | PyInstaller bootloader | GPL v2 + bootloader exception | https://github.com/pyinstaller/pyinstaller |
+
+## libsndfile (LGPL v2.1)
+
+Spypaper, müzik disklerindeki sesi OGG'ye çevirmek için libsndfile'ı (python-soundfile ile birlikte gelen kitaplık) değiştirmeden, dinamik olarak kullanır. Kaynak kodu yukarıdaki adresten edinilebilir; kitaplığı kendi derlediğiniz bir sürümle değiştirebilirsiniz. LGPL v2.1: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+Spypaper uses libsndfile (bundled with python-soundfile) unmodified via dynamic linking to convert music disc audio to OGG. Its source code is available at the address above, and you may replace it with your own build.
 
 ## Qt / PySide6 (LGPL v3)
 
@@ -28,9 +37,10 @@ Spypaper, Qt ve PySide6 kütüphanelerini değiştirmeden, dinamik olarak kullan
 
 Spypaper uses Qt and PySide6 unmodified via dynamic linking. Under the LGPL v3 you may obtain their source code from the addresses above and replace them with modified versions.
 
-## MIT License (nbtlib, PyYAML)
+## MIT License (nbtlib, PyYAML, CFFI)
 
 PyYAML: Copyright (c) 2017-2021 Ingy döt Net, Copyright (c) 2006-2016 Kirill Simonov
+CFFI: Copyright (c) 2012-2025 Armin Rigo, Maciej Fijalkowski and others
 
 ```
 Copyright (c) 2018 Valentin Berlier
@@ -51,12 +61,13 @@ OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## BSD 3-Clause License (psutil, NumPy, segno)
+## BSD 3-Clause License (psutil, NumPy, segno, python-soundfile)
 
 ```
 psutil: Copyright (c) 2009, Jay Loden, Dave Daeschler, Giampaolo Rodola
 NumPy:  Copyright (c) 2005-2025, NumPy Developers
 segno:  Copyright (c) 2016 - 2025, Lars Heuer
+python-soundfile: Copyright (c) 2013, Bastian Bechtold
 
 Redistribution and use in source and binary forms, with or without modification, are permitted
 provided that the following conditions are met:

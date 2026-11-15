@@ -1,13 +1,13 @@
 # Spypaper Gizlilik Bildirimi
 
-**Sürüm 1.1 · Yürürlük tarihi: 15.11.2026**
+**Sürüm 1.2 · Yürürlük tarihi: 15.11.2026**
 
 Bu bildirim, Spypaper'ın ("Yazılım") hangi verileri işlediğini, nerede sakladığını ve hangi durumlarda üçüncü taraflara gönderdiğini açıklar.
 
 ## Kısaca
 
 - Spypaper **bilgisayarınızda çalışır**. Geliştiriciye (Serkan Aynacı) hiçbir veri göndermez. Telemetri, kullanım istatistiği, reklam ya da çökme raporu gönderimi **yoktur**.
-- Dış bağlantılar sunucu yazılımı güncelleme ve Esplora'ya soru sorma gibi **sizin başlattığınız** işlemlerde kurulur. Tek istisna, açılışta GitHub'da yeni Spypaper sürümü olup olmadığına bakılmasıdır (bkz. 2.4); bu denetim ayarlardan kapatılabilir.
+- Dış bağlantılar sunucu yazılımı güncelleme ve Esplora'ya soru sorma gibi **sizin başlattığınız** işlemlerde kurulur. İki istisna vardır: açılışta GitHub'da yeni Spypaper sürümü olup olmadığına bakılması (bkz. 2.4) ve oyuncu kafalarının Mojang'dan indirilmesi (bkz. 2.5); ikisi de ayarlardan kapatılabilir.
 - Esplora'yı kullanırsanız sunucunuza ait bilgiler (oyuncu adları ve loglar dahil) **seçtiğiniz yapay zeka sağlayıcısına** gönderilir.
 
 ## 1. Bilgisayarınızda işlenen veriler
@@ -36,7 +36,10 @@ Bu veriler Yazılım tarafından ayrıca kopyalanmaz ya da bir yere yüklenmez. 
 - **Spypaper Remote** eşli cihazları: cihaz adı, eşlenme ve son bağlantı zamanı, cihaza verdiğiniz izinler, seçilen dil ile cihaz anahtarının yalnızca SHA-256 özeti (anahtarın kendisi saklanmaz)
 - Sunucu **notlarınız** (düz metin; parola yazmayın), otomatik bakım planı ve çökme bekçisi / yedek sınırı ayarları
 - **Tehlikeli Bölge PIN'i** (sunucuda PIN yoksa belirlenir): sunucu PIN'i gibi yalnızca PBKDF2 özeti olarak
+- Oyuncu **evleri** (ad, boyut, koordinatlar), Esplora için yazdığınız **sunucu bilgileri** ve İçerik Editörü'nün içerikleri
 - Bakım sürerken: bakım öncesi whitelist ve MOTD. Whitelist ayrıca sunucu klasöründe `backups/whitelist_maintenance.json` dosyasına yazılır ve bakım bitince silinir.
+
+Oyuncu kafası görüntüleri Yazılımın yanındaki `cache/skins/`, Modrinth ikonları `cache/modrinth/` klasöründe önbelleklenir. İçerik Editörü'ne eklediğiniz resim ve sesler sunucu klasöründe `spypaper_content/` içinde durur.
 
 *Windows açılınca başlat* seçeneğini açarsanız Windows kayıt defterine (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`) Yazılımın yolu yazılır; seçeneği kapatınca silinir.
 
@@ -71,6 +74,8 @@ Esplora'ya bir soru gönderdiğinizde (yazarak ya da hazır soru düğmesiyle), 
 - Günün özeti (oyuncu sayısı, ölüm, gecikme, hata sayıları)
 - Son **60 log satırı** (sohbet mesajları ve oyuncu adları içerebilir), son hata/uyarı satırları
 - Son 7 gün içindeki **en son çökme raporunun** ilk satırları (varsa)
+- Esplora için yazdığınız **sunucu bilgileri** (☰ değil, Esplora → Sunucu Bilgileri)
+- Soruyla ilgiliyse sunucunun **yapılandırma dosyalarından** bölümler (ör. `spigot.yml`, `config/paper-world-defaults.yml`, sorudaki eklentinin `config.yml` dosyası). Parola, token, API anahtarı, veritabanı bilgisi ve webhook adresi gibi değerler gönderilmeden önce `***` ile değiştirilir; yine de yapılandırma dosyalarına kişisel veri yazmayın.
 
 Sağlayıcılar ve gizlilik politikaları:
 
@@ -89,7 +94,20 @@ Spypaper Remote **varsayılan olarak kapalıdır**. Açarsanız Yazılım bilgis
 
 *Açılışta güncellemeleri denetle* seçeneği açıksa (varsayılan) Yazılım her açılışta GitHub'a (`api.github.com`) Spypaper'ın en son sürümünü sorar. Bu istekte yalnızca standart bağlantı bilgileri (IP adresiniz) ve Spypaper'ın sürümünü içeren bir User-Agent gönderilir; sunucularınıza, oyuncularınıza ya da ayarlarınıza ait hiçbir veri gönderilmez. Güncellemeyi kabul ederseniz yeni exe GitHub'dan indirilir ve SHA-256 özetiyle doğrulanır. GitHub'ın verileri nasıl işlediği için [GitHub Gizlilik Bildirimi](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)'ne bakın. Denetimi ☰ → *Açılışta güncellemeleri denetle* ile kapatabilirsiniz.
 
-### 2.5 Diğer bağlantılar
+### 2.5 Oyuncu kafaları (Mojang)
+
+*Oyuncu kafalarını göster* açıksa (varsayılan) Oyuncular sayfası, oyuncuların görünüşünü (skin) Mojang'dan indirir: lisanslı oyuncular için `sessionserver.mojang.com`'a oyuncunun UUID'si, lisanssız oyuncular için `api.mojang.com`'a oyuncu adı gönderilir; görüntü `textures.minecraft.net`'ten alınır. Görüntüler 1 gün önbelleklenir. Bkz. [Microsoft Gizlilik Bildirimi](https://privacy.microsoft.com/privacystatement). ☰ → *Oyuncu kafalarını göster* ile kapatabilirsiniz.
+
+### 2.6 Modrinth ve Newgrounds (siz başlattığınızda)
+
+- **Modrinth** sekmesinde arama yaptığınızda arama metniniz, seçtiğiniz Minecraft sürümü ve yükleyici `api.modrinth.com`'a gönderilir; eklenti/mod/kaynak paketi ve ikonlar `cdn.modrinth.com`'dan indirilir. Bkz. [Modrinth Gizlilik Politikası](https://modrinth.com/legal/privacy).
+- **İçerik Editörü**'nde Newgrounds ID'si girip *Newgrounds'tan Al*'a bastığınızda o ID'nin sayfası `www.newgrounds.com`'dan, ses dosyası `audio.ngfiles.com`'dan indirilir. Bkz. [Newgrounds Gizlilik Politikası](https://www.newgrounds.com/wiki/help-information/privacy-policy). Parçaların hakları sanatçılarına aittir; yalnızca kullanma izniniz olan parçaları ekleyin.
+
+### 2.7 Kaynak paketi paylaşımı
+
+İçerik Editörü'nde *Kaynak paketini Spypaper paylaşsın* seçeneğini açarsanız Yazılım, seçtiğiniz portta (varsayılan 8766) küçük bir web sunucusu çalıştırır ve yalnızca oluşturulan kaynak paketi dosyasını verir. Paketi indiren oyuncuların IP adresleri bu bağlantıda bilgisayarınıza ulaşır ama kaydedilmez. Seçenek varsayılan olarak kapalıdır.
+
+### 2.8 Diğer bağlantılar
 
 - **Canlı Harita** sayfası, ayarladığınız harita adresini (varsayılan `http://localhost:8100`) açar.
 - Çekmecedeki belge bağlantıları varsayılan tarayıcınızda açılır.

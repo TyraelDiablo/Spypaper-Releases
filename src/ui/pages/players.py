@@ -2,15 +2,16 @@ from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QTableWidgetItem
 from PySide6.QtWidgets import (
-    QDialog, QDialogButtonBox, QGridLayout, QHBoxLayout, QLineEdit,
+    QComboBox, QDialog, QDialogButtonBox, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
     QListWidget, QListWidgetItem, QSpinBox, QStackedWidget, QVBoxLayout, QWidget,
 )
 
 from core.players import (
-    PLAYER_COMMANDS, build_command, give_command, parse_list_output,
+    PLAYER_COMMANDS, account_type, build_command, give_command, parse_list_output,
     tp_death_command, tp_to_player_command,
 )
-from core import N_
+from core import N_, homes as H
+from .. import heads
 from .. import icons
 from ..msgbox import get_item
 from ..i18n import t
@@ -59,7 +60,8 @@ class GiveItemDialog(QDialog):
 
 class PlayersPage(Page):
     title = "Oyuncular"
-    VIEWS = [N_("Envanter"), N_("Zırh"), N_("Ender Sandığı"), N_("2. El"), N_("İstatistikler")]
+    VIEWS = [N_("Envanter"), N_("Zırh"), N_("Ender Sandığı"), N_("2. El"), N_("İstatistikler"), N_("Evler")]
+    HOMES_VIEW = 5
 
     def __init__(self, app, bridge):
         super().__init__(app, bridge)
@@ -82,7 +84,10 @@ class PlayersPage(Page):
         self.filter.setPlaceholderText(t("Ara…"))
         self.filter.textChanged.connect(self.populate)
         self.list = QListWidget()
+        self.list.setIconSize(QSize(24, 24))
         self.list.currentItemChanged.connect(self.on_select)
+        self.heads = heads.HeadLoader(lambda: bool(app.config.settings.get("player_heads")), self)
+        self.heads.ready.connect(self._head_ready)
         left.add(self.filter)
         left.add(self.list, 1)
         self.count_lbl = left.add(label("", "Muted"))
@@ -112,7 +117,13 @@ class PlayersPage(Page):
         name_col.setSpacing(2)
         name_col.addWidget(self.name_lbl)
         name_col.addWidget(self.status_lbl)
-        head.add(name_col)
+        self.face = QLabel()
+        self.face.setFixedSize(48, 48)
+        top = QHBoxLayout()
+        top.setSpacing(12)
+        top.addWidget(self.face, 0, Qt.AlignTop)
+        top.addLayout(name_col, 1)
+        head.add(top)
         head.add(stats)
         right.addWidget(head)
 
@@ -146,6 +157,7 @@ class PlayersPage(Page):
         self.table.setIconSize(QSize(28, 28))
         self.table.verticalHeader().setDefaultSectionSize(36)
         data.add(self.table, 1)
+        data.add(self._build_homes(), 1)
         self.lang_lbl = label("", "Muted", wrap=True)
         self.btn_gamefiles = button("Oyun Dosyalarını Al", "ghost", self.open_gamefiles,
                                     tooltip="Eşya adları ve ikonlar için Minecraft'ın dil dosyalarını ve dokularını hazırla")
@@ -156,6 +168,112 @@ class PlayersPage(Page):
         bridge.state.connect(lambda s: self._update_actions())
         self._update_actions()
         self._loaded = False
+
+    # --- evler ---
+    def _build_homes(self):
+        self.homes_box = w = QWidget()
+        v = QVBoxLayout(w)
+        v.setContentsMargins(0, 0, 0, 0)
+        v.setSpacing(8)
+        self.homes_table = table(["Ev", "Boyut", "X", "Y", "Z"], stretch_col=0)
+        v.addWidget(self.homes_table, 1)
+        self.h_name = QLineEdit()
+        self.h_name.setPlaceholderText(t("Ev adı"))
+        self.h_dim = QComboBox()
+        for k, n in H.DIMENSIONS.items():
+            self.h_dim.addItem(t(n), k)
+        self.h_xyz = []
+        for axis in "XYZ":
+            e = QLineEdit()
+            e.setPlaceholderText(axis)
+            e.setFixedWidth(90)
+            self.h_xyz.append(e)
+        self.btn_home_add = button("Ev Ekle", "primary", self.add_home)
+        self.btn_home_here = button("Şu Anki Konum", "ghost", self.fill_here,
+                                    tooltip="Oyuncunun son kaydedilen konumunu kutulara yazar")
+        v.addLayout(row(self.h_name, self.h_dim, *self.h_xyz, self.btn_home_here, self.btn_home_add, stretch_end=False))
+        self.btn_home_tp = button("Işınla", "info", self.tp_home)
+        self.btn_home_del = button("Sil", "danger", self.del_home)
+        self.homes_hint = label("", "Muted")
+        v.addLayout(row(self.btn_home_tp, self.btn_home_del, None, self.homes_hint, stretch_end=False))
+        self.homes_table.itemSelectionChanged.connect(self._home_buttons)
+        w.setVisible(False)
+        return w
+
+    def _homes(self):
+        return H.homes(self.app.config, self.current.uuid) if self.current else []
+
+    def show_homes(self):
+        items = self._homes()
+        rows = [(h["name"], t(H.DIMENSIONS.get(h["dim"], h["dim"])), H.fmt(h["x"]), H.fmt(h["y"]), H.fmt(h["z"]))
+                for h in items]
+        fill_table(self.homes_table, rows or [("–", t("Henüz ev yok"), "", "", "")], align_center=(1, 2, 3, 4))
+        self.homes_hint.setText(t("{n}/{max} ev", n=len(items), max=H.MAX_HOMES))
+        self.btn_home_add.setEnabled(self.current is not None)
+        self._home_buttons()
+
+    def _sel_home(self):
+        r = self.homes_table.currentRow()
+        items = self._homes()
+        return items[r] if 0 <= r < len(items) and self.homes_table.selectedItems() else None
+
+    def _home_buttons(self):
+        h = self._sel_home()
+        self.btn_home_tp.setEnabled(bool(h) and self.app.server.is_running)
+        self.btn_home_del.setEnabled(bool(h))
+
+    def fill_here(self):
+        if not self.current:
+            return
+        if self.app.server.is_running:
+            self.app.server.try_send("save-all flush")
+        d = self.app.players.details(self.current)
+        if not d or not d.pos:
+            self.info("Oyuncunun konumu okunamadı.")
+            return
+        dim, x, y, z = d.pos
+        i = self.h_dim.findData(dim)
+        if i < 0:
+            self.h_dim.addItem(dim, dim)
+            i = self.h_dim.count() - 1
+        self.h_dim.setCurrentIndex(i)
+        for e, val in zip(self.h_xyz, (x, y, z)):
+            e.setText(H.fmt(val))
+
+    def add_home(self):
+        if not self.current:
+            return
+        try:
+            H.add(self.app.config, self.current.uuid, self.h_name.text(), self.h_dim.currentData(),
+                  *(e.text().replace(",", ".").strip() for e in self.h_xyz))
+        except H.HomeError as e:
+            self.warn(t(str(e), n=H.MAX_HOMES))
+            return
+        self.h_name.clear()
+        for e in self.h_xyz:
+            e.clear()
+        self.show_homes()
+
+    def tp_home(self):
+        h = self._sel_home()
+        if h and self.current:
+            self.send(H.tp_command(self.current.name, h))
+
+    def del_home(self):
+        h = self._sel_home()
+        if h and self.confirm(t("'{name}' evi silinsin mi?", name=h["name"])):
+            H.remove(self.app.config, self.current.uuid, h["name"])
+            self.show_homes()
+
+    # --- kafalar ---
+    def _head_ready(self, uuid):
+        for i in range(self.list.count()):
+            it = self.list.item(i)
+            p = it.data(Qt.UserRole)
+            if p.uuid == uuid:
+                it.setIcon(QIcon(heads.pixmap(p.uuid, p.name, 24, p.online)))
+        if self.current and self.current.uuid == uuid:
+            self.face.setPixmap(heads.pixmap(uuid, self.current.name, 48))
 
     # --- yaşam döngüsü ---
     def on_show(self):
@@ -205,11 +323,12 @@ class PlayersPage(Page):
             if q and q not in p.name.lower():
                 continue
             it = QListWidgetItem(p.name)
-            it.setIcon(icons.dot(color("accent") if p.online else color("text_muted")))
+            it.setIcon(QIcon(heads.pixmap(p.uuid, p.name, 24, p.online)))
             it.setForeground(QColor(color("text") if p.online else color("text_muted")))
             it.setData(Qt.UserRole, p)
             self.list.addItem(it)
         self.list.blockSignals(False)
+        self.heads.request([(p.uuid, p.name) for p in self.players])
         online = sum(p.online for p in self.players)
         self.count_lbl.setText(t("{n} oyuncu · {on} çevrimiçi", n=len(self.players), on=online))
         if not self.players:
@@ -227,7 +346,16 @@ class PlayersPage(Page):
         gm = {0: N_("Hayatta Kalma"), 1: N_("Yaratıcı"), 2: N_("Macera"), 3: N_("İzleyici")}.get(
             self.details.gamemode if self.details else -1)
         gm_html = (f'  ·  <span style="color:{color("info")}; font-weight:600">{t(gm)}</span>' if gm else "")
-        self.status_lbl.setText(f'{st}{gm_html}  ·  <span style="color:{color("text_muted")}">{p.uuid}</span>')
+        acc = account_type(p.uuid)
+        acc_html = {"premium": f'  ·  <span style="color:{color("accent")}">{t("Lisanslı")}</span>',
+                    "offline": f'  ·  <span style="color:{color("warn")}">{t("Lisanssız")}</span>'}.get(acc, "")
+        self.status_lbl.setText(f'{st}{gm_html}{acc_html}  ·  <span style="color:{color("text_muted")}">{p.uuid}</span>')
+        self.status_lbl.setToolTip({
+            "premium": t("Mojang/Microsoft hesabıyla giriş yapıyor (resmi başlatıcı ya da lisanslı hesap kullanan bir başlatıcı)."),
+            "offline": t("Lisanssız hesap (TLauncher, SKLauncher gibi) ya da sunucu çevrimdışı modda. "
+                         "online-mode=false olan sunucularda lisanslı oyuncular da böyle görünür."),
+        }.get(acc, ""))
+        self.face.setPixmap(heads.pixmap(p.uuid, p.name, 48))
         d = self.details
         if d:
             hidden = d.gamemode in (1, 3)             # yaratıcı ve izleyicide oyunda can/açlık görünmez
@@ -247,7 +375,13 @@ class PlayersPage(Page):
 
     def show_view(self):
         d = self.details
+        homes_view = self.view == self.HOMES_VIEW
+        self.homes_box.setVisible(homes_view)
+        self.table.setVisible(not homes_view)
         if not self.current:
+            return
+        if homes_view:
+            self.show_homes()
             return
         if self.view == 4:
             self.table.setHorizontalHeaderLabels(["", t("İstatistik"), t("Değer"), ""])
@@ -387,6 +521,8 @@ class PlayersPage(Page):
         ok = self.current is not None and self.app.server.is_running
         for b in self.action_buttons:
             b.setEnabled(ok)
+        if hasattr(self, "btn_home_tp"):
+            self._home_buttons()
 
     def cmd(self, key):
         if self.current:

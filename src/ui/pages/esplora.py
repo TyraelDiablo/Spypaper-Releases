@@ -10,7 +10,8 @@ from PySide6.QtWidgets import (
 )
 
 from core import N_, ai, detect_version
-from core.esplora import build_system, latest_crash, preset_items, quick_items
+from core import esplora_kb
+from core.esplora import build_system, config_files, latest_crash, preset_items, quick_items
 from .. import icons
 from ..i18n import current, is_rtl, t
 from ..theme import TOKENS, rgba
@@ -153,6 +154,8 @@ class EsploraPage(Page):
 
         head = Card("Esplora", "Bu sunucuya özel yapay zeka asistanı. Yalnızca sunucu yönetimiyle ilgili sorulara yanıt verir.")
         head.header_actions.addWidget(button("Yeni sohbet", "ghost", self.reset))
+        head.header_actions.addWidget(button("Sunucu Bilgileri", "ghost", self.edit_knowledge,
+                                             tooltip="Esplora'ya sunucun hakkında bilmesi gerekenleri yaz"))
         head.header_actions.addWidget(button("Yapay Zeka Ayarları", "ghost", self.open_settings))
         self.model_lbl = label("", "Muted")
         head.add(self.model_lbl)
@@ -251,7 +254,7 @@ class EsploraPage(Page):
         self.render()
 
     # --- bağlam ---
-    def context(self):
+    def context(self, question=""):
         a = self.app
         ver, soft = detect_version(a.config.server_path)
         from core.logwatch import online_timeline
@@ -274,6 +277,10 @@ class EsploraPage(Page):
             # son 60 satırın dışında kalmış olabilecek hata/uyarılar ve son çökme raporu
             "recent_errors": [e.raw for e in a.logs.events if e.kind in ("error", "lag")][-20:],
             "crash": latest_crash(a.config.server_path),
+            # uzman bilgi bankasından soruyla ilgili bölümler, sahibin bilgileri ve ilgili yapılandırma dosyaları
+            "kb": esplora_kb.relevant(question, f"{soft} {ver} " + ("lag" if any(e.kind == "lag" for e in todays) else "")),
+            "owner": (a.config.get("esplora_knowledge") or "").strip(),
+            "configs": config_files(a.config.server_path, question, modded=a.plugins.modded),
         }
 
     # --- sohbet ---
@@ -324,7 +331,8 @@ class EsploraPage(Page):
         self._set_busy(True)
         self.render(thinking=True)
         settings = self.app.config.settings
-        system = build_system(self.context(), LANG_EN.get(current(), "English"))
+        last = next((m["content"] for m in reversed(self.app.esplora_history) if m["role"] == "user"), "")
+        system = build_system(self.context(last), LANG_EN.get(current(), "English"))
         msgs = self._api_messages(self.app.esplora_history)
 
         def work():
@@ -335,6 +343,10 @@ class EsploraPage(Page):
                 err = t(e.template, **e.kw) if hasattr(e, "template") else str(e)
                 self.reply.emit(my, "", err, "")
         threading.Thread(target=work, daemon=True).start()
+
+    def edit_knowledge(self):
+        from ..knowledge_dialog import KnowledgeDialog
+        KnowledgeDialog(self.app.config, self).exec()
 
     def stop(self):
         """Yanıtı durdurur. İstek arka planda bitse bile sonucu gösterilmez."""

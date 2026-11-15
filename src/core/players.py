@@ -55,6 +55,7 @@ class PlayerDetails:
     offhand: ItemRow = None
     ender: list = field(default_factory=list)
     last_death: tuple = None                        # (dim, x, y, z)
+    pos: tuple = None                               # (dim, x, y, z) son kaydedilen konum
 
 
 def hyphenate(u):
@@ -580,6 +581,15 @@ class PlayerService:
         ender = _get(root, "EnderItems", "ender_items", "enderItems") or []
         d.ender = [self._item(i) for i in ender if _get(i, "id")]
 
+        try:
+            p = [float(_val(v)) for v in list(root.get("Pos", []))]
+            dim = _val(root.get("Dimension", "minecraft:overworld"))
+            if isinstance(dim, (int, float)):                  # 1.16 öncesi sayısal boyut
+                dim = {-1: "minecraft:the_nether", 1: "minecraft:the_end"}.get(int(dim), "minecraft:overworld")
+            if len(p) == 3:
+                d.pos = (str(dim), *(round(c, 1) for c in p))
+        except Exception:
+            pass
         ld = root.get("LastDeathLocation")
         if ld:
             pos = list(ld.get("pos", []))
@@ -631,6 +641,14 @@ def give_command(player_name, item_id, amount):
 def tp_death_command(player_name, last_death):
     dim, x, y, z = last_death
     return f"execute in {dim} run tp {quote(player_name)} {x} {y} {z}"
+
+
+def account_type(uuid_str):
+    """'premium' (Mojang hesabı, UUID v4), 'offline' (lisanssız / çevrimdışı mod, UUID v3) ya da ''."""
+    u = (uuid_str or "").replace("-", "")
+    if len(u) != 32:
+        return ""
+    return {"4": "premium", "3": "offline"}.get(u[12], "")
 
 
 def tp_to_player_command(player_name, target):

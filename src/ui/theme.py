@@ -171,11 +171,11 @@ QLabel#Muted {{ color: {text_muted}; }}
 QLabel#BigValue {{ font-size: 17pt; font-weight: 700; }}
 
 /* --- input --- */
-QLineEdit, QSpinBox, QPlainTextEdit, QComboBox {{
+QLineEdit, QSpinBox, QDoubleSpinBox, QTimeEdit, QPlainTextEdit, QComboBox {{
     background: {surface_2}; border: 1px solid {border}; border-radius: {radius_sm};
     padding: 6px 9px; selection-background-color: {accent}; selection-color: {text_on_accent};
 }}
-QLineEdit:focus, QSpinBox:focus, QComboBox:focus {{ border-color: {accent}; }}
+QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QTimeEdit:focus, QComboBox:focus {{ border-color: {accent}; }}
 QLineEdit#Mono {{ font-family: "{font_mono}"; color: {accent}; }}
 QTextBrowser {{ background: {surface}; border: 1px solid {border}; border-radius: {radius_sm}; padding: 10px; }}
 QTabWidget::pane {{ border: none; top: -1px; }}

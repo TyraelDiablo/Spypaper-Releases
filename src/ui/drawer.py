@@ -149,6 +149,8 @@ class Drawer(QWidget):
                                  "Kapalıyken uygulama ana ekranla açılır"))
         v.addWidget(self._toggle("Çıkarken çalışan sunucuları sor", "confirm_on_close",
                                  "Kapalıysa sunucular sormadan durdurulur"))
+        v.addWidget(self._toggle("Oyuncu kafalarını göster", "player_heads",
+                                 "Oyuncuların kafa görüntüsü Mojang'dan indirilir"))
         v.addWidget(self._toggle("Açılışta güncellemeleri denetle", "check_updates",
                                  "Spypaper açılırken GitHub'da yeni sürüm olup olmadığına bakar"))
         if autostart.supported():

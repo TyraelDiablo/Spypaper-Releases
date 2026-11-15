@@ -34,6 +34,10 @@ SERVER_DEFAULTS = {
     "maintenance_schedule": {},   # core.maintenance.SCHEDULE_DEFAULTS
     "maintenance_state": {},
     "notes": "",               # kullanıcının bu sunucu için notları
+    "homes": {},               # core.homes: oyuncu başına en fazla 10 ev
+    "esplora_knowledge": "",   # sunucu sahibinin Esplora için yazdığı bilgiler
+    "content": [],             # core.content: içerik editörünün içerikleri
+    "content_share": {},       # kaynak paketini Spypaper paylaşsın mı (core.packhost)
     "auto_restart": False,     # çökünce otomatik yeniden başlat
     "backup_keep": 0,          # saklanacak yedek sayısı (0 = sınırsız)
     "danger_pin_hash": "",     # sunucuda PIN yoksa yalnızca Tehlikeli Bölge için PIN
@@ -56,7 +60,8 @@ APP_DEFAULTS = {
     "log_poll_seconds": 1,
     "update_contact": "",
     "translate_logs": True,
-    "check_updates": True,     # açılışta Spypaper güncellemesi denetlensin (core.appupdate)
+    "check_updates": True,
+    "player_heads": True,      # oyuncu kafalarını Mojang'dan indir (core.skins)     # açılışta Spypaper güncellemesi denetlensin (core.appupdate)
     "skip_version": "",
     "page_order": [],          # sunucu panelindeki sekmelerin sırası (sayfa sınıf adları)
     "hidden_pages": [],

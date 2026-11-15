@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 )
 
 from core import App, ServerError, detect_version
-from . import VERSION, i18n, icons, theme
+from . import VERSION, i18n, icons, motion, theme
 from .i18n import t
 from .theme import TOKENS, rgba
 from .widgets import ServerBridge, ask, button, err_text, label
@@ -24,9 +24,10 @@ from .pages.modtrans import ModTransPage
 from .pages.notes import NotesPage
 from .pages.teams import TeamsPage
 from .pages.danger import DangerPage
+from .pages.content import ContentPage, restore_sharing
 
 PAGES = [DashboardPage, ConsolePage, LogsPage, EsploraPage, PlayersPage, TeamsPage, PluginsPage, ModTransPage,
-         SettingsPage, AdminPage, MaintenancePage, MapPage, NotesPage, DangerPage]
+         SettingsPage, AdminPage, MaintenancePage, MapPage, NotesPage, ContentPage, DangerPage]
 CRASH_LIMIT = 3            # bu kadar çökme...
 CRASH_WINDOW = 600         # ...bu kadar saniye içinde olursa otomatik yeniden başlatma durur
 RESTART_DELAY = 10
@@ -118,6 +119,7 @@ class ServerPanel(QWidget):
             b = self.nav.button(i)
             b.setVisible(i not in self.hidden)
             sv.addWidget(b)
+        self.navbar = motion.SlideBar(self.nav, side, "left")
         danger_btn = self.nav.button(PAGES.index(DangerPage))
         danger_btn.setIcon(icons.icon("triangle-alert", TOKENS["danger"], 16))
         self._nav_texts()
@@ -226,9 +228,12 @@ class ServerPanel(QWidget):
         return next((i for i in self.order if i not in self.hidden), 0)
 
     def go(self, i):
+        changed = self.stack.currentIndex() != i
         self.current = i
         self.nav.button(i).setChecked(True)
         self.stack.setCurrentIndex(i)
+        if changed:
+            motion.fade_in(self.stack.currentWidget())
         self.title_lbl.setText(self._page_title(i))
         self.pages[i].on_show()
 
@@ -324,6 +329,7 @@ class MainWindow(QMainWindow):
         self.remote = RemoteController(self)        # Spypaper Remote (telefon), ayarda açıksa başlar
         self.remote.autostart()
         self._handled_run, self._crashes = {}, {}
+        restore_sharing(self.settings.servers())          # içerik editörünün kaynak paketi paylaşımı
         # otomatik bakım: tüm sunucular için (paneli açık olmasa da) saniyede bir
         self.maint_timer = QTimer(self)
         self.maint_timer.timeout.connect(self.maintenance_tick)
@@ -341,6 +347,7 @@ class MainWindow(QMainWindow):
         qapp = QApplication.instance()
         qapp.setLayoutDirection(Qt.RightToLeft if i18n.is_rtl() else Qt.LeftToRight)
         qapp.setStyleSheet(theme.stylesheet())
+        motion.REDUCED = bool(s.get("reduce_motion"))
 
     def build(self):
         """Tüm arayüzü (yeniden) kurar. Dil/tema değişince çağrılır."""
@@ -393,7 +400,10 @@ class MainWindow(QMainWindow):
             self.view = ("home", None, 0)
         self.view = ("home", None, 0)
         self.home.refresh()
+        was = self.stack.currentWidget()
         self.stack.setCurrentWidget(self.home)
+        if was is not self.home:
+            motion.fade_in(self.home)
         self.setWindowTitle("Spypaper")
 
     def app_for(self, sid):
@@ -475,7 +485,10 @@ class MainWindow(QMainWindow):
             self.panels[sid] = panel
             self.stack.addWidget(panel)
         panel = self.panels[sid]
+        was = self.stack.currentWidget()
         self.stack.setCurrentWidget(panel)
+        if was is not panel:
+            motion.fade_in(panel, dy=0)
         panel.go(page if 0 < page < len(PAGES) else panel.first_page())
         self.view = ("server", sid, page)
         self.settings.touch(sid)

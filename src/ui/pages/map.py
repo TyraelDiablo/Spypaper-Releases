@@ -21,6 +21,7 @@ DEFAULT_URL = "http://localhost:8100"
 
 class MapPage(Page):
     title = "Canlı Harita"
+    no_fade = True                 # gömülü tarayıcı opaklık efektiyle bozuk çizilir
     probed = Signal(bool, str)
     found = Signal(dict, bool, str)
     progress = Signal(int, int)
