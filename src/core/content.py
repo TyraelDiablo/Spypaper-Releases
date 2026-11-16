@@ -197,6 +197,13 @@ def recipe(c, fmt):
 
 
 def give_command(player, c):
+    """Oyuncuya eşya verir. Disk, bileşenleri /give ile doğrudan alır: loot tablosundaki set_components
+    bu sürümde uygulanmadığı için disk adı ve kaydı oyuncuya gelmiyordu. jukebox_playable metin olmalı."""
+    if c["type"] == "disc":
+        name = json.dumps(c.get("name") or c["id"], ensure_ascii=False)
+        snbt = name.replace("\\", "\\\\").replace("'", "\\'")
+        return (f"give {player} music_disc_13[item_name='{snbt}',"
+                f"jukebox_playable=\"spypaper:{c['id']}\"]")
     return f"loot give {player} loot spypaper:{c['id']}"
 
 
