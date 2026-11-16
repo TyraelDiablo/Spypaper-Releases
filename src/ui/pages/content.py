@@ -8,12 +8,14 @@ import threading
 from PySide6.QtCore import QSize, QStandardPaths, Qt, QUrl, Signal
 from PySide6.QtGui import QDesktopServices, QIcon, QImage, QPixmap
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QFormLayout, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-    QListWidget, QListWidgetItem, QMenu, QPlainTextEdit, QScrollArea, QSpinBox, QStackedWidget, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QFormLayout, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMenu, QPlainTextEdit, QScrollArea, QSpinBox, QStackedWidget, QVBoxLayout, QWidget,
 )
 
 from core import N_, content as C, newgrounds as NG, soundcloud as SC
 from core.commands import EFFECTS, ENCHANTS
+
+ENCH_MAX = 12          # bir eşyada en fazla büyü sayısı
+ENCH_LEVEL_MAX = 256   # Minecraft'ta büyü seviyesi üst sınırı
 from core.config import detect_version
 from core.danger import level_name
 from core.packhost import DEFAULT_PORT, HOST
@@ -191,18 +193,10 @@ class ContentPage(Page):
         tl.add(f)
         tl.add(row(self.t_unb, self.t_glint))
         self.t_ench = []
-        grid = QGridLayout()
-        for i in range(3):
-            e = QComboBox()
-            e.addItem("")
-            e.addItems(ENCHANTS)
-            lv = QSpinBox()
-            lv.setRange(1, 255)
-            grid.addWidget(e, i, 0)
-            grid.addWidget(lv, i, 1)
-            self.t_ench.append((e, lv))
+        self.t_ench_box = QVBoxLayout()
         tl.add(label("Büyüler", "Muted"))
-        tl.add(grid)
+        tl.add(self.t_ench_box)
+        tl.add(button("Büyü ekle", "ghost", self.add_ench_row))
         self.t_tex = self._texture_row(tl)
         self.types.addWidget(tl)
 
@@ -473,10 +467,9 @@ class ContentPage(Page):
             self.t_mine.setValue(float(c.get("mining", 0)))
             self.t_unb.setChecked(bool(c.get("unbreakable")))
             self.t_glint.setChecked(bool(c.get("glint")))
-            ench = list(c.get("enchants") or []) + [("", 1)] * 3
-            for (e, lv), (ename, elv) in zip(self.t_ench, ench[:3]):
-                e.setCurrentText(ename.replace("minecraft:", ""))
-                lv.setValue(int(elv))
+            self._clear_enchants()
+            for ename, elv in (c.get("enchants") or []):
+                self.add_ench_row(ename.replace("minecraft:", ""), elv)
             self._tex_preview(self.t_tex)
         elif k == "food":
             self.f_base.setEditText(c["base"])
@@ -605,6 +598,44 @@ class ContentPage(Page):
         self.p_preview.setPixmap(pm.scaled(150, 150, Qt.KeepAspectRatio, Qt.FastTransformation) if not pm.isNull() else QPixmap())
         if pm.isNull():
             self.p_preview.setText(t("Resim yok"))
+
+    def _clear_enchants(self):
+        while self.t_ench_box.count():
+            item = self.t_ench_box.takeAt(0)
+            lay = item.layout()
+            if lay:
+                while lay.count():
+                    w = lay.takeAt(0).widget()
+                    if w:
+                        w.deleteLater()
+        self.t_ench = []
+
+    def add_ench_row(self, name="", level=1):
+        if len(self.t_ench) >= ENCH_MAX:
+            return
+        h = QHBoxLayout()
+        e = QComboBox()
+        e.addItem("")
+        e.addItems(ENCHANTS)
+        e.setCurrentText(name)
+        lv = QSpinBox()
+        lv.setRange(1, ENCH_LEVEL_MAX)
+        lv.setValue(int(level))
+        rm = button("×", "ghost", lambda: self.remove_ench_row(h, e, lv))
+        h.addWidget(e, 1)
+        h.addWidget(lv)
+        h.addWidget(rm)
+        self.t_ench_box.addLayout(h)
+        self.t_ench.append((e, lv))
+
+    def remove_ench_row(self, layout, e, lv):
+        self.t_ench = [(ee, ll) for ee, ll in self.t_ench if ee is not e]
+        while layout.count():
+            w = layout.takeAt(0).widget()
+            if w:
+                w.deleteLater()
+        self.t_ench_box.removeItem(layout)
+        layout.deleteLater()
 
     def pick_texture(self):
         cid = self._need_id()
