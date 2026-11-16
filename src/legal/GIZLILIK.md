@@ -100,6 +100,8 @@ Spypaper Remote **varsayılan olarak kapalıdır**. Açarsanız Yazılım bilgis
 
 ### 2.6 Modrinth, Newgrounds ve SoundCloud (siz başlattığınızda)
 
+- **Güncellemeleri denetle**'ye bastığınızda, yüklü `.jar` dosyalarınızın SHA-1 özetleri (dosyaların kendisi değil) `api.modrinth.com`'a gönderilir ve hangi sürümlerin daha yeni olduğu sorulur. Bu yalnızca siz düğmeye bastığınızda olur; arka planda kontrol yapılmaz. Bkz. [Modrinth Gizlilik Politikası](https://modrinth.com/legal/privacy).
+
 - **Modrinth** sekmesinde arama yaptığınızda arama metniniz, seçtiğiniz Minecraft sürümü ve yükleyici `api.modrinth.com`'a gönderilir; eklenti/mod/kaynak paketi ve ikonlar `cdn.modrinth.com`'dan indirilir. Bkz. [Modrinth Gizlilik Politikası](https://modrinth.com/legal/privacy).
 - **İçerik Editörü**'nde Newgrounds ID'si girip *Getir*'e bastığınızda o ID'nin sayfası `www.newgrounds.com`'dan, ses dosyası `audio.ngfiles.com`'dan indirilir. Bkz. [Newgrounds Gizlilik Politikası](https://www.newgrounds.com/wiki/help-information/privacy-policy). Parçaların hakları sanatçılarına aittir; yalnızca kullanma izniniz olan parçaları ekleyin.
 - Aynı alana SoundCloud bağlantısı girip *Getir*'e bastığınızda yalnızca parça adı ve sanatçı, SoundCloud'un herkese açık oEmbed adresinden (`soundcloud.com/oembed`) alınır ve parçanın sayfası varsayılan tarayıcınızda açılır. Spypaper SoundCloud'dan ses indirmez; dosyayı, sanatçı izin verdiyse siz tarayıcıdan indirirsiniz. Bkz. [SoundCloud Gizlilik Politikası](https://soundcloud.com/pages/privacy).

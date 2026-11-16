@@ -10,7 +10,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core import N_, ServerError
+from core import N_, ServerError, modrinth as M
+from core.config import detect_version
 from core.files import read_name_list
 from ..i18n import t
 from ..widgets import Card, Page, button, color, fill_table, human_size, label, row, segmented, table
@@ -24,6 +25,7 @@ def open_folder(path):
 # ---------------------------------------------------------------- Eklentiler
 class PluginsPage(Page):
     title = "Eklentiler"
+    upd_done = Signal(object, object)       # (iş, sonuç) / hata
 
     def __init__(self, app, bridge):
         super().__init__(app, bridge)
@@ -40,6 +42,13 @@ class PluginsPage(Page):
         self.btn_delete = button("Sil", "danger", self.delete)
         self.hint = label("", "Muted")
         card.add(row(self.btn_toggle, self.btn_delete, None, self.hint, stretch_end=False))
+        self.btn_upd = button("Güncellemeleri denetle", "ghost", self.check_updates)
+        self.btn_upd_all = button("Tümünü güncelle", "primary", self.apply_updates)
+        self.btn_upd_all.setVisible(False)
+        card.add(row(self.btn_upd, self.btn_upd_all, None, stretch_end=False))
+        self._updates = []
+        self._upd_busy = False
+        self.upd_done.connect(self._upd_done)
         from PySide6.QtWidgets import QStackedWidget
         self.tabs = segmented([N_("Yüklü"), N_("Modrinth"), N_("Kaynak Paketi")], self._tab)
         self.root.addWidget(self.tabs, 0, Qt.AlignLeft)
@@ -88,6 +97,67 @@ class PluginsPage(Page):
         n, on = len(self.items), sum(on for *_, on in self.items)
         self.hint.setText(t("{n} mod · {on} etkin", n=n, on=on) if mods else t("{n} eklenti · {on} etkin", n=n, on=on))
         self._sel()
+
+    def check_updates(self):
+        if self._upd_busy:
+            return
+        mc, soft = detect_version(self.app.config.server_path)
+        _, loaders = M.context(soft, mc, self.app.plugins.modded)
+        folder = self.app.plugins.folder
+        self._upd_busy = True
+        self.hint.setText(t("Güncellemeler denetleniyor…"))
+
+        def work():
+            try:
+                self.upd_done.emit(("check", M.check_updates(folder, loaders, mc)), None)
+            except Exception as e:
+                self.upd_done.emit(("check", None), e)
+        threading.Thread(target=work, daemon=True).start()
+
+    def apply_updates(self):
+        if self._upd_busy or not self._updates or self._blocked():
+            return
+        items, folder = list(self._updates), self.app.plugins.folder
+        self._upd_busy = True
+        self.hint.setText(t("Güncelleniyor…"))
+
+        def work():
+            errs, done = [], 0
+            for it in items:
+                try:
+                    M.apply_update(it, folder)
+                    done += 1
+                except Exception as e:
+                    errs.append(f"{it['name']}: {e}")
+            self.upd_done.emit(("apply", (done, errs)), None)
+        threading.Thread(target=work, daemon=True).start()
+
+    def _upd_done(self, res, err):
+        from ..modrinth_view import err_msg
+        self._upd_busy = False
+        if err is not None:
+            self.hint.setText("")
+            self.warn(err_msg(err), t("Güncelleme"))
+            return
+        job, data = res
+        if job == "check":
+            self._updates = data
+            self.btn_upd_all.setVisible(bool(data))
+            self.hint.setText("")
+            if not data:
+                self.info(t("Tüm dosyalar güncel ya da Modrinth'te bulunamadı."), t("Güncelleme"))
+                return
+            lines = "\n".join(f"{u['name']}: {u['current']} → {u['latest']}" for u in data)
+            self.info(t("{n} güncelleme var:", n=len(data)) + "\n" + lines, t("Güncelleme"))
+        else:
+            done, errs = data
+            self._updates = []
+            self.btn_upd_all.setVisible(False)
+            self.on_show()
+            if errs:
+                self.warn(t("Bazı güncellemeler kurulamadı:") + "\n" + "\n".join(errs), t("Güncelleme"))
+            else:
+                self.info(t("{n} dosya güncellendi. Değişiklik sunucu yeniden başlatılınca geçerli olur.", n=done), t("Güncelleme"))
 
     def _selected(self):
         r = self.table.currentRow()

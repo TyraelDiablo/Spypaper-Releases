@@ -190,7 +190,7 @@ Her içeriğe 3×3 tarif eklenebilir. **Oyuncuya Ver**, `loot give <oyuncu> loot
 
 **Paketleri Oluştur**, `<dünya>/datapacks/spypaper_content/` klasörünü ve sunucu klasörüne `spypaper_resourcepack.zip` dosyasını yazar. Tablolar ve müzik diskleri sunucu yeniden başlatılınca, aletler ve yiyecekler `/reload` ile gelir. Oyuncular kaynak paketini bir adresten indirir: ya Spypaper paylaşsın (*Kaynak paketini Spypaper paylaşsın*, varsayılan port 8766; ev ağında ve Tailscale'de çalışır, internetteki oyuncular için portu yönlendir) ya da zip'i bir yere yükleyip adresini **Eklentiler → Kaynak Paketi**'ne yaz. Bir sunucunun tek kaynak paketi olur; bu, orada ayarlı paketin yerini alır.
 
-Her müzik diski için **"Bu ses dosyasını kullanma ve oyunculara dağıtma hakkım var"** kutusu işaretlenmeden disk paketlenmez ve paylaşılmaz. Spypaper telif hakkını doğrulayamaz; kullanılan dosyalardan sunucu sahibi sorumludur.
+Eklentiler/Modlar: **Güncellemeleri denetle** yüklü `.jar` dosyalarını SHA-1 özetiyle Modrinth'te arar ve uyumlu daha yeni sürümleri kurmayı önerir (yalnızca sen basınca). Her müzik diski için **"Bu ses dosyasını kullanma ve oyunculara dağıtma hakkım var"** kutusu işaretlenmeden disk paketlenmez ve paylaşılmaz. Spypaper telif hakkını doğrulayamaz; kullanılan dosyalardan sunucu sahibi sorumludur.
 
 Newgrounds ülkende engelliyse (ör. Türkiye) SoundCloud bağlantısı ya da kendi dosyanı kullan. Newgrounds ve SoundCloud parçalarının hakları sanatçılarına aittir; yalnızca kullanma iznin olan parçaları kullan. Sanatçının adı diskin açıklamasında görünür.
 

@@ -102,6 +102,8 @@ If *Show player heads* is on (the default), the Players page downloads players' 
 
 ### 2.6 Modrinth, Newgrounds and SoundCloud (when you start it)
 
+- When you click **Check for updates**, the SHA-1 hashes of your installed `.jar` files (not the files themselves) are sent to `api.modrinth.com` to find newer versions. This happens only when you click the button; there are no background checks. See the [Modrinth Privacy Policy](https://modrinth.com/legal/privacy).
+
 - When you search in the **Modrinth** tab, your search text, the selected Minecraft version and loader are sent to `api.modrinth.com`; plugins/mods/resource packs and icons are downloaded from `cdn.modrinth.com`. See the [Modrinth Privacy Policy](https://modrinth.com/legal/privacy).
 - When you enter a Newgrounds ID in the **Content Editor** and click *Fetch*, that ID's page is downloaded from `www.newgrounds.com` and the audio from `audio.ngfiles.com`. See the [Newgrounds Privacy Policy](https://www.newgrounds.com/wiki/help-information/privacy-policy). Tracks belong to their artists; only add tracks you have permission to use.
 - When you enter a SoundCloud link in the same field and click *Fetch*, only the track title and artist are requested from SoundCloud's public oEmbed endpoint (`soundcloud.com/oembed`) and the track page opens in your default browser. Spypaper does not download audio from SoundCloud; if the artist allows it, you download the file yourself in the browser. See the [SoundCloud Privacy Policy](https://soundcloud.com/pages/privacy).

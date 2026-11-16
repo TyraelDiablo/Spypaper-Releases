@@ -163,6 +163,76 @@ def download(file, dest_dir, progress=None):
     return dest
 
 
+def _post(path, body, timeout=20):
+    req = urllib.request.Request(API + path, data=json.dumps(body).encode("utf-8"),
+                                 headers={"User-Agent": UA, "Content-Type": "application/json",
+                                          "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        if e.code == 429:
+            raise ModrinthError(N_("Modrinth çok fazla istek aldı; biraz bekleyip tekrar dene."))
+        raise ModrinthError(N_("Modrinth'e ulaşılamadı: {e}"), e=net_reason(e))
+    except Exception as e:
+        raise ModrinthError(N_("Modrinth'e ulaşılamadı: {e}"), e=net_reason(e))
+
+
+def _sha1(path):
+    h = hashlib.sha1()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(256 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _file_info(v):
+    files = v.get("files") or []
+    f = next((x for x in files if x.get("primary")), files[0] if files else None)
+    if not f:
+        return None
+    return {"url": f.get("url", ""), "name": f.get("filename", ""), "size": int(f.get("size") or 0),
+            "sha512": (f.get("hashes") or {}).get("sha512", ""), "sha1": (f.get("hashes") or {}).get("sha1", "")}
+
+
+def check_updates(folder, loaders, game_version):
+    """Yüklü .jar dosyalarını SHA-1 özetiyle Modrinth'te arar; daha yeni uyumlu sürümü olanları döndürür.
+    Yalnızca dosyaların özetleri gönderilir. Modrinth'te olmayan (elle eklenmiş) dosyalar atlanır."""
+    paths = {}
+    for n in os.listdir(folder) if os.path.isdir(folder) else []:
+        if n.lower().endswith(".jar"):
+            paths[_sha1(os.path.join(folder, n))] = os.path.join(folder, n)
+    if not paths:
+        return []
+    hashes = list(paths)
+    current = _post("/version_files", {"hashes": hashes, "algorithm": "sha1"})
+    body = {"hashes": hashes, "algorithm": "sha1"}
+    if loaders:
+        body["loaders"] = list(loaders)
+    if game_version:
+        body["game_versions"] = [game_version]
+    latest = _post("/version_files/update", body)
+    out = []
+    for h, path in paths.items():
+        cur, new = current.get(h), latest.get(h)
+        if not cur or not new or new.get("id") == cur.get("id"):
+            continue
+        info = _file_info(new)
+        if not info:
+            continue
+        out.append({"path": path, "name": os.path.basename(path), "current": cur.get("version_number", ""),
+                    "latest": new.get("version_number", ""), "file": info})
+    return out
+
+
+def apply_update(item, folder, progress=None):
+    """Yeni sürümü indirir (SHA ile doğrulanır), doğrulanınca eski dosyayı siler."""
+    dest = download(item["file"], folder, progress)
+    if os.path.abspath(dest) != os.path.abspath(item["path"]) and os.path.exists(item["path"]):
+        os.remove(item["path"])
+    return dest
+
+
 def installed_names(folder):
     try:
         return {f.lower().replace(".disabled", "") for f in os.listdir(folder)}
