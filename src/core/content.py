@@ -100,6 +100,8 @@ def validate(c, fmt=None):
             raise ContentError(N_("Tablo boyutu 1-16 blok olmalı."))
     if t == "disc" and not c.get("sound"):
         raise ContentError(N_("Disk için müzik ekle (Newgrounds ID ya da ses dosyası)."))
+    if t == "disc" and not c.get("rights_ok"):
+        raise ContentError(N_("Bu diskin dağıtma onayı işaretlenmemiş. Ses dosyasını kullanma ve dağıtma hakkın olduğunu onayla."))
     if t in ("tool", "food") and not ITEM_RE.match(c.get("base", "")):
         raise ContentError(N_("Geçersiz temel eşya."))
     if t == "food" and fmt and not fmt.v1212:

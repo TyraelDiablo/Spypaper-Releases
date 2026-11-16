@@ -167,6 +167,9 @@ class ContentPage(Page):
         f.addRow(t("Disk görünümü"), self.d_base)
         f.addRow(t("Karşılaştırıcı sinyali"), self.d_cmp)
         d.add(f)
+        self.d_rights = QCheckBox(t("Bu ses dosyasını kullanma ve oyunculara dağıtma hakkım var"))
+        self.d_rights.setToolTip(t("İşaretlenmeden disk paketlenmez ve paylaşılmaz. Telifli parçaları izinsiz dağıtma."))
+        d.add(self.d_rights)
         d.add(label("Newgrounds'taki parçaların hakları sanatçılarına aittir. Yalnızca kullanma iznin olan "
                     "parçaları ekle; sanatçının adı diskin açıklamasında görünür.", "Muted", wrap=True))
         self.types.addWidget(d)
@@ -453,6 +456,7 @@ class ContentPage(Page):
             self.p_author.setText(c.get("author", ""))
             self._repaint_painting()
         elif k == "disc":
+            self.d_rights.setChecked(bool(c.get("rights_ok")))
             self.d_artist.setText(c.get("artist", ""))
             self.d_base.setCurrentText(c.get("base", "music_disc_13"))
             self.d_cmp.setValue(int(c.get("comparator", 1)))
@@ -503,7 +507,8 @@ class ContentPage(Page):
         if k == "painting":
             c.update(width=self.p_w.value(), height=self.p_h.value(), author=self.p_author.text().strip())
         elif k == "disc":
-            c.update(artist=self.d_artist.text().strip(), base=self.d_base.currentText(), comparator=self.d_cmp.value())
+            c.update(artist=self.d_artist.text().strip(), base=self.d_base.currentText(), comparator=self.d_cmp.value(),
+                     rights_ok=self.d_rights.isChecked())
         elif k == "tool":
             c.update(base=self.t_base.currentText().strip().replace("minecraft:", ""), damage=self.t_dmg.value(),
                      speed=self.t_spd.value(), durability=self.t_dur.value(), mining=self.t_mine.value(),
@@ -719,6 +724,7 @@ class ContentPage(Page):
 
     def _sc_done(self, res, err):
         self.d_ng_btn.setEnabled(True)
+        self.d_rights.setChecked(False)
         if err is not None:
             self.d_info.setText(t(err.template, **err.kw) if hasattr(err, "template") else str(err))
             return
@@ -753,6 +759,7 @@ class ContentPage(Page):
 
     def _ng_done(self, res, err):
         self.d_ng_btn.setEnabled(True)
+        self.d_rights.setChecked(False)          # yeni ses: onay yeniden istenir
         if err is not None:
             msg = t(err.template, **err.kw) if hasattr(err, "template") else str(err)
             self.d_info.setText(msg)

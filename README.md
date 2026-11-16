@@ -192,6 +192,8 @@ Every item can have a 3×3 crafting recipe. **Give to Player** runs `loot give <
 
 **Build Packs** writes `<world>/datapacks/spypaper_content/` and `spypaper_resourcepack.zip` in the server folder. Paintings and music discs appear after a server restart; tools and food after `/reload`. Players download the resource pack from an address: either let Spypaper share it (*Let Spypaper share the resource pack*, default port 8766; works on your home network and Tailscale, forward the port for players on the internet) or upload the zip somewhere and enter its URL in **Plugins → Resource Pack**. A server has only one resource pack, so this replaces any pack set there.
 
+Every music disc needs the **"I have the right to use and distribute this audio file"** checkbox before it is packed or shared. Spypaper cannot verify copyright; the server owner is responsible for the files used.
+
 If Newgrounds is blocked in your country, use a SoundCloud link or your own file. Newgrounds and SoundCloud tracks belong to their artists; only use tracks you have permission to use. The artist name is shown in the disc description.
 
 ---
