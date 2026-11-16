@@ -155,7 +155,7 @@ def components(c, fmt):
             comps["minecraft:unbreakable"] = {}
         elif int(c.get("durability", 0) or 0) > 0:
             comps["minecraft:max_damage"] = int(c["durability"])
-        ench = {mc(e): int(lv) for e, lv in (c.get("enchants") or []) if e and int(lv) > 0}
+        ench = {mc(e): min(255, int(lv)) for e, lv in (c.get("enchants") or []) if e and int(lv) > 0}
         if ench:
             comps["minecraft:enchantments"] = ench if fmt.v1215 else {"levels": ench}
         if c.get("glint"):
@@ -198,15 +198,40 @@ def recipe(c, fmt):
                        "components": components(c, fmt)}}
 
 
-def give_command(player, c):
-    """Oyuncuya eşya verir. Disk, bileşenleri /give ile doğrudan alır: loot tablosundaki set_components
-    bu sürümde uygulanmadığı için disk adı ve kaydı oyuncuya gelmiyordu. jukebox_playable metin olmalı."""
-    if c["type"] == "disc":
-        name = json.dumps(c.get("name") or c["id"], ensure_ascii=False)
-        snbt = name.replace("\\", "\\\\").replace("'", "\\'")
-        return (f"give {player} music_disc_13[item_name='{snbt}',"
-                f"jukebox_playable=\"spypaper:{c['id']}\"]")
-    return f"loot give {player} loot spypaper:{c['id']}"
+_BARE = re.compile(r"[A-Za-z0-9._+\-]+")
+TEXT_COMPONENTS = ("minecraft:item_name", "minecraft:custom_name")
+
+
+def snbt(v):
+    """JSON değerini /give komutundaki SNBT biçimine çevirir."""
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, int):
+        return str(v)
+    if isinstance(v, float):
+        return repr(v)
+    if isinstance(v, str):
+        return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    if isinstance(v, list):
+        return "[" + ",".join(snbt(x) for x in v) + "]"
+    if isinstance(v, dict):
+        return "{" + ",".join((k if _BARE.fullmatch(k) else snbt(k)) + ":" + snbt(x) for k, x in v.items()) + "}"
+    raise TypeError(type(v))
+
+
+def give_command(player, c, version=None):
+    """Oyuncuya eşyayı /give ile, bileşenleri komutun içinde vererek verir.
+    loot give'daki set_components bazı sunucularda (ör. Paper 26.x) uygulanmıyor; eşya düz geliyordu.
+    1.21.5'ten önce metin bileşenleri JSON metni olarak yazılır, sonra doğrudan SNBT."""
+    fmt = Fmt(version) if version else Fmt("99")
+    parts = []
+    for key, val in components(c, fmt).items():
+        if not fmt.v1215 and key in TEXT_COMPONENTS:
+            val = json.dumps(val, ensure_ascii=False)
+        elif not fmt.v1215 and key == "minecraft:lore":
+            val = [json.dumps(x, ensure_ascii=False) for x in val]
+        parts.append(f"{key}={snbt(val)}")
+    return f"give {player} {base_item(c)}[{','.join(parts)}]"
 
 
 # ---------------------------------------------------------------- paketler

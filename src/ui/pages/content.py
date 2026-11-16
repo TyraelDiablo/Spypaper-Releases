@@ -1,21 +1,21 @@
 """İçerik Editörü: tablo, müzik diski (Newgrounds), alet/silah ve yiyecek ekleme; 3x3 tarif; paket oluşturma
-ve kaynak paketini paylaşma. Çekirdek: core/content.py, core/newgrounds.py, core/soundcloud.py, core/packhost.py."""
+ve kaynak paketini paylaşma. Çekirdek: core/content.py, core/newgrounds.py, core/packhost.py."""
 import copy
 import os
 import re
 import threading
 
-from PySide6.QtCore import QSize, QStandardPaths, Qt, QUrl, Signal
-from PySide6.QtGui import QDesktopServices, QIcon, QImage, QPixmap
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QIcon, QImage, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QFormLayout, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMenu, QPlainTextEdit, QScrollArea, QSpinBox, QStackedWidget, QVBoxLayout, QWidget,
 )
 
-from core import N_, content as C, newgrounds as NG, soundcloud as SC
+from core import N_, content as C, newgrounds as NG
 from core.commands import EFFECTS, ENCHANTS
 
 ENCH_MAX = 12          # bir eşyada en fazla büyü sayısı
-ENCH_LEVEL_MAX = 256   # Minecraft'ta büyü seviyesi üst sınırı
+ENCH_LEVEL_MAX = 255   # Minecraft büyü seviyesini 1-255 arasında kabul eder
 from core.config import detect_version
 from core.danger import level_name
 from core.packhost import DEFAULT_PORT, HOST
@@ -45,14 +45,11 @@ def item_combo(items, editable=True):
 class ContentPage(Page):
     title = "İçerik Editörü"
     ng_done = Signal(object, object)       # (başlık, sanatçı, dosya, süre) / hata
-    sc_done = Signal(object, object)       # (başlık, sanatçı, adres) / hata
 
     def __init__(self, app, bridge):
         super().__init__(app, bridge)
         self.items, self.cur = [], None
         self.ng_done.connect(self._ng_done)
-        self.sc_done.connect(self._sc_done)
-        self._sc_pending = None
 
         self.banner = label("", None, wrap=True)
         self.banner.setStyleSheet(f"color:{TOKENS['warn']}; font-weight:600;")
@@ -150,9 +147,9 @@ class ContentPage(Page):
         self.types.addWidget(p)
 
         # disk
-        d = Card("Müzik Diski", "Newgrounds ID'si ya da SoundCloud bağlantısı gir, veya kendi ses dosyanı seç")
+        d = Card("Müzik Diski", "Newgrounds ID'si gir ya da kendi ses dosyanı seç")
         self.d_ng = QLineEdit()
-        self.d_ng.setPlaceholderText(t("Newgrounds ID (ör. 467339) ya da SoundCloud bağlantısı"))
+        self.d_ng.setPlaceholderText(t("Newgrounds ID (ör. 467339)"))
         self.d_ng_btn = button("Getir", "primary", self.fetch_ng)
         d.add(row(self.d_ng, self.d_ng_btn, button("Ses Dosyası Seç", "ghost", self.pick_sound), stretch_end=False))
         self.d_info = label("", "Muted", wrap=True)
@@ -460,8 +457,7 @@ class ContentPage(Page):
             self.d_artist.setText(c.get("artist", ""))
             self.d_base.setCurrentText(c.get("base", "music_disc_13"))
             self.d_cmp.setValue(int(c.get("comparator", 1)))
-            self.d_ng.setText(str(c.get("newgrounds") or c.get("soundcloud") or ""))
-            self._sc_pending = None
+            self.d_ng.setText(str(c.get("newgrounds") or ""))
             self._disc_info()
         elif k == "tool":
             self.t_base.setEditText(c["base"])
@@ -675,24 +671,16 @@ class ContentPage(Page):
         cid = self._need_id()
         if not cid:
             return
-        start = QStandardPaths.writableLocation(QStandardPaths.DownloadLocation) if self._sc_pending else ""
-        path, _ = QFileDialog.getOpenFileName(self, t("Ses Dosyası Seç"), start, "Audio (*.mp3 *.ogg *.wav *.flac *.aiff *.aif)")
+        path, _ = QFileDialog.getOpenFileName(self, t("Ses Dosyası Seç"), "", "Audio (*.mp3 *.ogg *.wav *.flac *.aiff *.aif)")
         if not path:
             return
         with open(path, "rb") as f:
             data = f.read(60 * 1024 * 1024)
-        if self._sc_pending:
-            title, artist, url = self._sc_pending
-            self._convert(cid, title, artist, data, ("soundcloud", url))
-        else:
-            self._convert(cid, os.path.splitext(os.path.basename(path))[0], "", data, None)
+        self._convert(cid, os.path.splitext(os.path.basename(path))[0], "", data, None)
 
     def fetch_ng(self):
         sid = self.d_ng.text().strip()
         if not sid:
-            return
-        if "soundcloud.com" in sid.lower():          # kimlik gerekmez; başlıktan türetilir
-            self.fetch_sc(sid)
             return
         cid = self._need_id()
         if not cid:
@@ -709,38 +697,6 @@ class ContentPage(Page):
             except Exception as e:
                 self.ng_done.emit(None, e)
         threading.Thread(target=work, daemon=True).start()
-
-    def fetch_sc(self, url):
-        """SoundCloud: bilgileri al, sayfayı tarayıcıda aç; dosyayı kullanıcı indirip seçer."""
-        self.d_ng_btn.setEnabled(False)
-        self.d_info.setText(t("SoundCloud'dan bilgiler alınıyor…"))
-
-        def work():
-            try:
-                self.sc_done.emit(SC.info(url), None)
-            except Exception as e:
-                self.sc_done.emit(None, e)
-        threading.Thread(target=work, daemon=True).start()
-
-    def _sc_done(self, res, err):
-        self.d_ng_btn.setEnabled(True)
-        self.d_rights.setChecked(False)
-        if err is not None:
-            self.d_info.setText(t(err.template, **err.kw) if hasattr(err, "template") else str(err))
-            return
-        title, artist, url = res
-        c = self.cur
-        if not c or c["type"] != "disc":
-            return
-        self._sc_pending = (title, artist, url)
-        if title and not self.f_name.text().strip():
-            self.f_name.setText(title)
-            self._auto_id(title)
-        if artist and not self.d_artist.text().strip():
-            self.d_artist.setText(artist)
-        QDesktopServices.openUrl(QUrl(url))
-        self.d_info.setText(t("“{title}” – {artist}: SoundCloud sayfası tarayıcıda açıldı. Sanatçı izin verdiyse ⋯ (Diğer) → İndir ile dosyayı indir, sonra Ses Dosyası Seç'e bas. İndirme yoksa parça kullanılamaz.",
-                              title=title or "?", artist=artist or "?"))
 
     def _convert(self, cid, title, artist, data, ng):
         """Dönüştürme arka planda; uzun parçalarda arayüz donmasın."""
@@ -768,11 +724,8 @@ class ContentPage(Page):
         c = self.cur
         if not c or c["type"] != "disc":
             return
-        if isinstance(ng, tuple):
-            c.update(sound=name, length=length, newgrounds="", soundcloud=ng[1])
-        else:
-            c.update(sound=name, length=length, newgrounds=ng or "", soundcloud="")
-        self._sc_pending = None
+        c.update(sound=name, length=length, newgrounds=ng or "")
+        c.pop("soundcloud", None)
         if not self.f_name.text().strip():
             self.f_name.setText(title)
             self._auto_id(title)
@@ -784,7 +737,7 @@ class ContentPage(Page):
         c = self.cur
         if c and c.get("sound"):
             m, s = divmod(int(float(c.get("length", 0))), 60)
-            src = f"Newgrounds #{c['newgrounds']}" if c.get("newgrounds") else "SoundCloud" if c.get("soundcloud") else t("kendi dosyan")
+            src = f"Newgrounds #{c['newgrounds']}" if c.get("newgrounds") else t("kendi dosyan")
             self.d_info.setText(t("Ses hazır: {file} · {len} · kaynak: {src}", file=c["sound"], len=f"{m}:{s:02}", src=src))
         else:
             self.d_info.setText(t("Henüz ses yok."))
@@ -862,7 +815,7 @@ class ContentPage(Page):
         if not re.fullmatch(r"[A-Za-z0-9_]{1,16}|@[aprs]", who):
             self.warn(t("Geçersiz oyuncu adı: {name}", name=who))
             return
-        self.send(C.give_command(who, self.cur))
+        self.send(C.give_command(who, self.cur, self._version()))
 
 
 def restore_sharing(settings_servers):

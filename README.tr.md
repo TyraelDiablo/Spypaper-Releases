@@ -34,7 +34,7 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Whitelist & Ban** | Whitelist, ban ve op listeleri. |
 | **Bakım & Yedek** | Dünya (Overworld, Nether, End) yedeği ve bakım modu. Bakımda whitelist yedeklenip boşaltılır, böylece whitelist kullanan sunuculara da kimse giremez; OP olmayan oyuncular atılır, bakım bitince her şey geri gelir. Gün, saat ve süreli haftalık plan, oyun içi uyarılarla. Bkz. [Bakım](#bakım). |
 | **Notlar** | Her sunucu için kendi notların; kendiliğinden kaydedilir. |
-| **İçerik Editörü** | Mod olmadan içerik ekle (veri paketi + kaynak paketi, Minecraft 1.21+): kendi resimlerinden tablo, **Newgrounds ID**'si, **SoundCloud** bağlantısı ya da kendi ses dosyandan müzik diski, var olan eşyalardan hasarı, hızı, dayanıklılığı, büyüleri, efektleri ve isteğe bağlı dokusu senin belirlediğin alet/silah ve yiyecek; 3×3 tarif. Kaynak paketini Spypaper kendisi paylaşabilir. Mod olmadan yeni blok eklenemez. Bkz. [İçerik Editörü](#i̇çerik-editörü). |
+| **İçerik Editörü** | Mod olmadan içerik ekle (veri paketi + kaynak paketi, Minecraft 1.21+): kendi resimlerinden tablo, **Newgrounds ID**'si ya da kendi ses dosyandan müzik diski, var olan eşyalardan hasarı, hızı, dayanıklılığı, büyüleri, efektleri ve isteğe bağlı dokusu senin belirlediğin alet/silah ve yiyecek; 3×3 tarif. Kaynak paketini Spypaper kendisi paylaşabilir. Mod olmadan yeni blok eklenemez. Bkz. [İçerik Editörü](#i̇çerik-editörü). |
 | **Tehlikeli Bölge** | Geri alınamayan işlemler için PIN korumalı sayfa: dünyayı sıfırla (Overworld/Nether/End ve seed seçerek), dünya yedeğini geri yükle, oyuncu verilerini sıfırla, sunucuyu sil. Bkz. [Tehlikeli Bölge](#tehlikeli-bölge). |
 | **Çökme bekçisi** | İsteğe bağlı: durdurulmadan kapanan sunucuyu yeniden başlatır; 10 dakikada 3 kez çökerse vazgeçer. İsteğe bağlı yedek sınırı en eski yedekleri kendiliğinden siler. |
 | **Canlı Harita** | BlueMap 3D haritası panelin içinde açılır. BlueMap kurulu değilse sunucunun yazılımına ve sürümüne uygun olanı Modrinth'ten indirip kurar, doku indirme iznini (onayınla) ayarlar. |
@@ -182,7 +182,7 @@ Her sunucu panelindeki **İçerik Editörü** sekmesi (Minecraft 1.21 ve üstü)
 | Tür | Ayarlanan | Kaynak paketi gerekir mi |
 |---|---|---|
 | Tablo | Resim (blok başına 16 piksele ölçeklenir), 1–16 × 1–16 blok boyut, ressam | evet |
-| Müzik Diski | **Newgrounds ID** (indirilip tek kanallı OGG'ye çevrilir), **SoundCloud** bağlantısı (ad ve sanatçı doldurulur, sayfa tarayıcıda açılır; sanatçı izin verdiyse dosyayı oradan indirirsin) ya da kendi MP3/OGG/WAV/FLAC/AIFF dosyan, sanatçı, disk görünümü, karşılaştırıcı sinyali | evet |
+| Müzik Diski | **Newgrounds ID** (indirilip tek kanallı OGG'ye çevrilir) ya da kendi MP3/OGG/WAV/FLAC/AIFF dosyan, sanatçı, disk görünümü, karşılaştırıcı sinyali | evet |
 | Alet / Silah | Temel eşya, saldırı hasarı ve hızı, dayanıklılık ya da kırılmaz, kazma hızı bonusu, büyüler, parıltı, isteğe bağlı 16×16 doku (1.21.4+) | yalnızca doku için |
 | Yiyecek | Temel eşya, besin, doygunluk, yeme süresi, tokken yenebilme, efektler, isteğe bağlı doku (1.21.2+) | yalnızca doku için |
 
@@ -192,7 +192,7 @@ Her içeriğe 3×3 tarif eklenebilir. **Oyuncuya Ver**, `loot give <oyuncu> loot
 
 Eklentiler/Modlar: **Güncellemeleri denetle** yüklü `.jar` dosyalarını SHA-1 özetiyle Modrinth'te arar ve uyumlu daha yeni sürümleri kurmayı önerir (yalnızca sen basınca). Her müzik diski için **"Bu ses dosyasını kullanma ve oyunculara dağıtma hakkım var"** kutusu işaretlenmeden disk paketlenmez ve paylaşılmaz. Spypaper telif hakkını doğrulayamaz; kullanılan dosyalardan sunucu sahibi sorumludur.
 
-Newgrounds ülkende engelliyse (ör. Türkiye) SoundCloud bağlantısı ya da kendi dosyanı kullan. Newgrounds ve SoundCloud parçalarının hakları sanatçılarına aittir; yalnızca kullanma iznin olan parçaları kullan. Sanatçının adı diskin açıklamasında görünür.
+Newgrounds ülkende engelliyse (ör. Türkiye) kendi ses dosyanı kullan. Newgrounds parçalarının hakları sanatçılarına aittir; yalnızca kullanma iznin olan parçaları kullan. Sanatçının adı diskin açıklamasında görünür.
 
 ---
 
@@ -298,7 +298,6 @@ Spypaper-Releases/
    │  ├─ modrinth.py       Modrinth arama/indirme, sunucu kaynak paketi
    │  ├─ content.py        İçerik Editörü (veri paketi + kaynak paketi üretici)
    │  ├─ newgrounds.py     Newgrounds parça indirme
-   │  ├─ soundcloud.py     SoundCloud parça bilgisi (oEmbed)
    │  ├─ packhost.py       kaynak paketi paylaşımı (küçük HTTP sunucusu)
    │  ├─ skins.py, homes.py oyuncu kafaları (Mojang), oyuncu evleri
    │  ├─ esplora_kb.py     Esplora'nın gömülü bilgi bankası
