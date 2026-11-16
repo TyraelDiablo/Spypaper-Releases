@@ -30,7 +30,7 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Takımlar** | Takım oluştur ve sil (`/team`), üye ekle/çıkar; renk, görünen ad, ön ek/son ek, dost ateşi, isim etiketi ve ölüm mesajı görünürlüğü ile çarpışmayı ayarla. Takımlar `scoreboard.dat`'tan okunur, sunucu kapalıyken de görünür. |
 | **Eklentiler / Modlar** | Paper, Purpur ve Spigot'ta `plugins/`, Fabric, Quilt, Forge ve NeoForge'da `mods/` klasörünü yönetir: ekle, sil, devre dışı bırak. **Modrinth:** sunucunun Minecraft sürümüne ve yükleyicisine göre süzülmüş eklenti/mod arama, gerekli bağımlılıklarıyla kurma (dosyalar SHA-512 ile doğrulanır). **Kaynak Paketi:** Modrinth'ten bir kaynak paketi seç ya da adres gir, sunucu kaynak paketi olsun (SHA-1, zorunlu/isteğe bağlı). |
 | **Mod Dil Dosyaları** | Mod ve eklenti jar'larının içindeki İngilizce dil dosyalarını, yolu ne olursa olsun bulur (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…). JSON ve YAML, düz ya da iç içe. Çeviriyi sen yazarsın; panel jar'ın içine ve eklentinin kendi klasöründeki kopyaya kaydeder. Biçim kodu kontrolü (`%s`, `%player%`, `§a`, `&c`, `<red>`), dışa/içe aktarma, orijinali geri yükleme. |
-| **Sunucu Ayarları** | `server.properties` düzenleyici, Java yolu, RAM, jar, sunucu ikonu. |
+| **Sunucu Ayarları** | `server.properties` düzenleyici, Java yolu, RAM, jar, sunucu ikonu. **Dünya Sınırı:** iki köşe (X/Z) ya da merkez ve yarıçap gir; Spypaper Overworld, Nether ya da End için `/worldborder` gönderir, istersen geçiş süresiyle. Sınır her zaman karedir; dikdörtgen girersen uzun kenarı kapsar. |
 | **Whitelist & Ban** | Whitelist, ban ve op listeleri. |
 | **Bakım & Yedek** | Dünya (Overworld, Nether, End) yedeği ve bakım modu. Bakımda whitelist yedeklenip boşaltılır, böylece whitelist kullanan sunuculara da kimse giremez; OP olmayan oyuncular atılır, bakım bitince her şey geri gelir. Gün, saat ve süreli haftalık plan, oyun içi uyarılarla. Bkz. [Bakım](#bakım). |
 | **Notlar** | Her sunucu için kendi notların; kendiliğinden kaydedilir. |
@@ -318,6 +318,7 @@ Spypaper-Releases/
    │  ├─ skins.py, homes.py oyuncu kafaları (Mojang), oyuncu evleri
    │  ├─ esplora_kb.py     Esplora'nın gömülü bilgi bankası
    │  ├─ guard.py          Hile Koruması (cevher gizleme, yetki koruması, GrimAC, bot doğrulaması)
+   │  ├─ worldborder.py    Dünya Sınırı (/worldborder komutları)
    │  ├─ autostart.py      Windows ile başlatma
    │  ├─ gamefiles.py      Minecraft dil dosyaları ve ikonlar (yerel kurulum ya da Mojang)
    │  ├─ iconrender.py     blok eşya ikonlarını oyunun 3D modellerinden çizer

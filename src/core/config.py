@@ -39,6 +39,7 @@ SERVER_DEFAULTS = {
     "content": [],             # core.content: içerik editörünün içerikleri
     "content_share": {},       # kaynak paketini Spypaper paylaşsın mı (core.packhost)
     "guard": {},               # Hile Koruması (core.guard.DEFAULTS)
+    "world_border": {},        # Dünya Sınırı kartının son değerleri (core.worldborder)
     "auto_restart": False,     # çökünce otomatik yeniden başlat
     "backup_keep": 0,          # saklanacak yedek sayısı (0 = sınırsız)
     "danger_pin_hash": "",     # sunucuda PIN yoksa yalnızca Tehlikeli Bölge için PIN

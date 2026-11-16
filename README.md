@@ -30,7 +30,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Teams** | Create and delete teams (`/team`), add and remove members, and set color, display name, prefix/suffix, friendly fire, name tag and death message visibility and collision. Teams are read from `scoreboard.dat`, so you can see them even while the server is stopped. |
 | **Plugins / Mods** | Manages `plugins/` on Paper, Purpur and Spigot, and `mods/` on Fabric, Quilt, Forge and NeoForge: add, remove, disable. **Modrinth:** search plugins/mods filtered by your server's Minecraft version and loader, install with required dependencies (files verified with SHA-512). **Resource Pack:** pick a resource pack from Modrinth or enter a URL to set as the server resource pack (SHA-1, required/optional). |
 | **Mod Language Files** | Finds the English language files inside mod and plugin jars wherever they are (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…), JSON or YAML, flat or nested. You write the translation; the panel saves it into the jar and into the plugin's own data folder copy. Format code checks (`%s`, `%player%`, `§a`, `&c`, `<red>`), import/export, restore original. |
-| **Server Settings** | `server.properties` editor, Java path, RAM, jar, server icon. |
+| **Server Settings** | `server.properties` editor, Java path, RAM, jar, server icon. **World Border:** enter two corners (X/Z) or a center and radius; Spypaper sends `/worldborder` for the Overworld, Nether or End, optionally with a transition time. The border is always square, so a rectangle is covered by its longer side. |
 | **Whitelist & Bans** | Whitelist, ban and op lists. |
 | **Maintenance & Backups** | World backups (Overworld, Nether, End) and maintenance mode. Maintenance saves and empties the whitelist so nobody gets in even on whitelisted servers, kicks non-OP players and restores everything when it ends. Weekly schedule (days, time, duration) with in-game warnings. See [Maintenance](#maintenance). |
 | **Notes** | Your own notes for each server, saved automatically. |
@@ -320,6 +320,7 @@ Spypaper-Releases/
    │  ├─ skins.py, homes.py player heads (Mojang), player homes
    │  ├─ esplora_kb.py     Esplora's built-in knowledge base
    │  ├─ guard.py          Anti-Cheat (ore hiding, permission guard, GrimAC, bot verification)
+   │  ├─ worldborder.py    World Border (/worldborder commands)
    │  ├─ autostart.py      start with Windows
    │  ├─ gamefiles.py      Minecraft language files and icons (local install or Mojang)
    │  ├─ iconrender.py     renders block item icons from the game's 3D models

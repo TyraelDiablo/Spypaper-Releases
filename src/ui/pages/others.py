@@ -261,6 +261,10 @@ class SettingsPage(Page):
         top.addWidget(panel, 2)
         self.col.addLayout(top)
 
+        from ..borderbox import BorderCard
+        self.border = BorderCard(self)
+        self.col.addWidget(self.border)
+
         # server.properties
         props = Card("server.properties", "Değişikliklerin çoğu sunucu yeniden başlatılınca geçerli olur")
         self.search = QLineEdit()
@@ -289,6 +293,7 @@ class SettingsPage(Page):
         self.bluemap.setText(c.get("bluemap_url"))
         self.keep.setValue(int(c.get("backup_keep") or 0))
         self.auto_restart.setChecked(bool(c.get("auto_restart")))
+        self.border.load()
 
         ip = self.app.properties.icon_path
         if ip:
