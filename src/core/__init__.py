@@ -31,6 +31,8 @@ class App:
         self.maintenance = Maintenance(profile, self.server, self.properties, self.backups, online=self.online_players)
         self.metrics = ProcessMetrics(self.server, profile)
         self.logtrans = LogTranslator(self.players.translations)
+        from .guard import Guard
+        self.guard = Guard(profile, self.server)
 
     def online_players(self):
         """Log'daki giriş/çıkışlara göre şu an içerideki oyuncular (log'u panel okur, burada okunmaz:

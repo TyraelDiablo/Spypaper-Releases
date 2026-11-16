@@ -1,6 +1,6 @@
 # Spypaper Privacy Notice
 
-**Version 1.2 · Effective date: 15 November 2026**
+**Version 1.3 · Effective date: 16 November 2026**
 
 > If this English version conflicts with the Turkish version ([GIZLILIK.md](GIZLILIK.md)), the Turkish version prevails.
 
@@ -39,9 +39,10 @@ This data is not copied elsewhere or uploaded by the Software. Backups are writt
 - Your server **notes** (plain text; don't write passwords), the maintenance schedule and crash watchdog / backup limit settings
 - The **Danger Zone PIN** (set if the server has no PIN): stored only as a PBKDF2 hash, like the server PIN
 - Player **homes** (name, dimension, coordinates), the **server info** you write for Esplora, and Content Editor items
+- **Anti-Cheat** settings and the Permission Guard's allowed OP list (player names)
 - While maintenance is running: the whitelist and MOTD from before maintenance. The whitelist is also written to `backups/whitelist_maintenance.json` in the server folder and deleted when maintenance ends.
 
-Player head images are cached in `cache/skins/` next to the Software and Modrinth icons in `cache/modrinth/`. Images and audio you add in the Content Editor are kept in `spypaper_content/` in the server folder.
+Player head images are cached in `cache/skins/` next to the Software and Modrinth icons in `cache/modrinth/`. Images and audio you add in the Content Editor are kept in `spypaper_content/` in the server folder. When Anti-Cheat is on, the names and verification dates of verified players (`verified.json`) and protection events (`guard.log`: player name and what happened) are written to `spypaper_guard/` in the server folder; IP addresses are not written.
 
 If you turn on *Start Spypaper with Windows*, the Software's path is written to the Windows registry (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`); turning it off removes it.
 
@@ -105,11 +106,12 @@ If *Show player heads* is on (the default), the Players page downloads players' 
 - When you click **Check for updates**, the SHA-1 hashes of your installed `.jar` files (not the files themselves) are sent to `api.modrinth.com` to find newer versions. This happens only when you click the button; there are no background checks. See the [Modrinth Privacy Policy](https://modrinth.com/legal/privacy).
 
 - When you search in the **Modrinth** tab, your search text, the selected Minecraft version and loader are sent to `api.modrinth.com`; plugins/mods/resource packs and icons are downloaded from `cdn.modrinth.com`. See the [Modrinth Privacy Policy](https://modrinth.com/legal/privacy).
+- When you click *Install* on the **Anti-Cheat** page, the GrimAC anti-cheat plugin and its dependencies are downloaded from `api.modrinth.com` / `cdn.modrinth.com`, sending your server version and loader.
 - When you enter a Newgrounds ID in the **Content Editor** and click *Fetch*, that ID's page is downloaded from `www.newgrounds.com` and the audio from `audio.ngfiles.com`. See the [Newgrounds Privacy Policy](https://www.newgrounds.com/wiki/help-information/privacy-policy). Tracks belong to their artists; only add tracks you have permission to use.
 
 ### 2.7 Resource pack sharing
 
-If you turn on *Let Spypaper share the resource pack* in the Content Editor, the Software runs a small web server on the port you choose (default 8766) that only serves the generated resource pack file. The IP addresses of players downloading the pack reach your computer through this connection but are not stored. This option is off by default.
+If you turn on *Let Spypaper share the resource pack* in the Content Editor, the Software runs a small web server on the port you choose (default 8766) that only serves the generated resource pack file. The IP addresses of players downloading the pack reach your computer through this connection but are not written to disk. When **Bot Verification** is on, these IP addresses and download times are kept in memory only (at most the last 1000 downloads) to compare them with the IP in the server log of a player who logs in, and are cleared when the Software closes. This option is off by default.
 
 ### 2.8 Other connections
 

@@ -8,6 +8,8 @@ paket başka bir yere yüklenip adresi elle girilmeli.
 import os
 import re
 import threading
+import time
+from collections import deque
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -43,6 +45,8 @@ class _Handler(BaseHTTPRequestHandler):
                     self.wfile.write(chunk)
                 except (BrokenPipeError, ConnectionResetError):
                     return
+        # yalnızca tamamı gönderilen indirmeler sayılır (Bot Doğrulaması: core.guard)
+        self.server.host.downloads.append((m.group(1), self.client_address[0], time.time()))
 
 
 class _Server(ThreadingHTTPServer):
@@ -55,6 +59,7 @@ class _Server(ThreadingHTTPServer):
 class PackHost:
     def __init__(self):
         self.files = {}            # (sunucu_id, sha1) -> dosya yolu
+        self.downloads = deque(maxlen=1000)   # (sunucu_id, ip, zaman) — yalnızca bellekte
         self.httpd = None
         self.port = None
 
@@ -85,6 +90,9 @@ class PackHost:
     def unregister(self, sid):
         for k in [k for k in self.files if k[0] == sid]:
             del self.files[k]
+
+    def downloads_for(self, sid):
+        return [(ip, ts) for s, ip, ts in list(self.downloads) if s == sid]
 
     def url(self, address, sid, sha1):
         host = f"[{address}]" if ":" in address else address

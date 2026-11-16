@@ -25,9 +25,10 @@ from .pages.notes import NotesPage
 from .pages.teams import TeamsPage
 from .pages.danger import DangerPage
 from .pages.content import ContentPage, restore_sharing
+from .pages.guard import GuardPage
 
 PAGES = [DashboardPage, ConsolePage, LogsPage, EsploraPage, PlayersPage, TeamsPage, PluginsPage, ModTransPage,
-         SettingsPage, AdminPage, MaintenancePage, MapPage, NotesPage, ContentPage, DangerPage]
+         SettingsPage, AdminPage, MaintenancePage, MapPage, NotesPage, ContentPage, GuardPage, DangerPage]
 CRASH_LIMIT = 3            # bu kadar çökme...
 CRASH_WINDOW = 600         # ...bu kadar saniye içinde olursa otomatik yeniden başlatma durur
 RESTART_DELAY = 10
@@ -410,6 +411,7 @@ class MainWindow(QMainWindow):
         if sid not in self.apps:
             app = self.apps[sid] = App(self.settings.server(sid))
             app.maintenance.tr = t                  # oyunculara giden uyarılar panel dilinde
+            app.guard.tr = t
         return self.apps[sid]
 
     def watchdog(self):
@@ -450,6 +452,11 @@ class MainWindow(QMainWindow):
 
     def maintenance_tick(self):
         self.watchdog()
+        for app in list(self.apps.values()):
+            try:
+                app.guard.tick()
+            except Exception as e:
+                print(f"[koruma] {app.config.name}: {e}")
         for prof in self.settings.servers():
             if not prof.exists:
                 continue

@@ -803,7 +803,9 @@ class ContentPage(Page):
         sha = C.sha1_file(rp)
         HOST.register(self.app.id, rp, sha)
         from core import modrinth as M
-        M.set_resource_pack(self.app.properties, HOST.url(cfg["address"], self.app.id, sha), sha, cfg["required"])
+        from core import guard as G
+        required = cfg["required"] or G.active(self.app.config, "captcha")   # Bot Doğrulaması paketi zorunlu kılar
+        M.set_resource_pack(self.app.properties, HOST.url(cfg["address"], self.app.id, sha), sha, required)
         if not quiet:
             self.info(t("Kaynak paketi paylaşılıyor: {url}", url=HOST.url(cfg["address"], self.app.id, sha)) + "\n" +
                       t("Değişiklik sunucu yeniden başlatılınca geçerli olur."))

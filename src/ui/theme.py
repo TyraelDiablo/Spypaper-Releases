@@ -63,11 +63,13 @@ PRESETS = {
 
 TOKENS = dict(BASE)
 _scale = 1.0
+_solid = False          # yüksek kontrastta butonlar dolu kalır (okunabilirlik)
 
 
 def apply(preset="gece", high_contrast=False, font_scale=1.0):
     """TOKENS'ı yerinde günceller (modüller aynı sözlüğü gördüğü için)."""
-    global _scale
+    global _scale, _solid
+    _solid = bool(high_contrast) or preset == "kontrast"
     TOKENS.clear()
     TOKENS.update(BASE)
     TOKENS.update(PRESETS.get(preset, PRESETS["gece"])[2])
@@ -90,16 +92,31 @@ def log_colors():
             "info": TOKENS["text_muted"], "plain": TOKENS["text"]}
 
 
+def _mix(a, b, t):
+    """a rengini t oranında b'ye yaklaştırır."""
+    a, b = a.lstrip("#"), b.lstrip("#")
+    return "#" + "".join(f"{round(int(a[i:i + 2], 16) * (1 - t) + int(b[i:i + 2], 16) * t):02x}" for i in (0, 2, 4))
+
+
 def button_variants():
-    return {
-        "primary": (TOKENS["accent"], TOKENS["text_on_accent"], TOKENS["accent_hover"]),
-        "danger": (TOKENS["danger"], "#ffffff", "#ff5a4d"),
-        "warn": (TOKENS["warn"], "#111111", "#ffc53a"),
-        "info": (TOKENS["info"], "#ffffff", "#42a5f5"),
-        "purple": (TOKENS["purple"], "#ffffff", "#ad85f5"),
-        "ghost": (TOKENS["surface_2"], TOKENS["text"], TOKENS["surface_3"]),
-        "flat": ("transparent", TOKENS["text"], TOKENS["surface_2"]),
+    """ad -> (zemin, yazı, üzerine gelince zemin, kenar).
+    Renkli butonlar tonlu: renk yazıda ve hafif bir zeminde; yüksek kontrastta dolu kalır."""
+    out = {
+        "ghost": (TOKENS["surface_2"], TOKENS["text"], TOKENS["surface_3"], TOKENS["border"]),
+        "flat": ("transparent", TOKENS["text"], TOKENS["surface_2"], "transparent"),
     }
+    colored = {"primary": TOKENS["accent"], "danger": TOKENS["danger"], "warn": TOKENS["warn"],
+               "info": TOKENS["info"], "purple": TOKENS["purple"]}
+    if _solid:
+        on = {"primary": TOKENS["text_on_accent"], "warn": "#111111"}
+        for name, c in colored.items():
+            out[name] = (c, on.get(name, "#ffffff"), _mix(c, "#ffffff", 0.15), c)
+        return out
+    light = is_light()
+    for name, c in colored.items():
+        fg = _mix(c, "#000000", 0.38) if light else c
+        out[name] = (rgba(c, 0.12), fg, rgba(c, 0.22), rgba(c, 0.38))
+    return out
 
 
 def status(state):
@@ -246,12 +263,12 @@ QToolTip {{ background: {surface_2}; color: {text}; border: 1px solid {border}; 
 
 BUTTON_QSS = """
 QPushButton[variant="{name}"] {{
-    background: {bg}; color: {fg}; border: none; border-radius: {radius_sm};
-    padding: 7px 14px; font-weight: 600;
+    background: {bg}; color: {fg}; border: 1px solid {edge}; border-radius: {radius_sm};
+    padding: 6px 13px; font-weight: 600;
 }}
 QPushButton[variant="{name}"]:hover {{ background: {hover}; }}
-QPushButton[variant="{name}"]:pressed {{ padding-top: 8px; padding-bottom: 6px; }}
-QPushButton[variant="{name}"]:disabled {{ background: {surface_2}; color: {text_muted}; }}
+QPushButton[variant="{name}"]:pressed {{ padding-top: 7px; padding-bottom: 5px; }}
+QPushButton[variant="{name}"]:disabled {{ background: {surface_2}; color: {text_muted}; border-color: {border}; }}
 """
 
 
@@ -262,6 +279,6 @@ def _scale_pt(css):
 def stylesheet():
     css = QSS.format(**TOKENS)
     rest = {k: v for k, v in TOKENS.items() if k != "bg"}
-    for name, (bg, fg, hover) in button_variants().items():
-        css += BUTTON_QSS.format(name=name, bg=bg, fg=fg, hover=hover, **rest)
+    for name, (bg, fg, hover, edge) in button_variants().items():
+        css += BUTTON_QSS.format(name=name, bg=bg, fg=fg, hover=hover, edge=edge, **rest)
     return _scale_pt(css)

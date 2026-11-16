@@ -35,6 +35,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Maintenance & Backups** | World backups (Overworld, Nether, End) and maintenance mode. Maintenance saves and empties the whitelist so nobody gets in even on whitelisted servers, kicks non-OP players and restores everything when it ends. Weekly schedule (days, time, duration) with in-game warnings. See [Maintenance](#maintenance). |
 | **Notes** | Your own notes for each server, saved automatically. |
 | **Content Editor** | Add content without mods (data pack + resource pack, Minecraft 1.21+): paintings from your images, music discs from a **Newgrounds ID** or your own audio file, tools/weapons and food based on existing items with your own damage, speed, durability, enchantments, effects and optional texture, plus a 3×3 crafting recipe. Spypaper can share the resource pack itself. New blocks are not possible without mods. See [Content Editor](#content-editor). |
+| **Anti-Cheat** | Modules named by what they do: **Ore Hiding** (Paper/Purpur's built-in anti-xray, makes X-Ray packs useless), **Permission Guard** (revokes OP that wasn't given from the panel and kicks the player), **Combat Cheat Check** (one-click install of the open-source GrimAC plugin from Modrinth for killaura, reach, fly and speed), **Bot Verification** (kicks joining players who don't actually download the server's resource pack). A single switch allows cheats and turns everything off. See [Anti-Cheat](#anti-cheat). |
 | **Danger Zone** | PIN-protected page for irreversible actions: reset the world (choose Overworld/Nether/End and the seed), restore a world backup, reset player data, delete the server. See [Danger Zone](#danger-zone). |
 | **Crash watchdog** | Optional: restarts a server that shuts down without being stopped; gives up after 3 crashes in 10 minutes. Optional backup limit deletes the oldest backups automatically. |
 | **Live Map** | Shows the BlueMap 3D map inside the panel. If BlueMap isn't installed, it downloads the right version for your server software and Minecraft version from Modrinth and (with your consent) enables its texture download. |
@@ -42,7 +43,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Spypaper Remote** | Watch your servers from your phone; with the permissions you grant on the computer, start/stop them, run maintenance and change settings. Pair with a QR code; no app store, no account, no database. See [Spypaper Remote](#spypaper-remote-phone). |
 | **Updates** | Checks GitHub Releases for a new Spypaper version at startup (can be turned off) and updates the exe in one click. |
 | **Security** | 4-level safe mode (confirm, block or read-only for dangerous commands) and an optional per-server PIN. |
-| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons, themed in-app dialogs instead of Windows message boxes. **Panel Layout:** reorder or hide the panel's tabs and the Dashboard cards. Animated page transitions and a sliding indicator for the selected tab (off with *Reduce motion*). Scrolling over settings no longer changes dropdowns or number fields by accident. Optional start with Windows. |
+| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons, themed in-app dialogs instead of Windows message boxes. **Panel Layout:** reorder or hide the panel's tabs and the Dashboard cards. Animated page transitions and a sliding indicator for the selected tab (off with *Reduce motion*). Scrolling over settings no longer changes dropdowns or number fields by accident. Colored buttons use a subtle tonal style (solid in high contrast). Optional start with Windows. |
 
 ---
 
@@ -198,6 +199,21 @@ If Newgrounds is blocked in your country, use your own audio file. Newgrounds tr
 
 ---
 
+## Anti-Cheat
+
+Spypaper runs **outside** the server: it sees the console and the server files, not the players' network packets. Each module on the **Anti-Cheat** page does what is possible from there:
+
+| Module | What it does | Limits |
+|---|---|---|
+| Ore Hiding | Turns on Paper/Purpur's built-in anti-xray in `config/paper-world-defaults.yml` (comments are kept). *Light* shows hidden ores as stone, *Strong* places fake ores everywhere. X-Ray resource packs become useless. | Paper and Purpur only. Fullbright and the player's own resource pack run on the player's computer; no server can see them. |
+| Permission Guard | Watches `ops.json` and the console. If someone not on the allowed list becomes OP (in-game `/op`, a plugin, a command block), Spypaper sends `deop` and `kick` and logs it. OP given from the panel (console, Players, phone) is allowed automatically. | Works while the server is started from Spypaper. |
+| Combat Cheat Check | Installs [GrimAC](https://modrinth.com/plugin/grimac) (GPL-3.0) and its dependencies from Modrinth for your server version, and turns it on or off. Killaura, reach, fly and speed need packet-level checks that only a server plugin can do. | Paper, Purpur and Spigot. Stop the server before installing or toggling (Windows locks the jar). |
+| Bot Verification | While Spypaper shares the resource pack (Content Editor → Sharing), the pack becomes required. When a player logs in, Spypaper checks that the whole pack was downloaded from that player's IP; one download verifies only one login. Players who didn't download it are kicked after the wait time; verified players go to `spypaper_guard/verified.json` and aren't checked again. | Doesn't work behind a proxy (Velocity/BungeeCord). Bedrock (Geyser) players are skipped by default. When you turn it on, the pack is renewed so everyone downloads it once more. |
+
+**Allow cheats on this server** turns every module off (and turns anti-xray and the plugin off in their files); turning it off again restores them. Events are written to `spypaper_guard/guard.log`. Changed config files apply after a restart.
+
+---
+
 ## Spypaper Remote (phone)
 
 Watch your servers from your phone and, if you allow it, control them. There is no app store app: Spypaper on your computer serves a small mobile web app, and your phone opens it in the browser. Add it to the home screen and it opens like an app (Android and iPhone).
@@ -303,6 +319,7 @@ Spypaper-Releases/
    │  ├─ packhost.py       resource pack sharing (small HTTP server)
    │  ├─ skins.py, homes.py player heads (Mojang), player homes
    │  ├─ esplora_kb.py     Esplora's built-in knowledge base
+   │  ├─ guard.py          Anti-Cheat (ore hiding, permission guard, GrimAC, bot verification)
    │  ├─ autostart.py      start with Windows
    │  ├─ gamefiles.py      Minecraft language files and icons (local install or Mojang)
    │  ├─ iconrender.py     renders block item icons from the game's 3D models
@@ -357,6 +374,8 @@ Planned next (order may change; share your ideas on [Issues](https://github.com/
 - **"Couldn't check for updates":** the computer is offline or the releases repository is private; Spypaper starts normally anyway.
 - **Player heads show letters instead of faces:** the player has no Mojang account with that name (offline/cracked), Mojang can't be reached, or *Show player heads* is off.
 - **Players don't get the Content Editor's paintings/music:** build the packs, restart the server, and make sure players can reach the resource pack address (port 8766 by default when Spypaper shares it).
+- **Bot Verification kicks a real player:** they may already have the pack cached from before (they never download it again), or they connect through a proxy/VPN with a different address. Add them with **Verify manually** on the Anti-Cheat page.
+- **Ore Hiding says it isn't available:** it exists only on Paper and Purpur, and `config/paper-world-defaults.yml` appears after the server has been started once.
 - **The server won't start:** read the error in the Live Console or ask Esplora *"Why won't the server start?"*. Make sure your Java version matches your Minecraft version.
 - **Forge/NeoForge installation failed:** check that the Java path is correct and the server folder is writable; the last lines of the installer output are shown in the window.
 - **Gemini/OpenAI error 429:** the provider's rate limit was reached; try again later.

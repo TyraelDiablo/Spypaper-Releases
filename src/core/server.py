@@ -29,6 +29,8 @@ class ServerProcess:
         self._lock = threading.Lock()
         self.on_line = None   # fn(str)
         self.on_state = None  # fn(state)
+        self.hooks = []       # fn(str): her satırda, arayüzden bağımsız (ör. core.guard)
+        self.send_hooks = []  # fn(str): gönderilen her komutta
         self.history = deque(maxlen=5000)   # arayüz yeniden kurulunca konsol buradan dolar
         self.stop_requested = False
         self.crashed = False                # son kapanış beklenmedik miydi (durdurulmadan kapandı)
@@ -103,6 +105,11 @@ class ServerProcess:
         command = command.strip().lstrip("/")
         if not command:
             return
+        for hook in list(self.send_hooks):
+            try:
+                hook(command)
+            except Exception as e:
+                print(f"[hook] {e}")
         with self._lock:
             try:
                 self.process.stdin.write(command + "\n")
@@ -132,6 +139,11 @@ class ServerProcess:
                 self.stop_requested = True          # konsoldan /stop da isteyerek durdurmadır
                 self._set_state(STOPPING)
             self.history.append(clean)
+            for hook in list(self.hooks):
+                try:
+                    hook(clean)
+                except Exception as e:
+                    print(f"[hook] {e}")
             if self.on_line:
                 self.on_line(clean)
         try:

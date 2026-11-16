@@ -35,6 +35,7 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Bakım & Yedek** | Dünya (Overworld, Nether, End) yedeği ve bakım modu. Bakımda whitelist yedeklenip boşaltılır, böylece whitelist kullanan sunuculara da kimse giremez; OP olmayan oyuncular atılır, bakım bitince her şey geri gelir. Gün, saat ve süreli haftalık plan, oyun içi uyarılarla. Bkz. [Bakım](#bakım). |
 | **Notlar** | Her sunucu için kendi notların; kendiliğinden kaydedilir. |
 | **İçerik Editörü** | Mod olmadan içerik ekle (veri paketi + kaynak paketi, Minecraft 1.21+): kendi resimlerinden tablo, **Newgrounds ID**'si ya da kendi ses dosyandan müzik diski, var olan eşyalardan hasarı, hızı, dayanıklılığı, büyüleri, efektleri ve isteğe bağlı dokusu senin belirlediğin alet/silah ve yiyecek; 3×3 tarif. Kaynak paketini Spypaper kendisi paylaşabilir. Mod olmadan yeni blok eklenemez. Bkz. [İçerik Editörü](#i̇çerik-editörü). |
+| **Hile Koruması** | İşlevine göre adlandırılmış modüller: **Cevher Gizleme** (Paper/Purpur'un yerleşik anti-xray'i, X-Ray paketlerini işe yaramaz yapar), **Yetki Koruması** (panelden verilmeyen OP'u geri alır, oyuncuyu atar), **Savaş Hilesi Denetimi** (killaura, uzaktan vurma, uçma ve hız için açık kaynak GrimAC eklentisini Modrinth'ten tek tıkla kurar), **Bot Doğrulaması** (sunucunun kaynak paketini gerçekten indirmeyen oyuncuyu atar). Tek anahtarla hilelere izin verilip hepsi kapatılabilir. Bkz. [Hile Koruması](#hile-koruması). |
 | **Tehlikeli Bölge** | Geri alınamayan işlemler için PIN korumalı sayfa: dünyayı sıfırla (Overworld/Nether/End ve seed seçerek), dünya yedeğini geri yükle, oyuncu verilerini sıfırla, sunucuyu sil. Bkz. [Tehlikeli Bölge](#tehlikeli-bölge). |
 | **Çökme bekçisi** | İsteğe bağlı: durdurulmadan kapanan sunucuyu yeniden başlatır; 10 dakikada 3 kez çökerse vazgeçer. İsteğe bağlı yedek sınırı en eski yedekleri kendiliğinden siler. |
 | **Canlı Harita** | BlueMap 3D haritası panelin içinde açılır. BlueMap kurulu değilse sunucunun yazılımına ve sürümüne uygun olanı Modrinth'ten indirip kurar, doku indirme iznini (onayınla) ayarlar. |
@@ -42,7 +43,7 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Spypaper Remote** | Sunucularını telefondan izle; bilgisayardan verdiğin izinlerle başlat/durdur, bakıma al ve ayarlarını değiştir. QR kodla eşleşir; mağaza, hesap ya da veritabanı gerekmez. Bkz. [Spypaper Remote](#spypaper-remote-telefon). |
 | **Güncelleme** | Açılışta GitHub Releases'ta yeni Spypaper sürümü olup olmadığına bakar (kapatılabilir) ve exe'yi tek tıkla günceller. |
 | **Güvenlik** | 4 seviyeli güvenli mod (tehlikeli komutlar için onay, engelleme ya da salt okunur) ve sunucu başına isteğe bağlı PIN. |
-| **Görünüm** | 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller, [Lucide](https://lucide.dev) ikonları, Windows mesaj kutuları yerine panele özel uyarı/soru pencereleri. **Panel Düzeni:** paneldeki sekmeleri ve Dashboard kartlarını sırala ya da gizle. Sayfa geçiş animasyonları ve seçili sekmede kayan gösterge (*Animasyonları azalt* ile kapanır). Ayarlarda kaydırırken açılır listeler ve sayı kutuları artık kazara değişmez. İsteğe bağlı Windows ile başlatma. |
+| **Görünüm** | 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller, [Lucide](https://lucide.dev) ikonları, Windows mesaj kutuları yerine panele özel uyarı/soru pencereleri. **Panel Düzeni:** paneldeki sekmeleri ve Dashboard kartlarını sırala ya da gizle. Sayfa geçiş animasyonları ve seçili sekmede kayan gösterge (*Animasyonları azalt* ile kapanır). Ayarlarda kaydırırken açılır listeler ve sayı kutuları artık kazara değişmez. Renkli butonlar göz yormayan tonlu bir stilde (yüksek kontrastta dolu). İsteğe bağlı Windows ile başlatma. |
 
 ---
 
@@ -196,6 +197,21 @@ Newgrounds ülkende engelliyse (ör. Türkiye) kendi ses dosyanı kullan. Newgro
 
 ---
 
+## Hile Koruması
+
+Spypaper sunucunun **dışında** çalışır: konsolu ve sunucu dosyalarını görür, oyuncuların ağ paketlerini göremez. **Hile Koruması** sayfasındaki her modül oradan yapılabileni yapar:
+
+| Modül | Ne yapar | Sınırlar |
+|---|---|---|
+| Cevher Gizleme | `config/paper-world-defaults.yml` içindeki Paper/Purpur anti-xray'ini açar (yorumlar korunur). *Hafif* gizli cevherleri taş gösterir, *Güçlü* her yere sahte cevher koyar. X-Ray kaynak paketleri işe yaramaz. | Yalnızca Paper ve Purpur. Fullbright ve oyuncunun kendi kaynak paketi oyuncunun bilgisayarında çalışır; hiçbir sunucu bunları göremez. |
+| Yetki Koruması | `ops.json`'u ve konsolu izler. İzinli listede olmayan biri OP olursa (oyun içinden `/op`, eklenti, komut bloğu) `deop` ve `kick` gönderir, kayda geçirir. Panelden (konsol, Oyuncular, telefon) verilen OP kendiliğinden izinli sayılır. | Sunucu Spypaper'dan başlatıldığında çalışır. |
+| Savaş Hilesi Denetimi | [GrimAC](https://modrinth.com/plugin/grimac) (GPL-3.0) eklentisini ve bağımlılıklarını sunucu sürümüne göre Modrinth'ten kurar, açar ve kapatır. Killaura, uzaktan vurma, uçma ve hız için paket düzeyinde denetim gerekir; bunu yalnızca sunucu eklentisi yapabilir. | Paper, Purpur ve Spigot. Kurmadan ya da açıp kapatmadan önce sunucuyu durdur (Windows jar dosyasını kilitler). |
+| Bot Doğrulaması | Kaynak paketini Spypaper paylaşırken (İçerik Editörü → Paylaşım) paket zorunlu olur. Oyuncu girince Spypaper, paketin tamamının o oyuncunun IP'sinden indirildiğine bakar; bir indirme yalnızca bir girişi doğrular. İndirmeyen oyuncu bekleme süresinden sonra atılır; doğrulananlar `spypaper_guard/verified.json`'a yazılır ve bir daha denetlenmez. | Proxy (Velocity/BungeeCord) arkasında çalışmaz. Bedrock (Geyser) oyuncuları varsayılan olarak denetlenmez. Açıldığında paket yenilenir, herkes bir kez yeniden indirir. |
+
+**Bu sunucuda hilelere izin ver** bütün modülleri kapatır (anti-xray'i ve eklentiyi dosyalarında da kapatır); tekrar kapatınca geri açar. Olaylar `spypaper_guard/guard.log`'a yazılır. Değişen ayar dosyaları sunucu yeniden başlatılınca geçerli olur.
+
+---
+
 ## Spypaper Remote (telefon)
 
 Sunucularını telefondan izle; izin verirsen kontrol et. Mağazadan indirilecek bir uygulama yok: bilgisayardaki Spypaper küçük bir mobil web uygulaması sunar, telefon bunu tarayıcıda açar. Ana ekrana eklersen uygulama gibi açılır (Android ve iPhone).
@@ -301,6 +317,7 @@ Spypaper-Releases/
    │  ├─ packhost.py       kaynak paketi paylaşımı (küçük HTTP sunucusu)
    │  ├─ skins.py, homes.py oyuncu kafaları (Mojang), oyuncu evleri
    │  ├─ esplora_kb.py     Esplora'nın gömülü bilgi bankası
+   │  ├─ guard.py          Hile Koruması (cevher gizleme, yetki koruması, GrimAC, bot doğrulaması)
    │  ├─ autostart.py      Windows ile başlatma
    │  ├─ gamefiles.py      Minecraft dil dosyaları ve ikonlar (yerel kurulum ya da Mojang)
    │  ├─ iconrender.py     blok eşya ikonlarını oyunun 3D modellerinden çizer
@@ -355,6 +372,8 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 - **"Güncelleme denetlenemedi":** bilgisayar çevrimdışı ya da sürüm reposu gizli; Spypaper yine normal açılır.
 - **Oyuncu kafası yerine harf görünüyor:** oyuncunun bu adla bir Mojang hesabı yok (lisanssız), Mojang'a ulaşılamıyor ya da *Oyuncu kafalarını göster* kapalı.
 - **İçerik Editörü'nün tabloları/müzikleri oyuncularda görünmüyor:** paketleri oluştur, sunucuyu yeniden başlat ve oyuncuların kaynak paketi adresine ulaşabildiğinden emin ol (Spypaper paylaşıyorsa varsayılan port 8766).
+- **Bot Doğrulaması gerçek bir oyuncuyu atıyor:** oyuncuda paket daha önceden önbellekte olabilir (bir daha indirmez) ya da farklı bir adresle proxy/VPN üzerinden bağlanıyordur. Hile Koruması sayfasında **Elle doğrula** ile ekle.
+- **Cevher Gizleme kullanılamıyor diyor:** yalnızca Paper ve Purpur'da var; `config/paper-world-defaults.yml` sunucu bir kez başlatılınca oluşur.
 - **Sunucu başlamıyor:** Canlı Konsol'daki hatayı oku ya da Esplora'da *Sunucu neden açılmıyor?* sorusunu kullan. Java sürümünün Minecraft sürümüne uygun olduğundan emin ol.
 - **Forge/NeoForge kurulumu başarısız:** Java yolunun doğru olduğunu ve sunucu klasörüne yazma izni olduğunu kontrol et; kurulum çıktısının son satırları pencerede gösterilir.
 - **Gemini/OpenAI 429 hatası:** Sağlayıcının istek sınırı doldu; bir süre sonra tekrar dene.

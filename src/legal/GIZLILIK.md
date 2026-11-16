@@ -1,6 +1,6 @@
 # Spypaper Gizlilik Bildirimi
 
-**Sürüm 1.2 · Yürürlük tarihi: 15.11.2026**
+**Sürüm 1.3 · Yürürlük tarihi: 16.11.2026**
 
 Bu bildirim, Spypaper'ın ("Yazılım") hangi verileri işlediğini, nerede sakladığını ve hangi durumlarda üçüncü taraflara gönderdiğini açıklar.
 
@@ -37,9 +37,10 @@ Bu veriler Yazılım tarafından ayrıca kopyalanmaz ya da bir yere yüklenmez. 
 - Sunucu **notlarınız** (düz metin; parola yazmayın), otomatik bakım planı ve çökme bekçisi / yedek sınırı ayarları
 - **Tehlikeli Bölge PIN'i** (sunucuda PIN yoksa belirlenir): sunucu PIN'i gibi yalnızca PBKDF2 özeti olarak
 - Oyuncu **evleri** (ad, boyut, koordinatlar), Esplora için yazdığınız **sunucu bilgileri** ve İçerik Editörü'nün içerikleri
+- **Hile Koruması** ayarları ve Yetki Koruması'nın izinli OP listesi (oyuncu adları)
 - Bakım sürerken: bakım öncesi whitelist ve MOTD. Whitelist ayrıca sunucu klasöründe `backups/whitelist_maintenance.json` dosyasına yazılır ve bakım bitince silinir.
 
-Oyuncu kafası görüntüleri Yazılımın yanındaki `cache/skins/`, Modrinth ikonları `cache/modrinth/` klasöründe önbelleklenir. İçerik Editörü'ne eklediğiniz resim ve sesler sunucu klasöründe `spypaper_content/` içinde durur.
+Oyuncu kafası görüntüleri Yazılımın yanındaki `cache/skins/`, Modrinth ikonları `cache/modrinth/` klasöründe önbelleklenir. İçerik Editörü'ne eklediğiniz resim ve sesler sunucu klasöründe `spypaper_content/` içinde durur. Hile Koruması açıksa sunucu klasöründeki `spypaper_guard/` içine doğrulanan oyuncuların adı ve doğrulama tarihi (`verified.json`) ile koruma olayları (`guard.log`: oyuncu adı ve ne olduğu) yazılır; IP adresi yazılmaz.
 
 *Windows açılınca başlat* seçeneğini açarsanız Windows kayıt defterine (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`) Yazılımın yolu yazılır; seçeneği kapatınca silinir.
 
@@ -103,11 +104,12 @@ Spypaper Remote **varsayılan olarak kapalıdır**. Açarsanız Yazılım bilgis
 - **Güncellemeleri denetle**'ye bastığınızda, yüklü `.jar` dosyalarınızın SHA-1 özetleri (dosyaların kendisi değil) `api.modrinth.com`'a gönderilir ve hangi sürümlerin daha yeni olduğu sorulur. Bu yalnızca siz düğmeye bastığınızda olur; arka planda kontrol yapılmaz. Bkz. [Modrinth Gizlilik Politikası](https://modrinth.com/legal/privacy).
 
 - **Modrinth** sekmesinde arama yaptığınızda arama metniniz, seçtiğiniz Minecraft sürümü ve yükleyici `api.modrinth.com`'a gönderilir; eklenti/mod/kaynak paketi ve ikonlar `cdn.modrinth.com`'dan indirilir. Bkz. [Modrinth Gizlilik Politikası](https://modrinth.com/legal/privacy).
+- **Hile Koruması** sayfasında *Kur*'a bastığınızda GrimAC anti-hile eklentisi ve bağımlılıkları, sunucu sürümünüz ve yükleyiciniz gönderilerek `api.modrinth.com` / `cdn.modrinth.com`'dan indirilir.
 - **İçerik Editörü**'nde Newgrounds ID'si girip *Getir*'e bastığınızda o ID'nin sayfası `www.newgrounds.com`'dan, ses dosyası `audio.ngfiles.com`'dan indirilir. Bkz. [Newgrounds Gizlilik Politikası](https://www.newgrounds.com/wiki/help-information/privacy-policy). Parçaların hakları sanatçılarına aittir; yalnızca kullanma izniniz olan parçaları ekleyin.
 
 ### 2.7 Kaynak paketi paylaşımı
 
-İçerik Editörü'nde *Kaynak paketini Spypaper paylaşsın* seçeneğini açarsanız Yazılım, seçtiğiniz portta (varsayılan 8766) küçük bir web sunucusu çalıştırır ve yalnızca oluşturulan kaynak paketi dosyasını verir. Paketi indiren oyuncuların IP adresleri bu bağlantıda bilgisayarınıza ulaşır ama kaydedilmez. Seçenek varsayılan olarak kapalıdır.
+İçerik Editörü'nde *Kaynak paketini Spypaper paylaşsın* seçeneğini açarsanız Yazılım, seçtiğiniz portta (varsayılan 8766) küçük bir web sunucusu çalıştırır ve yalnızca oluşturulan kaynak paketi dosyasını verir. Paketi indiren oyuncuların IP adresleri bu bağlantıda bilgisayarınıza ulaşır ama diske kaydedilmez. **Bot Doğrulaması** açıksa bu IP adresleri ve indirme zamanları, giriş yapan oyuncunun sunucu logundaki IP'siyle karşılaştırmak için yalnızca bellekte (en fazla son 1000 indirme) tutulur ve Yazılım kapanınca silinir. Seçenek varsayılan olarak kapalıdır.
 
 ### 2.8 Diğer bağlantılar
 
