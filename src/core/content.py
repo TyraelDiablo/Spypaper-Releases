@@ -5,6 +5,7 @@ Türler
   disc      müzik diski     data/spypaper/jukebox_song + .ogg ses (kaynak paketi)
   tool      alet / silah    var olan bir eşyanın hasar, hız, dayanıklılık, büyü değerleri değiştirilmiş hali
   food      yiyecek         besin, doygunluk, yeme süresi ve efektler
+  hud       HUD             kalp, açlık, zırh, hava, hotbar, nişangah, XP çubuğu görselleri (yalnızca kaynak paketi)
 Her içerik bir ganimet tablosu (data/spypaper/loot_table/<id>.json) olarak üretilir; "loot give <oyuncu> loot
 spypaper:<id>" ile verilir. İsteğe bağlı 3x3 tarif (data/spypaper/recipe/<id>.json).
 Yeni BLOK eklenemez (veri paketiyle mümkün değil).
@@ -30,7 +31,30 @@ from .config import N_
 
 ID_RE = re.compile(r"^[a-z0-9_]{1,32}$")
 ITEM_RE = re.compile(r"^(minecraft:)?[a-z0-9_]{1,64}$")
-TYPES = {"painting": N_("Tablo"), "disc": N_("Müzik Diski"), "tool": N_("Alet / Silah"), "food": N_("Yiyecek")}
+TYPES = {"painting": N_("Tablo"), "disc": N_("Müzik Diski"), "tool": N_("Alet / Silah"), "food": N_("Yiyecek"),
+         "hud": N_("HUD")}
+# HUD: kaynak paketinde assets/minecraft/textures/gui/sprites/hud/<ad>.png (1.20.2+ GUI sprite düzeni).
+# ad -> (görünen ad, genişlik, yükseklik). Kendi resmin bu boyutun tam katı olarak kaydedilir (ör. 2x, 4x).
+HUD_SPRITES = {
+    "heart/full": (N_("Kalp (dolu)"), 9, 9), "heart/half": (N_("Kalp (yarım)"), 9, 9),
+    "heart/container": (N_("Kalp (boş çerçeve)"), 9, 9),
+    "heart/hardcore_full": (N_("Hardcore kalp (dolu)"), 9, 9), "heart/hardcore_half": (N_("Hardcore kalp (yarım)"), 9, 9),
+    "heart/poisoned_full": (N_("Zehirli kalp (dolu)"), 9, 9), "heart/poisoned_half": (N_("Zehirli kalp (yarım)"), 9, 9),
+    "heart/withered_full": (N_("Solmuş kalp (dolu)"), 9, 9), "heart/withered_half": (N_("Solmuş kalp (yarım)"), 9, 9),
+    "heart/absorbing_full": (N_("Emilim kalbi (dolu)"), 9, 9), "heart/absorbing_half": (N_("Emilim kalbi (yarım)"), 9, 9),
+    "heart/frozen_full": (N_("Donmuş kalp (dolu)"), 9, 9), "heart/frozen_half": (N_("Donmuş kalp (yarım)"), 9, 9),
+    "food_full": (N_("Açlık (dolu)"), 9, 9), "food_half": (N_("Açlık (yarım)"), 9, 9),
+    "food_empty": (N_("Açlık (boş)"), 9, 9),
+    "armor_full": (N_("Zırh (dolu)"), 9, 9), "armor_half": (N_("Zırh (yarım)"), 9, 9),
+    "armor_empty": (N_("Zırh (boş)"), 9, 9),
+    "air": (N_("Hava baloncuğu"), 9, 9), "air_bursting": (N_("Hava baloncuğu (patlayan)"), 9, 9),
+    "hotbar": (N_("Hotbar"), 182, 22), "hotbar_selection": (N_("Hotbar seçimi"), 24, 23),
+    "hotbar_offhand_left": (N_("İkinci el yuvası (sol)"), 29, 24),
+    "hotbar_offhand_right": (N_("İkinci el yuvası (sağ)"), 29, 24),
+    "crosshair": (N_("Nişangah"), 15, 15),
+    "experience_bar_background": (N_("XP çubuğu (arka plan)"), 182, 5),
+    "experience_bar_progress": (N_("XP çubuğu (dolu kısım)"), 182, 5),
+}
 TOOL_BASES = ["diamond_sword", "netherite_sword", "iron_sword", "golden_sword", "stone_sword", "wooden_sword",
               "diamond_axe", "netherite_axe", "iron_axe", "diamond_pickaxe", "netherite_pickaxe", "iron_pickaxe",
               "diamond_shovel", "diamond_hoe", "mace", "trident", "bow", "crossbow", "stick", "blaze_rod"]
@@ -102,6 +126,11 @@ def validate(c, fmt=None):
         raise ContentError(N_("Disk için müzik ekle (Newgrounds ID ya da ses dosyası)."))
     if t == "disc" and not c.get("rights_ok"):
         raise ContentError(N_("Bu diskin dağıtma onayı işaretlenmemiş. Ses dosyasını kullanma ve dağıtma hakkın olduğunu onayla."))
+    if t == "hud":
+        if c.get("sprite") not in HUD_SPRITES:
+            raise ContentError(N_("Değiştirilecek HUD parçasını seç."))
+        if not c.get("image"):
+            raise ContentError(N_("HUD parçası için resim seç."))
     if t in ("tool", "food") and not ITEM_RE.match(c.get("base", "")):
         raise ContentError(N_("Geçersiz temel eşya."))
     if t == "food" and fmt and not fmt.v1212:
@@ -121,6 +150,8 @@ def base_item(c):
     t = c["type"]
     if t == "painting":
         return "minecraft:painting"
+    if t == "hud":
+        return ""
     if t == "disc":
         return mc(c.get("base") or "music_disc_13")
     return mc(c["base"])
@@ -274,6 +305,14 @@ def build(server_path, level, version, items):
         except ContentError as e:
             e.item = c.get("name") or c.get("id")          # hangi içerikte sorun olduğu söylensin
             raise
+    seen = {}
+    for c in items:
+        if c["type"] == "hud":
+            if c["sprite"] in seen:
+                e = ContentError(N_("Bu HUD parçası iki kez değiştirilmiş: {other}"), other=seen[c["sprite"]])
+                e.item = c.get("name") or c.get("id")
+                raise e
+            seen[c["sprite"]] = c.get("name") or c["id"]
     dp = os.path.join(server_path, level, "datapacks", "spypaper_content")
     if os.path.isdir(dp):
         shutil.rmtree(dp)
@@ -284,6 +323,9 @@ def build(server_path, level, version, items):
     placeable = []
     for c in items:
         i = c["id"]
+        if c["type"] == "hud":                     # yalnızca kaynak paketi: Minecraft'ın kendi HUD görselinin yerine geçer
+            rp_files[f"assets/minecraft/textures/gui/sprites/hud/{c['sprite']}.png"] = os.path.join(src, c["image"])
+            continue
         _write(os.path.join(dp, "data", "spypaper", "loot_table", f"{i}.json"), loot_table(c, fmt))
         if (c.get("recipe") or {}).get("enabled"):
             _write(os.path.join(dp, "data", "spypaper", "recipe", f"{i}.json"), recipe(c, fmt))

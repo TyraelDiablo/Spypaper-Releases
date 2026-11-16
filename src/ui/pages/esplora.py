@@ -4,12 +4,17 @@ import re
 import threading
 from datetime import datetime
 
-from PySide6.QtCore import Qt, QTimer, Signal
+import base64
+
+from PySide6.QtCore import QBuffer, QByteArray, QIODevice, Qt, QTimer, Signal
+from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget,
+    QFileDialog, QFrame, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QScrollArea, QSizePolicy, QVBoxLayout,
+    QWidget,
 )
 
 from core import N_, ai, detect_version
+from core import esplora_access as EA
 from core import esplora_kb
 from core.esplora import build_system, config_files, latest_crash, preset_items, quick_items
 from .. import icons
@@ -23,7 +28,65 @@ LANG_EN = {
     "uk": "Ukrainian", "az": "Azerbaijani", "ja": "Japanese", "ko": "Korean", "zh_CN": "Simplified Chinese",
     "ar": "Arabic",
 }
-BLOCK = re.compile(r"```(\w*)\s*\n(.*?)```", re.S)
+BLOCK = re.compile(r"```([\w-]*)\s*\n(.*?)```", re.S)
+MAX_IMAGES = 4              # bir mesajdaki en fazla görsel
+IMAGE_SIDE = 1568           # uzun kenar (sağlayıcıların önerdiği üst sınır civarı)
+IMAGE_HISTORY = 3           # görselleri gönderilen son kullanıcı mesajı sayısı (eskiler "[görsel]" olur)
+MAX_ROUNDS = 3              # bir soruda en fazla veri isteği turu
+IMAGE_EXT = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp")
+
+
+def encode_image(img):
+    """QImage -> {"mime", "data"(base64)}: uzun kenar en fazla IMAGE_SIDE, saydamsa PNG yoksa JPEG."""
+    if img.isNull():
+        return None
+    if max(img.width(), img.height()) > IMAGE_SIDE:
+        img = img.scaled(IMAGE_SIDE, IMAGE_SIDE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+    fmt, mime = ("PNG", "image/png") if img.hasAlphaChannel() else ("JPEG", "image/jpeg")
+    for attempt in (fmt, "JPEG"):
+        ba = QByteArray()
+        buf = QBuffer(ba)
+        buf.open(QIODevice.WriteOnly)
+        img.save(buf, attempt, 85 if attempt == "JPEG" else -1)
+        buf.close()
+        if attempt == "JPEG":
+            mime = "image/jpeg"
+        if ba.size() <= 3_500_000:
+            break
+    return {"mime": mime, "data": base64.b64encode(bytes(ba)).decode("ascii")}
+
+
+def image_pixmap(im, side=120):
+    pm = QPixmap()
+    pm.loadFromData(base64.b64decode(im["data"]))
+    return pm.scaled(side, side, Qt.KeepAspectRatio, Qt.SmoothTransformation) if not pm.isNull() else pm
+
+
+class ChatInput(QPlainTextEdit):
+    """Ctrl+Enter gönderir; görsel yapıştırma (Ctrl+V) ve sürükle-bırak görsel ekler."""
+    image = Signal(object)
+    submit = Signal()
+
+    def keyPressEvent(self, e):
+        if e.key() in (Qt.Key_Return, Qt.Key_Enter) and e.modifiers() & Qt.ControlModifier:
+            self.submit.emit()
+        else:
+            super().keyPressEvent(e)
+
+    def canInsertFromMimeData(self, src):
+        return src.hasImage() or src.hasUrls() or super().canInsertFromMimeData(src)
+
+    def insertFromMimeData(self, src):
+        if src.hasImage():
+            self.image.emit(QImage(src.imageData()))
+            return
+        if src.hasUrls():
+            files = [u.toLocalFile() for u in src.urls() if u.isLocalFile() and u.toLocalFile().lower().endswith(IMAGE_EXT)]
+            for f in files:
+                self.image.emit(QImage(f))
+            if files:
+                return
+        super().insertFromMimeData(src)
 
 
 def _inline(s):
@@ -51,6 +114,14 @@ def split_message(text):
             cmds = [l.strip().lstrip("/") for l in body.splitlines() if l.strip() and not l.strip().startswith("#")]
             if cmds:
                 parts.append(("cmds", cmds))
+        elif lang == "esplora-get":
+            reqs = EA.parse_requests(m.group(0))
+            if reqs:
+                parts.append(("get", reqs))
+        elif lang == "esplora-set":
+            sets = EA.parse_sets(m.group(0))
+            if sets:
+                parts.append(("set", sets))
         else:
             parts.append(("code", body.rstrip()))
         pos = m.end()
@@ -62,11 +133,11 @@ def split_message(text):
 class Bubble(QFrame):
     """Tek bir mesaj balonu. role: user | assistant | error | thinking"""
 
-    def __init__(self, page, role, text, when=""):
+    def __init__(self, page, role, text, when="", images=None):
         super().__init__()
         self.page = page
         k = TOKENS
-        bg = {"user": rgba(k["accent"], 38), "assistant": k["surface_2"], "stopped": "transparent",
+        bg = {"user": rgba(k["accent"], 38), "assistant": k["surface_2"], "stopped": "transparent", "note": "transparent",
               "error": rgba(k["danger"], 40), "thinking": k["surface_2"]}[role]
         border = {"user": rgba(k["accent"], 90), "error": rgba(k["danger"], 110)}.get(role, k["border"])
         self.setObjectName("Bubble")
@@ -76,8 +147,9 @@ class Bubble(QFrame):
         v.setContentsMargins(14, 10, 14, 10)
         v.setSpacing(6)
 
-        who = {"user": t("Sen")}.get(role, "Esplora")
-        color = {"user": k["accent"], "error": k["danger"], "stopped": k["text_muted"]}.get(role, k["info"])
+        who = {"user": t("Sen"), "note": "Spypaper"}.get(role, "Esplora")
+        color = {"user": k["accent"], "error": k["danger"], "stopped": k["text_muted"],
+                 "note": k["text_muted"]}.get(role, k["info"])
         head = QLabel(f'<span style="color:{color}; font-weight:700;">{html.escape(who)}</span>'
                       + (f'&nbsp;&nbsp;<span style="color:{k["text_muted"]}; font-size:8pt;">{when}</span>' if when else ""))
         v.addWidget(head)
@@ -87,19 +159,41 @@ class Bubble(QFrame):
             self.dots.setStyleSheet(f"color:{k['text_muted']};")
             v.addWidget(self.dots)
             return
-        if role == "stopped":
+        if role in ("stopped", "note"):
             lbl = self._text(html.escape(text))
             lbl.setStyleSheet(f"color:{k['text_muted']}; font-style: italic; background: transparent;")
             v.addWidget(lbl)
             return
         if role in ("user", "error"):
-            v.addWidget(self._text(_inline(text)))
+            if images:
+                strip = QHBoxLayout()
+                strip.setSpacing(6)
+                for im in images:
+                    th = QLabel()
+                    th.setPixmap(image_pixmap(im))
+                    th.setStyleSheet("background: transparent;")
+                    strip.addWidget(th)
+                strip.addStretch(1)
+                v.addLayout(strip)
+            if text.strip():
+                v.addWidget(self._text(_inline(text)))
             return
         for kind, val in split_message(text):
             if kind == "text":
                 v.addWidget(self._text(val))
             elif kind == "code":
                 c = self._text(f'<pre style="margin:0;">{html.escape(val)}</pre>')
+                c.setStyleSheet(f"background:{k['surface']}; border-radius:8px; padding:8px; font-family:Consolas;")
+                v.addWidget(c)
+            elif kind == "get":
+                names = ", ".join(t(EA.ITEMS[key][0]) + (f" ({arg})" if arg else "") for key, arg in val)
+                g = self._text(html.escape(t("Veri istedi: {items}", items=names)))
+                g.setStyleSheet(f"color:{k['text_muted']}; font-style: italic; background: transparent;")
+                v.addWidget(g)
+            elif kind == "set":
+                v.addWidget(self._sets(val))
+            elif EA.level(page.app.config, "commands.suggest") == "off":
+                c = self._text(f'<pre style="margin:0;">{html.escape(chr(10).join(val))}</pre>')
                 c.setStyleSheet(f"background:{k['surface']}; border-radius:8px; padding:8px; font-family:Consolas;")
                 v.addWidget(c)
             else:
@@ -117,6 +211,38 @@ class Bubble(QFrame):
         longest = max((lbl.fontMetrics().horizontalAdvance(l) for l in plain.split("\n")), default=0)
         lbl.setMinimumWidth(min(longest + 18, 620))
         return lbl
+
+    def _sets(self, sets):
+        """server.properties değişiklik önerisi: mevcut → önerilen, Uygula düğmesi (izin Onaylı ise)."""
+        box = QFrame()
+        box.setMinimumWidth(480)
+        box.setObjectName("Cmds")
+        box.setStyleSheet(f"QFrame#Cmds {{ background:{TOKENS['surface']}; border-radius:8px; }}")
+        v = QVBoxLayout(box)
+        v.setContentsMargins(8, 6, 8, 6)
+        v.setSpacing(4)
+        cur = self.page.app.properties.load()
+        for key, val in sets:
+            h = QHBoxLayout()
+            c = QLabel(f"{key}: {cur.get(key, '—')}  →  {val}")
+            c.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            c.setStyleSheet(f"font-family:Consolas; color:{TOKENS['text']}; background:transparent;")
+            h.addWidget(c, 1)
+            if EA.level(self.page.app.config, "settings.write") != "off":
+                b = QPushButton(t("Uygula"))
+                b.setProperty("variant", "primary")
+                b.setCursor(Qt.PointingHandCursor)
+                b.clicked.connect(lambda _=False, kk=key, vv=val, bb=b: self.page.apply_setting(kk, vv, bb))
+                if cur.get(key) == val:                     # zaten bu değerde (uygulanmış)
+                    b.setEnabled(False)
+                    b.setText(t("Uygulandı"))
+                h.addWidget(b)
+            v.addLayout(h)
+        if EA.level(self.page.app.config, "settings.write") == "off":
+            n = QLabel(t("Ayar değiştirme Veri İzinleri'nde kapalı."))
+            n.setStyleSheet(f"color:{TOKENS['text_muted']}; background:transparent;")
+            v.addWidget(n)
+        return box
 
     def _cmds(self, cmds):
         box = QFrame()
@@ -145,6 +271,7 @@ class Bubble(QFrame):
 class EsploraPage(Page):
     title = "Esplora"
     reply = Signal(int, str, str, str)     # istek no, metin, hata, yeni_model
+    fetched = Signal(int, object)          # istek no, [(anahtar, argüman, metin, durum)]
 
     def __init__(self, app, bridge):
         super().__init__(app, bridge)
@@ -156,6 +283,8 @@ class EsploraPage(Page):
         head.header_actions.addWidget(button("Yeni sohbet", "ghost", self.reset))
         head.header_actions.addWidget(button("Sunucu Bilgileri", "ghost", self.edit_knowledge,
                                              tooltip="Esplora'ya sunucun hakkında bilmesi gerekenleri yaz"))
+        head.header_actions.addWidget(button("Veri İzinleri", "ghost", self.open_access,
+                                             tooltip="Esplora'nın hangi verilere ulaşabileceğini ve hangileri için sana soracağını ayarla"))
         head.header_actions.addWidget(button("Yapay Zeka Ayarları", "ghost", self.open_settings))
         self.model_lbl = label("", "Muted")
         head.add(self.model_lbl)
@@ -177,14 +306,30 @@ class EsploraPage(Page):
         self.root.addLayout(self.chips)
         self.flags = {}
 
-        self.input = QPlainTextEdit()
-        self.input.setPlaceholderText(t("Esplora'ya sor… (Ctrl+Enter ile gönder)"))
+        # eklenecek görseller (gönderilmeden önce)
+        self.images = []
+        self.thumbs = QHBoxLayout()
+        self.thumbs.setSpacing(6)
+        self.root.addLayout(self.thumbs)
+
+        self.input = ChatInput()
+        self.input.setPlaceholderText(t("Esplora'ya sor… (Ctrl+Enter ile gönder, Ctrl+V ile görsel yapıştır)"))
         self.input.setFixedHeight(70)
-        self.input.keyPressEvent = self._key
+        self.input.submit.connect(lambda: self.ask(self.input.toPlainText()))
+        self.input.image.connect(self.add_image)
         self.gen = 0                         # her istekte artar; durdurulan isteğin geç gelen yanıtı yok sayılır
+        self.rounds = 0                      # bu sorudaki veri isteği turu
+        self.pending = None                  # onay bekleyen veri istekleri
+        self.attach_btn = QPushButton()
+        self.attach_btn.setIcon(icons.icon("image", None, 18))
+        self.attach_btn.setProperty("variant", "ghost")
+        self.attach_btn.setToolTip(t("Görsel ekle"))
+        self.attach_btn.setCursor(Qt.PointingHandCursor)
+        self.attach_btn.clicked.connect(self.pick_images)
         self.send_btn = button("Gönder", "primary", self._send_or_stop)
-        self.root.addLayout(row(self.input, self.send_btn, stretch_end=False))
+        self.root.addLayout(row(self.attach_btn, self.input, self.send_btn, stretch_end=False))
         self.reply.connect(self._on_reply)
+        self.fetched.connect(self._on_fetched)
         self._dots = QTimer(self)
         self._dots.timeout.connect(self._tick)
         self.render()
@@ -238,11 +383,55 @@ class EsploraPage(Page):
             t("Model: {model} · {provider}", model=cfg["model"], provider=ai.PROVIDERS[cfg["provider"]]["name"])
             if has_key else t("API anahtarı ayarlanmamış. Başlamak için Yapay Zeka Ayarları'nı aç."))
 
-    def _key(self, e):
-        if e.key() in (Qt.Key_Return, Qt.Key_Enter) and e.modifiers() & Qt.ControlModifier:
-            self.ask(self.input.toPlainText())
-        else:
-            QPlainTextEdit.keyPressEvent(self.input, e)
+    # --- görseller ---
+    def pick_images(self):
+        files, _ = QFileDialog.getOpenFileNames(self, t("Görsel ekle"), "", "Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp)")
+        for f in files:
+            self.add_image(QImage(f))
+
+    def add_image(self, img):
+        if len(self.images) >= MAX_IMAGES:
+            self.warn(t("Bir mesaja en fazla {n} görsel eklenebilir.", n=MAX_IMAGES))
+            return
+        enc = encode_image(img)
+        if not enc:
+            self.warn("Resim açılamadı.")
+            return
+        self.images.append(enc)
+        self._show_thumbs()
+
+    def _show_thumbs(self):
+        while self.thumbs.count():
+            it = self.thumbs.takeAt(0)
+            w = it.widget()
+            if w:
+                w.hide()                           # deleteLater olay döngüsünü bekler; o ana kadar boşta görünmesin
+                w.deleteLater()
+        for i, im in enumerate(self.images):
+            box = QFrame()
+            box.setObjectName("Thumb")
+            box.setStyleSheet(f"QFrame#Thumb {{ background:{TOKENS['surface_2']}; border:1px solid {TOKENS['border']}; border-radius:6px; }}")
+            h = QHBoxLayout(box)
+            h.setContentsMargins(4, 4, 4, 4)
+            th = QLabel()
+            th.setPixmap(image_pixmap(im, 56))
+            th.setStyleSheet("background:transparent; border:none;")
+            x = button("×", "flat", lambda _=False, n=i: self._remove_image(n), tooltip="Kaldır")
+            h.addWidget(th)
+            h.addWidget(x)
+            self.thumbs.addWidget(box)
+        if self.images:
+            self.thumbs.addStretch(1)
+
+    def _remove_image(self, i):
+        if 0 <= i < len(self.images):
+            self.images.pop(i)
+            self._show_thumbs()
+
+    def open_access(self):
+        from ..access_dialog import AccessDialog
+        AccessDialog(self.app.config, self).exec()
+        self.render()
 
     def open_settings(self):
         from ..ai_dialog import AIDialog
@@ -283,6 +472,7 @@ class EsploraPage(Page):
             "configs": config_files(a.config.server_path, question, modded=a.plugins.modded),
         }
 
+
     # --- sohbet ---
     def _send_or_stop(self):
         if self.busy:
@@ -300,11 +490,18 @@ class EsploraPage(Page):
     def ask(self, text, label=None):
         """label: hazır sorularda balonda görünen kısa metin; Esplora'ya ayrıntılı soru (text) gider."""
         text = text.strip()
-        if not text or self.busy:
+        images = list(self.images) if label is None else []
+        if (not text and not images) or self.busy:
             return
         if label is None:
             self.input.clear()
+            self.images = []
+            self._show_thumbs()
+        self.pending = None                 # onay bekleyen istek varsa yeni soru onu iptal eder
+        self.rounds = 0
         msg = {"role": "user", "content": text, "time": datetime.now().strftime("%H:%M")}
+        if images:
+            msg["images"] = images
         if label:
             msg["label"] = label
         self.app.esplora_history.append(msg)
@@ -312,18 +509,41 @@ class EsploraPage(Page):
 
     @staticmethod
     def _api_messages(hist):
-        """Hata/durdurma balonlarını çıkarır, art arda gelen aynı rolleri birleştirir (bazı API'ler ister)."""
+        """Hata/durdurma/not balonlarını çıkarır, art arda gelen aynı rolleri birleştirir (bazı API'ler ister).
+        Görseller yalnızca son IMAGE_HISTORY görselli mesajda gönderilir; öncekiler "[görsel]" olur."""
+        recent = hist[-24:]
+        with_img = [i for i, m in enumerate(recent) if m.get("images")][-IMAGE_HISTORY:]
         out = []
-        for m in hist[-24:]:
-            if m.get("error") or m.get("stopped"):
+        for i, m in enumerate(recent):
+            if m.get("error") or m.get("stopped") or m.get("note"):
+                continue
+            parts = [{"type": "text", "text": m["content"]}] if m["content"] else []
+            if m.get("images"):
+                if i in with_img:
+                    parts = [{"type": "image", **im} for im in m["images"]] + (parts or [{"type": "text", "text": "(image)"}])
+                else:
+                    parts = [{"type": "text", "text": f"[{len(m['images'])} image(s) sent earlier]"}] + parts
+            if not parts:
                 continue
             if out and out[-1]["role"] == m["role"]:
-                out[-1]["content"] += "\n\n" + m["content"]
+                out[-1]["parts"] += [{"type": "text", "text": "\n\n"}] + parts
             else:
-                out.append({"role": m["role"], "content": m["content"]})
+                out.append({"role": m["role"], "parts": parts})
         while out and out[0]["role"] != "user":
             out.pop(0)
-        return out
+        result = []
+        for m in out:
+            if all(p["type"] == "text" for p in m["parts"]):
+                result.append({"role": m["role"], "content": "".join(p["text"] for p in m["parts"])})
+            else:
+                merged = []
+                for p in m["parts"]:
+                    if p["type"] == "text" and merged and merged[-1]["type"] == "text":
+                        merged[-1] = {"type": "text", "text": merged[-1]["text"] + p["text"]}
+                    elif not (p["type"] == "text" and not p["text"].strip()):
+                        merged.append(p)
+                result.append({"role": m["role"], "content": merged})
+        return result
 
     def _request(self):
         self.gen += 1
@@ -331,8 +551,11 @@ class EsploraPage(Page):
         self._set_busy(True)
         self.render(thinking=True)
         settings = self.app.config.settings
-        last = next((m["content"] for m in reversed(self.app.esplora_history) if m["role"] == "user"), "")
-        system = build_system(self.context(last), LANG_EN.get(current(), "English"))
+        last = next((m["content"] for m in reversed(self.app.esplora_history)
+                     if m["role"] == "user" and not m.get("data") and not m.get("cmd")), "")
+        prof = self.app.config
+        system = build_system(EA.filter_context(self.context(last), prof), LANG_EN.get(current(), "English"),
+                              access=EA.prompt_section(prof), no_commands=EA.command_rule(prof))
         msgs = self._api_messages(self.app.esplora_history)
 
         def work():
@@ -362,8 +585,11 @@ class EsploraPage(Page):
         """Son kullanıcı sorusundan sonraki yanıt(lar)ı silip soruyu yeniden gönderir."""
         if self.busy:
             return
+        self.pending = None
+        self.rounds = 0
         hist = self.app.esplora_history
-        last_q = max((i for i, m in enumerate(hist) if m["role"] == "user" and not m.get("cmd")), default=None)
+        last_q = max((i for i, m in enumerate(hist) if m["role"] == "user" and not m.get("cmd") and not m.get("data")),
+                     default=None)
         if last_q is None:
             return
         del hist[last_q + 1:]
@@ -377,8 +603,98 @@ class EsploraPage(Page):
         self.on_show()          # model değişmiş, durum değişmiş olabilir
         if err:
             self.app.esplora_history.append({"role": "assistant", "content": err, "error": True, "time": now})
-        else:
-            self.app.esplora_history.append({"role": "assistant", "content": text, "time": now})
+            self.render()
+            return
+        self.app.esplora_history.append({"role": "assistant", "content": text, "time": now})
+        reqs = EA.parse_requests(text)
+        if reqs and self.rounds < MAX_ROUNDS:
+            self.rounds += 1
+            self._handle_requests(reqs)
+            return
+        self.render()
+
+    # --- veri istekleri ---
+    def _handle_requests(self, reqs):
+        """İzinlere göre: kapalı -> reddedilir, onaysız -> getirilir, onaylı -> sohbette sorulur."""
+        lv = EA.levels(self.app.config)
+        ask = [(k, a) for k, a in reqs if lv.get(k) == "ask"]
+        if ask:
+            self.pending = {"reqs": reqs, "ask": ask, "gen": self.gen}
+            self.render()
+            return
+        self._fetch(reqs, approved=set())
+
+    def decide(self, choice):
+        """choice: allow | deny | always"""
+        p, self.pending = self.pending, None
+        if not p:
+            return
+        if choice == "always":
+            for k, _a in p["ask"]:
+                EA.set_level(self.app.config, k, "allow")
+        approved = set(p["ask"]) if choice in ("allow", "always") else set()
+        self._fetch(p["reqs"], approved)
+
+    def _fetch(self, reqs, approved):
+        self.gen += 1
+        my = self.gen
+        self._set_busy(True)
+        self.render(thinking=True)
+        lv = EA.levels(self.app.config)
+        app = self.app
+
+        def work():
+            results = []
+            for k, a in reqs:
+                level = lv.get(k, "off")
+                if level == "off":
+                    results.append((k, a, None, "off"))
+                elif level == "ask" and (k, a) not in approved:
+                    results.append((k, a, None, "denied"))
+                else:
+                    try:
+                        results.append((k, a, EA.fetch(app, k, a), "ok"))
+                    except Exception as e:
+                        msg = t(e.template, **e.kw) if hasattr(e, "template") else str(e)
+                        results.append((k, a, msg, "error"))
+            self.fetched.emit(my, results)
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_fetched(self, gen, results):
+        if gen != self.gen:
+            return
+        now = datetime.now().strftime("%H:%M")
+        given = [t(EA.ITEMS[k][0]) + (f" ({a})" if a else "") for k, a, _x, st in results if st == "ok"]
+        refused = [t(EA.ITEMS[k][0]) + (f" ({a})" if a else "") for k, a, _x, st in results if st in ("denied", "off")]
+        note = []
+        if given:
+            note.append(t("Esplora'ya verilen veri: {items}", items=", ".join(given)))
+        if refused:
+            note.append(t("Verilmeyen: {items}", items=", ".join(refused)))
+        self.app.esplora_history.append({"role": "user", "content": EA.data_message(results), "data": True,
+                                         "label": "📎 " + " · ".join(note or [t("Veri isteği yanıtlandı.")]),
+                                         "time": now})
+        self._set_busy(False)
+        self._request()
+
+    def apply_setting(self, key, value, btn=None):
+        if self.read_only():
+            return
+        if EA.level(self.app.config, "settings.write") == "off":
+            self.warn("Ayar değiştirme Veri İzinleri'nde kapalı.")
+            return
+        props = self.app.properties
+        if not props.exists:
+            self.warn("server.properties bulunamadı.")
+            return
+        old = props.load().get(key)
+        props.save({key: value})
+        if btn is not None:
+            btn.setEnabled(False)
+            btn.setText(t("Uygulandı"))
+        self.app.esplora_history.append({"role": "assistant", "note": True, "time": datetime.now().strftime("%H:%M"),
+                                         "content": t("server.properties: {key} {old} → {new} (sunucu yeniden başlatılınca geçerli olur)",
+                                                      key=key, old=old if old is not None else "—", new=value)})
         self.render()
 
     def _new_canvas(self):
@@ -440,13 +756,19 @@ class EsploraPage(Page):
                      + t("Aşağıdaki hızlı sorulara ya da “Tüm hazır sorular” menüsüne tıklayabilirsin."))
             self._add(Bubble(self, "assistant", hello), right=False)
         for i, m in enumerate(hist):
+            if m.get("data") or m.get("note"):
+                self._add(Bubble(self, "note", m.get("label") or m["content"], m.get("time", "")), right=False)
+                continue
             if m["role"] == "user":
                 role = "user"
             else:
                 role = "error" if m.get("error") else "stopped" if m.get("stopped") else "assistant"
-            self._add(Bubble(self, role, m.get("label") or m["content"], m.get("time", "")), right=(role == "user"))
-            if i == len(hist) - 1 and m["role"] == "assistant" and not thinking:
+            self._add(Bubble(self, role, m.get("label") or m["content"], m.get("time", ""), m.get("images")),
+                      right=(role == "user"))
+            if i == len(hist) - 1 and m["role"] == "assistant" and not thinking and not self.pending:
                 self._add(self._actions(m), right=False)
+        if self.pending and not thinking:
+            self._add(self._approval(self.pending), right=False)
         self.thinking = None
         if thinking:
             self.thinking = Bubble(self, "thinking", "")
@@ -455,6 +777,31 @@ class EsploraPage(Page):
             self._dots.start(400)
         else:
             self._dots.stop()
+
+    def _approval(self, p):
+        """Esplora'nın "Onaylı" verileri isteği: İzin ver / Reddet / Hep izin ver."""
+        box = QFrame()
+        box.setObjectName("Bubble")
+        box.setStyleSheet(f"QFrame#Bubble {{ background:{rgba(TOKENS['warn'], 30)}; border:1px solid {rgba(TOKENS['warn'], 110)};"
+                          f" border-radius:14px; }}")
+        v = QVBoxLayout(box)
+        v.setContentsMargins(14, 10, 14, 10)
+        v.setSpacing(6)
+        head = QLabel(f'<span style="color:{TOKENS["warn"]}; font-weight:700;">{html.escape(t("Esplora veri istiyor"))}</span>')
+        v.addWidget(head)
+        for k, a in p["ask"]:
+            lab = QLabel("• " + t(EA.ITEMS[k][0]) + (f" — {a}" if a else ""))
+            lab.setStyleSheet("background:transparent;")
+            v.addWidget(lab)
+        note = QLabel(t("Bu veriler seçtiğin yapay zeka sağlayıcısına gönderilir."))
+        note.setStyleSheet(f"color:{TOKENS['text_muted']}; background:transparent;")
+        v.addWidget(note)
+        v.addLayout(row(button("İzin ver", "primary", lambda: self.decide("allow")),
+                        button("Reddet", "ghost", lambda: self.decide("deny")),
+                        button("Hep izin ver", "ghost", lambda: self.decide("always"),
+                               tooltip="Bu veri türleri bundan sonra sormadan verilir (Veri İzinleri'nden değiştirilebilir)"),
+                        None))
+        return box
 
     def _tick(self):
         if self.thinking is not None:

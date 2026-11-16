@@ -16,6 +16,8 @@ from core.commands import EFFECTS, ENCHANTS
 
 ENCH_MAX = 12          # bir eşyada en fazla büyü sayısı
 ENCH_LEVEL_MAX = 255   # Minecraft büyü seviyesini 1-255 arasında kabul eder
+# oyuncuyu hareket ettiren büyüler ve vanilla'daki en yüksek seviyeleri
+MOTION_ENCHANTS = {"wind_burst": 3, "riptide": 3, "knockback": 2, "punch": 2}
 from core.config import detect_version
 from core.danger import level_name
 from core.packhost import DEFAULT_PORT, HOST
@@ -24,7 +26,7 @@ from ..i18n import t
 from ..theme import TOKENS
 from ..widgets import Card, Page, button, label, row
 
-TYPE_ICON = {"painting": "image", "disc": "disc", "tool": "sword", "food": "apple"}
+TYPE_ICON = {"painting": "image", "disc": "disc", "tool": "sword", "food": "apple", "hud": "heart"}
 
 
 def slug(name):
@@ -112,6 +114,7 @@ class ContentPage(Page):
         f.addRow(t("Kimlik"), self.f_id)
         f.addRow(t("Ad rengi"), self.f_color)
         f.addRow(t("Açıklama"), self.f_lore)
+        self.common_form = f
         c.add(f)
         self.col.addWidget(c)
 
@@ -197,6 +200,10 @@ class ContentPage(Page):
         tl.add(label("Büyüler", "Muted"))
         tl.add(self.t_ench_box)
         tl.add(button("Büyü ekle", "ghost", self.add_ench_row))
+        self.t_motion = label("", "Muted", wrap=True)
+        self.t_motion.setStyleSheet(f"color:{TOKENS['warn']};")
+        self.t_motion.setVisible(False)
+        tl.add(self.t_motion)
         self.t_tex = self._texture_row(tl)
         self.types.addWidget(tl)
 
@@ -236,6 +243,27 @@ class ContentPage(Page):
         fd.add(grid)
         self.f_tex = self._texture_row(fd)
         self.types.addWidget(fd)
+
+        # HUD
+        hd = Card("HUD", "Oyuncuların ekranındaki kalp, açlık, zırh, hotbar gibi görsellerin yerine kendi resmin")
+        self.h_sprite = QComboBox()
+        for key, (name, w, h) in C.HUD_SPRITES.items():
+            self.h_sprite.addItem(f"{t(name)}  ({w}×{h})", key)
+        self.h_sprite.currentIndexChanged.connect(self._hud_preview)
+        self.h_preview = QLabel()
+        self.h_preview.setMinimumSize(200, 90)
+        self.h_preview.setAlignment(Qt.AlignCenter)
+        self.h_preview.setStyleSheet(f"background:{TOKENS['surface_2']}; border-radius:8px;")
+        self.h_info = label("", "Muted", wrap=True)
+        f = QFormLayout()
+        f.addRow(t("Değiştirilecek parça"), self.h_sprite)
+        hd.add(f)
+        hd.add(row(self.h_preview, button("Resim Seç", "ghost", self.pick_hud), None))
+        hd.add(self.h_info)
+        hd.add(label("Resim parçanın boyutuna ya da tam katına (2×, 4×…) ölçeklenir; piksel sanatı için keskin büyütme "
+                     "kullanılır. Yalnızca kaynak paketine girer, veri paketi ve tarif gerekmez. Paketi kabul eden "
+                     "her oyuncunun ekranında görünür.", "Muted", wrap=True))
+        self.types.addWidget(hd)
 
     def _texture_row(self, card):
         box = QWidget()
@@ -425,7 +453,8 @@ class ContentPage(Page):
                      "tool": {"base": "diamond_sword", "damage": 7, "speed": 1.6, "durability": 0, "mining": 0,
                               "unbreakable": False, "glint": False, "enchants": []},
                      "food": {"base": "apple", "nutrition": 4, "saturation": 2.4, "seconds": 1.6,
-                              "always_eat": False, "effects": []}}[kind])
+                              "always_eat": False, "effects": []},
+                     "hud": {"sprite": "heart/full", "image": ""}}[kind])
         self.items.append(base)
         self.reload_list(len(self.items) - 1)
         self.f_name.setFocus()
@@ -434,6 +463,12 @@ class ContentPage(Page):
         has = 0 <= i < len(self.items)
         for w in (self.c_common, self.types, self.c_recipe, self.c_actions):
             w.setVisible(has)
+        hud = has and self.items[i]["type"] == "hud"
+        self.c_recipe.setVisible(has and not hud)          # HUD verilen bir eşya değil: tarif ve "Oyuncuya Ver" yok
+        for w in (self.who, self.btn_give):
+            w.setVisible(not hud)
+        for w in (self.f_color, self.f_lore):                # HUD'da ad rengi ve açıklama kullanılmaz
+            self.common_form.setRowVisible(w, not hud)
         self.btn_del.setEnabled(has)
         if not has:
             self.cur = None
@@ -471,6 +506,11 @@ class ContentPage(Page):
             for ename, elv in (c.get("enchants") or []):
                 self.add_ench_row(ename.replace("minecraft:", ""), elv)
             self._tex_preview(self.t_tex)
+        elif k == "hud":
+            self.h_sprite.blockSignals(True)
+            self.h_sprite.setCurrentIndex(max(0, self.h_sprite.findData(c.get("sprite", "heart/full"))))
+            self.h_sprite.blockSignals(False)
+            self._hud_preview()
         elif k == "food":
             self.f_base.setEditText(c["base"])
             self.f_nut.setValue(int(c["nutrition"]))
@@ -489,8 +529,8 @@ class ContentPage(Page):
             cb.setEditText(g.replace("minecraft:", ""))
             self._cell_icon(cb)
         self.r_count.setValue(int(rec.get("count", 1)))
-        base = C.base_item(c) if k != "painting" else "minecraft:painting"
-        pm = self._icon_for(base) if k in ("tool", "food", "disc") or base else None
+        base = C.base_item(c)
+        pm = self._icon_for(base) if base else None
         self.r_result.setPixmap(pm.scaled(40, 40) if pm else QPixmap())
 
     def _collect(self):
@@ -510,6 +550,8 @@ class ContentPage(Page):
                      speed=self.t_spd.value(), durability=self.t_dur.value(), mining=self.t_mine.value(),
                      unbreakable=self.t_unb.isChecked(), glint=self.t_glint.isChecked(),
                      enchants=[(e.currentText(), lv.value()) for e, lv in self.t_ench if e.currentText()])
+        elif k == "hud":
+            c["sprite"] = self.h_sprite.currentData()
         elif k == "food":
             c.update(base=self.f_base.currentText().strip().replace("minecraft:", ""), nutrition=self.f_nut.value(),
                      saturation=self.f_sat.value(), seconds=self.f_sec.value(), always_eat=self.f_always.isChecked(),
@@ -610,6 +652,7 @@ class ContentPage(Page):
                     if w:
                         w.deleteLater()
         self.t_ench = []
+        self.t_motion.setVisible(False)
 
     def add_ench_row(self, name="", level=1):
         if len(self.t_ench) >= ENCH_MAX:
@@ -622,12 +665,15 @@ class ContentPage(Page):
         lv = QSpinBox()
         lv.setRange(1, ENCH_LEVEL_MAX)
         lv.setValue(int(level))
+        e.currentTextChanged.connect(self._check_motion)
+        lv.valueChanged.connect(self._check_motion)
         rm = button("×", "ghost", lambda: self.remove_ench_row(h, e, lv))
         h.addWidget(e, 1)
         h.addWidget(lv)
         h.addWidget(rm)
         self.t_ench_box.addLayout(h)
         self.t_ench.append((e, lv))
+        self._check_motion()
 
     def remove_ench_row(self, layout, e, lv):
         self.t_ench = [(ee, ll) for ee, ll in self.t_ench if ee is not e]
@@ -637,6 +683,65 @@ class ContentPage(Page):
                 w.deleteLater()
         self.t_ench_box.removeItem(layout)
         layout.deleteLater()
+        self._check_motion()
+
+    def _check_motion(self, *_a):
+        """Oyuncuyu fırlatan büyüler vanilla sınırının üstündeyse: anti-hile eklentisi bunu uçma/hız hilesi sanabilir."""
+        over = [(e.currentText(), lv.value()) for e, lv in self.t_ench
+                if e.currentText() in MOTION_ENCHANTS and lv.value() > MOTION_ENCHANTS[e.currentText()]]
+        if not over:
+            self.t_motion.setVisible(False)
+            return
+        from core import guard as G
+        names = ", ".join(f"{n} {lv}" for n, lv in over)
+        text = t("{list}: oyuncuyu vanilla'da mümkün olmayan bir hızla fırlatır. Anti-hile eklentileri bunu uçma ya da "
+                 "hız hilesi sanıp oyuncuyu geri çekebilir veya atabilir.", list=names)
+        if G.active(self.app.config, "combat"):
+            text += " " + t("Bu sunucuda Savaş Hilesi Denetimi açık.")
+        self.t_motion.setText("⚠ " + text)
+        self.t_motion.setVisible(True)
+
+    def pick_hud(self):
+        cid = self._need_id()
+        if not cid or not self.cur:
+            return
+        key = self.h_sprite.currentData()
+        _name, w, h = C.HUD_SPRITES[key]
+        path, _ = QFileDialog.getOpenFileName(self, t("Resim Seç"), "", "Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp)")
+        if not path:
+            return
+        img = QImage(path)
+        if img.isNull():
+            self.warn("Resim açılamadı.")
+            return
+        k = max(1, min(8, round(img.width() / w)))
+        same_ratio = abs(img.width() / img.height() - w / h) < 0.06
+        out = img.scaled(w * k, h * k, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+        name = f"{cid}_hud.png"
+        out.save(self._dest(name), "PNG")
+        self.cur["image"] = name
+        self.cur["sprite"] = key
+        self._hud_preview()
+        if not same_ratio:
+            self.warn(t("Resmin en-boy oranı bu parçaya ({w}×{h}) uymuyor; sığdırmak için uzatıldı.", w=w, h=h))
+
+    def _hud_preview(self, *_a):
+        c = self.cur
+        if not c or c["type"] != "hud":
+            return
+        key = self.h_sprite.currentData()
+        _name, w, h = C.HUD_SPRITES[key]
+        p = os.path.join(C.content_dir(self.app.config.server_path), c.get("image") or "")
+        pm = QPixmap(p) if c.get("image") and os.path.exists(p) else QPixmap()
+        if pm.isNull():
+            self.h_preview.setPixmap(QPixmap())
+            self.h_preview.setText(t("Resim yok"))
+            self.h_info.setText(t("Boyut: {w}×{h} piksel", w=w, h=h))
+            return
+        scale = max(1, min(180 // max(pm.width(), 1), 80 // max(pm.height(), 1)))
+        self.h_preview.setPixmap(pm.scaled(pm.width() * scale, pm.height() * scale, Qt.KeepAspectRatio, Qt.FastTransformation))
+        self.h_info.setText(t("Boyut: {w}×{h} piksel", w=w, h=h) + " · " +
+                            t("Kaydedilen: {w}×{h}", w=pm.width(), h=pm.height()))
 
     def pick_texture(self):
         cid = self._need_id()

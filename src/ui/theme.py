@@ -212,6 +212,12 @@ QListWidget, QTableWidget {{
 QListWidget::item {{ padding: 7px 10px; border-radius: {radius_sm}; margin: 1px 4px; }}
 QListWidget::item:hover {{ background: {surface_2}; }}
 QListWidget::item:selected {{ background: {surface_3}; color: {accent}; }}
+QTreeWidget {{
+    background: {surface}; border: 1px solid {border}; border-radius: {radius}; outline: none; color: {text};
+}}
+QTreeWidget::item {{ padding: 5px 4px; color: {text}; }}
+QTreeWidget::item:hover {{ background: {surface_2}; }}
+QTreeWidget::item:selected {{ background: {surface_3}; color: {accent}; }}
 QTableWidget::item {{ padding: 4px 8px; }}
 QTableWidget::item:selected {{ background: {surface_3}; color: {accent}; }}
 QHeaderView::section {{

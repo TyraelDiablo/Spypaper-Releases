@@ -74,8 +74,37 @@ def _post(url, headers, body, timeout=120):
         raise AIError(N_("Yapay zeka servisine bağlanılamadı: {e}"), e=e)
 
 
+def _parts(content):
+    """content: metin ya da [{"type": "text", "text"} | {"type": "image", "mime", "data"(base64)}]."""
+    if isinstance(content, str):
+        return [{"type": "text", "text": content}]
+    return [p for p in content if p.get("type") in ("text", "image")]
+
+
+def _anthropic_content(content):
+    if isinstance(content, str):
+        return content
+    return [{"type": "text", "text": p["text"]} if p["type"] == "text" else
+            {"type": "image", "source": {"type": "base64", "media_type": p["mime"], "data": p["data"]}}
+            for p in _parts(content)]
+
+
+def _openai_content(content):
+    if isinstance(content, str):
+        return content
+    return [{"type": "text", "text": p["text"]} if p["type"] == "text" else
+            {"type": "image_url", "image_url": {"url": f"data:{p['mime']};base64,{p['data']}"}}
+            for p in _parts(content)]
+
+
+def _gemini_parts(content):
+    return [{"text": p["text"]} if p["type"] == "text" else {"inline_data": {"mime_type": p["mime"], "data": p["data"]}}
+            for p in _parts(content)]
+
+
 def chat(cfg, system, messages, max_tokens=1500, temperature=0.4):
-    """messages: [{"role": "user"|"assistant", "content": str}] -> yanıt metni."""
+    """messages: [{"role": "user"|"assistant", "content": metin | parça listesi}] -> yanıt metni.
+    Parça listesi görsel içerebilir (bkz. _parts); görseli desteklemeyen model hata döndürür."""
     key = api_key(cfg)
     if not key and cfg["provider"] in ("anthropic", "gemini"):
         raise AIError(N_("API anahtarı ayarlanmamış. ☰ menüsünden Yapay Zeka Ayarları'nı aç."))
@@ -83,11 +112,12 @@ def chat(cfg, system, messages, max_tokens=1500, temperature=0.4):
         data = _post("https://api.anthropic.com/v1/messages",
                      {"x-api-key": key, "anthropic-version": "2023-06-01"},
                      {"model": cfg["model"], "max_tokens": max_tokens, "temperature": temperature,
-                      "system": system, "messages": messages})
+                      "system": system,
+                      "messages": [{"role": m["role"], "content": _anthropic_content(m["content"])} for m in messages]})
         return "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text").strip()
     if cfg["provider"] == "gemini":
         # Gemini: rol adları "user" / "model"; sistem promptu ayrı alanda
-        contents = [{"role": "model" if m["role"] == "assistant" else "user", "parts": [{"text": m["content"]}]}
+        contents = [{"role": "model" if m["role"] == "assistant" else "user", "parts": _gemini_parts(m["content"])}
                     for m in messages]
         data = _post(f"https://generativelanguage.googleapis.com/v1beta/models/{cfg['model']}:generateContent",
                      {"x-goog-api-key": key},
@@ -107,7 +137,8 @@ def chat(cfg, system, messages, max_tokens=1500, temperature=0.4):
     headers = {"Authorization": f"Bearer {key}"} if key else {}
     data = _post(f"{base}/chat/completions", headers,
                  {"model": cfg["model"], "max_tokens": max_tokens, "temperature": temperature,
-                  "messages": [{"role": "system", "content": system}] + messages})
+                  "messages": [{"role": "system", "content": system}] +
+                              [{"role": m["role"], "content": _openai_content(m["content"])} for m in messages]})
     try:
         return data["choices"][0]["message"]["content"].strip()
     except (KeyError, IndexError, TypeError):

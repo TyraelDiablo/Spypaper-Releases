@@ -1,6 +1,6 @@
 # Spypaper Gizlilik Bildirimi
 
-**Sürüm 1.3 · Yürürlük tarihi: 16.11.2026**
+**Sürüm 1.4 · Yürürlük tarihi: 16.11.2026**
 
 Bu bildirim, Spypaper'ın ("Yazılım") hangi verileri işlediğini, nerede sakladığını ve hangi durumlarda üçüncü taraflara gönderdiğini açıklar.
 
@@ -67,7 +67,7 @@ Gönderilenler: IP adresiniz (her internet bağlantısında olduğu gibi), isten
 
 Esplora'ya bir soru gönderdiğinizde (yazarak ya da hazır soru düğmesiyle), aşağıdakiler ☰ → Yapay Zeka Ayarları'nda **seçtiğiniz sağlayıcıya** gönderilir:
 
-- Sorunuz ve o sohbetteki önceki mesajlar
+- Sorunuz, o sohbetteki önceki mesajlar ve eklediğiniz **görseller** (ekran görüntüleri; mesaj başına en fazla 4)
 - Sunucu adı, yazılımı, Minecraft sürümü, durumu, jar ve Java yolu, RAM sınırları, güvenli mod seviyesi
 - Çevrimiçi ve bilinen **oyuncu adları** (en fazla 60)
 - Eklenti / mod listesi
@@ -77,6 +77,13 @@ Esplora'ya bir soru gönderdiğinizde (yazarak ya da hazır soru düğmesiyle), 
 - Son 7 gün içindeki **en son çökme raporunun** ilk satırları (varsa)
 - Esplora için yazdığınız **sunucu bilgileri** (☰ değil, Esplora → Sunucu Bilgileri)
 - Soruyla ilgiliyse sunucunun **yapılandırma dosyalarından** bölümler (ör. `spigot.yml`, `config/paper-world-defaults.yml`, sorudaki eklentinin `config.yml` dosyası). Parola, token, API anahtarı, veritabanı bilgisi ve webhook adresi gibi değerler gönderilmeden önce `***` ile değiştirilir; yine de yapılandırma dosyalarına kişisel veri yazmayın.
+
+Aşağıdaki maddelerin hangilerinin gönderileceğini Esplora → **Veri İzinleri**'nden siz belirlersiniz: her veri türü *Erişim yok*, *Onaylı* (her istekte size sorulur) ya da *Onaysız* olabilir. Yukarıdaki liste varsayılan ayarlardır. Ayrıca, yalnızca izin verdiğinizde ve Esplora adını verdiği bir oyuncu için istediğinde şunlar da gönderilebilir:
+
+- Oyuncu **koordinatları** (son konum, son ölüm noktası, kayıtlı evler), **gelişimleri**, **envanteri** (zırh, ikinci el, Ender sandığı dahil) ve **değerleri** (can, açlık, XP, oyun modu, istatistikler)
+- Whitelist, ban ve OP listelerindeki oyuncu adları; yedek listesi ve bakım planı; takımlar ve üyeleri; İçerik Editörü içerikleri; Hile Koruması ayarları ve son olayları (oyuncu adları içerir); sunucu notlarınız (varsayılan olarak kapalı)
+
+Bu veriler varsayılan olarak her istekte size sorulur; *Hep izin ver* derseniz o veri türü artık sorulmadan gönderilir.
 
 Sağlayıcılar ve gizlilik politikaları:
 

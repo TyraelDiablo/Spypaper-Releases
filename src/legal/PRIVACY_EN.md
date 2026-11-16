@@ -1,6 +1,6 @@
 # Spypaper Privacy Notice
 
-**Version 1.3 · Effective date: 16 November 2026**
+**Version 1.4 · Effective date: 16 November 2026**
 
 > If this English version conflicts with the Turkish version ([GIZLILIK.md](GIZLILIK.md)), the Turkish version prevails.
 
@@ -69,7 +69,7 @@ Sent: your IP address (as with any internet connection), the requested version, 
 
 When you send Esplora a question (typed or via a preset button), the following is sent to **the provider you selected** in ☰ → AI Settings:
 
-- Your question and earlier messages in that chat
+- Your question, earlier messages in that chat and any **images** you attach (screenshots; up to 4 per message)
 - Server name, software, Minecraft version, state, jar and Java path, RAM limits, safe mode level
 - Online and known **player names** (up to 60)
 - Plugin / mod list
@@ -79,6 +79,13 @@ When you send Esplora a question (typed or via a preset button), the following i
 - The first lines of the **most recent crash report** from the last 7 days (if any)
 - The **server info** you wrote for Esplora (Esplora → Server Info)
 - When relevant to the question, parts of the server's **configuration files** (e.g. `spigot.yml`, `config/paper-world-defaults.yml`, the `config.yml` of a plugin named in the question). Values such as passwords, tokens, API keys, database credentials and webhook URLs are replaced with `***` before sending; still, don't put personal data in configuration files.
+
+You decide which of these items are sent in Esplora → **Data Permissions**: each data type can be *No access*, *Ask first* (you're asked each time) or *Allowed*. The list above is the default. In addition, only if you allow it and Esplora asks for a named player, the following may be sent:
+
+- A player's **coordinates** (last position, last death point, saved homes), **advancements**, **inventory** (including armor, offhand and ender chest) and **values** (health, food, XP, game mode, statistics)
+- Player names on the whitelist, ban and OP lists; the backup list and maintenance schedule; teams and members; Content Editor items; Anti-Cheat settings and recent events (contain player names); your server notes (off by default)
+
+By default you're asked for each request; if you choose *Always allow*, that data type is sent without asking from then on.
 
 Providers and their privacy policies:
 
