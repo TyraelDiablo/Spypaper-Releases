@@ -245,13 +245,16 @@ Java yolu ve jar adı yalnızca bilgisayardan değiştirilebilir; RCON/sorgu/yö
 - Eşleşme 2 dakika geçerli, tek kullanımlık bir kodla yapılır. Telefon anahtarını HttpOnly çerezde tutar; `config.json`'da yalnızca SHA-256 özeti durur. Veritabanı kullanılmaz.
 - Sunucuda PIN varsa telefonda her değişiklikte sorulur (5 yanlış denemede 5 dakika kilitlenir). Güvenli mod *Yüksek* (salt okunur) telefondan değişikliği engeller; *Telefonlardan değişiklik yapılabilsin* kutusu hepsini birden kapatır (yalnızca izleme).
 - Log satırlarındaki IP adresleri telefona gitmeden gizlenir.
-- Bağlantı kendi ağının içinde düz HTTP'dir. **Bunun için modemde port açma.** Dışarıdan (mobil veriyle) erişmek için bilgisayara ve telefona [Tailscale](https://tailscale.com) kur ve Remote penceresinde *(Tailscale)* yazan adresi seç; trafik Tailscale ile şifrelenir.
+- Bağlantı kendi ağının içinde düz HTTP'dir. Dışarıdan (mobil veriyle) erişmek için en kolayı [Tailscale](https://tailscale.com): bilgisayara ve telefona kur, Remote penceresinde *(Tailscale)* yazan adresi seç; trafik Tailscale ile şifrelenir.
+- Tailscale istemiyorsanız Remote penceresindeki **Dış erişim** bölümüne bakın. **Modemde portu otomatik aç (UPnP)** modemin UPnP desteğine bağlıdır ve trafiği şifresiz (HTTP) dışarı açar; bu yüzden önerilmez. **Tünel sağlayıcısı: Cloudflare** ise HTTPS ile geçici bir adres verir. Tünel için [cloudflared](https://github.com/cloudflare/cloudflared) programını kendiniz kurup yolunu girersiniz; Spypaper onu indirmez. Tünelin adresi her açılışta değişir ve açıkken QR ile eşleşme bu adresi kullanır.
 
 ![Masaüstünde Spypaper Remote penceresi](docs/screenshots/remote-desktop.png)
 
 ---
 
 ## Esplora (yapay zeka asistanı)
+
+Spypaper bir yapay zeka sağlayıcısı değildir: sağlayıcıya ve modele kendi hesabınızdan, kendi ücretinizle bağlanırsınız.
 
 1. ☰ → **Yapay Zeka** → sağlayıcıyı seç, API anahtarını gir → **Bağlantıyı Test Et**.
 2. **Modelleri Getir** ile anahtarının erişebildiği modelleri listele.
@@ -331,6 +334,8 @@ Spypaper-Releases/
    │  ├─ creator.py        yeni sunucu oluşturma
    │  ├─ bluemap.py        BlueMap algılama, Modrinth'ten kurulum, ayarlar
    │  ├─ remote.py         Spypaper Remote web sunucusu (eşleşme, telefon API'si)
+   │  ├─ portmap.py        Modem port yönlendirme (UPnP)
+   │  ├─ tunnel.py         Cloudflare tüneli (cloudflared)
    │  ├─ ai.py, esplora.py yapay zeka sağlayıcıları, Esplora kuralları ve hazır sorular
    │  ├─ safemode.py       güvenli mod ve PIN
    │  └─ secrets.py        API anahtarı şifreleme
@@ -371,6 +376,8 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 ## Sorun giderme
 
 - **Eşya adları İngilizce görünüyor ya da ikon yok:** Oyuncular sayfasında **Oyun Dosyalarını Al**'a bas. Sayfanın altında hangi dil dosyasının kullanıldığı yazar.
+- **Modem portu açılamadı:** modemin UPnP'si kapalı olabilir (modem ayarlarından açın) ya da modem UPnP desteklemiyor. Bu durumda Tailscale ya da tünel kullanın.
+- **Tünel açılamadı:** Remote penceresinde cloudflared yolunu kontrol edin (*Gözat* ile seçin) ve internet bağlantınızı deneyin.
 - **Telefon Spypaper Remote'a bağlanamıyor:** telefon ve bilgisayar aynı Wi-Fi'da olmalı (misafir ağları genelde bunu engeller), Windows güvenlik duvarı Spypaper'a özel ağlarda izin vermeli ve Remote penceresindeki adres bilgisayarın yerel adresi olmalı (genelde `192.168…`). Port meşgulse Remote penceresinden değiştir.
 - **Derlerken `'uv' is not recognized`:** uv'yi kur (`winget install astral-sh.uv`) ve yeni bir terminal aç.
 - **Derlerken "Failed to build pyyaml" gibi bir hata:** Python sürümün bazı paketler için fazla yeni. `build.bat` uv ile Python 3.12 kullanır; komutları elle çalıştırıyorsan `--python 3.12` ekle.

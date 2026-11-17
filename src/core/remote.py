@@ -43,8 +43,15 @@ COOKIE_AGE = 365 * 24 * 3600
 MAX_BODY = 64 * 1024              # server.properties'in tamamı gönderilebilsin
 WEB_DIR = "remote_web"
 
-REMOTE_DEFAULTS = {"enabled": False, "port": DEFAULT_PORT, "allow_control": True, "devices": []}
+REMOTE_DEFAULTS = {"enabled": False, "port": DEFAULT_PORT, "allow_control": True, "devices": [],
+                   "upnp": False, "tunnel": "off", "tunnel_path": ""}
 PERMS = {"control": True, "maintenance": False, "settings": False}     # yeni cihazın izinleri
+
+
+def tunnel_choices():
+    """Dış erişim tüneli seçenekleri: [(anahtar, ad)]"""
+    from .tunnel import PROVIDERS
+    return list(PROVIDERS.items())
 
 # server.properties: telefona hiç gitmeyenler ve telefondan değiştirilemeyenler
 _PROP_HIDDEN = re.compile(r"password|secret|^rcon\.|^query\.|^management-server|^enable-rcon$|^enable-query$", re.I)
@@ -288,6 +295,9 @@ class RemoteServer:
         self.error = ""
         self.started_at = None
         self._tables = {}
+        self.mapping = None              # portmap.Mapping (UPnP)
+        self.tunnel = None               # tunnel.CloudflareTunnel
+        self.exposure = {"upnp": "", "upnp_msg": "", "ext_ip": "", "tunnel": "", "tunnel_msg": "", "tunnel_url": ""}
 
     # ------------------------------------------------------------ dil
     def tr(self, lang):
@@ -387,13 +397,89 @@ class RemoteServer:
         self.started_at = time.time()
         self.thread = threading.Thread(target=self.httpd.serve_forever, kwargs={"poll_interval": 0.5}, daemon=True)
         self.thread.start()
+        self._start_exposure(self.port)
         return True
 
     def stop(self):
         h, self.httpd = self.httpd, None
+        self._stop_exposure()
         if h:
             h.shutdown()
             h.server_close()
+
+    # ------------------------------------------------------------ dış erişim (isteğe bağlı)
+    def _set_exposure(self, **kw):
+        with self.lock:
+            self.exposure.update(kw)
+
+    def _start_exposure(self, port):
+        """Modem eşlemesi ve tünel ayarlıysa arka planda kurar; ağ çağrıları arayüzü dondurmaz."""
+        self._set_exposure(upnp="", upnp_msg="", ext_ip="", tunnel="", tunnel_msg="", tunnel_url="")
+        if self.data.get("upnp"):
+            self._set_exposure(upnp="wait")
+            threading.Thread(target=self._upnp_up, args=(port,), daemon=True).start()
+        if self.data.get("tunnel") == "cloudflare":
+            self._set_exposure(tunnel="wait")
+            threading.Thread(target=self._tunnel_up, args=(port,), daemon=True).start()
+
+    def _upnp_up(self, port):
+        from . import portmap
+        m = portmap.Mapping(port)
+        try:
+            m.add()
+        except portmap.PortMapError as e:
+            self._set_exposure(upnp="fail", upnp_msg=str(e))
+            return
+        with self.lock:
+            if self.httpd is None:               # bu sırada panel durdu: eşlemeyi hemen geri al
+                stale = True
+            else:
+                self.mapping, stale = m, False
+        if stale:
+            m.remove()
+            return
+        self._set_exposure(upnp="ok", ext_ip=m.external_ip)
+
+    def _tunnel_up(self, port):
+        from . import tunnel as TN
+        binary = TN.find_binary(self.data.get("tunnel_path") or "")
+        tn = TN.CloudflareTunnel(port, binary)
+        try:
+            url = tn.start()
+        except TN.TunnelError as e:
+            self._set_exposure(tunnel="fail", tunnel_msg=str(e))
+            return
+        with self.lock:
+            if self.httpd is None:               # bu sırada panel durdu: tüneli kapat
+                stale = True
+            else:
+                self.tunnel, stale = tn, False
+        if stale:
+            tn.stop()
+            return
+        self._set_exposure(tunnel="ok", tunnel_url=url)
+
+    def _stop_exposure(self):
+        m, self.mapping = self.mapping, None
+        tn, self.tunnel = self.tunnel, None
+        if m:
+            t = threading.Thread(target=m.remove, daemon=True)
+            t.start()
+            t.join(5)
+        if tn:
+            tn.stop()
+        self._set_exposure(upnp="", upnp_msg="", ext_ip="", tunnel="", tunnel_msg="", tunnel_url="")
+
+    def exposure_state(self):
+        with self.lock:
+            return dict(self.exposure)
+
+    def apply_exposure(self):
+        """Ayar değişince (UPnP ya da tünel) çalışan panel için dış erişimi yeniden kurar."""
+        if self.httpd is None:
+            return
+        self._stop_exposure()
+        self._start_exposure(self.port)
 
     # ------------------------------------------------------------ eşleşme
     def new_code(self):

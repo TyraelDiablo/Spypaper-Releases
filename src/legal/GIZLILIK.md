@@ -1,6 +1,6 @@
 # Spypaper Gizlilik Bildirimi
 
-**Sürüm 1.4 · Yürürlük tarihi: 16.11.2026**
+**Sürüm 1.5 · Yürürlük tarihi: 17.11.2026**
 
 Bu bildirim, Spypaper'ın ("Yazılım") hangi verileri işlediğini, nerede sakladığını ve hangi durumlarda üçüncü taraflara gönderdiğini açıklar.
 
@@ -96,7 +96,9 @@ Bu sağlayıcılar verileri kendi politikalarına göre işler ve sunucuları T�
 
 ### 2.3 Spypaper Remote (telefon)
 
-Spypaper Remote **varsayılan olarak kapalıdır**. Açarsanız Yazılım bilgisayarınızda küçük bir web sunucusu çalıştırır ve yalnızca QR kodla eşlediğiniz cihazlara şu özetleri gösterir: sunucu durumu, RAM/CPU kullanımı, oyuncu adları ile can/açlık/zırh/seviye/oyun modu ve son log satırları. Log satırlarındaki **IP adresleri gizlenir**. Bilgisayarda o cihaza izin verdiyseniz telefon sunucu ayarlarını (RAM, otomatik bakım planı, `server.properties`) görebilir ve değiştirebilir; RCON/sorgu/yönetim ayarları ve parolalar telefona gönderilmez. Telefon, panelin dili yerine kendi dilini (tarayıcının bildirdiği dil) kullanır. Bu veriler hiçbir üçüncü tarafa gönderilmez; doğrudan telefonunuz ile bilgisayarınız arasında, yerel ağınızda (ya da kendi kurduğunuz Tailscale gibi bir ağ üzerinden) iletilir. Bağlantı şifrelenmemiş HTTP'dir; bu yüzden yalnızca güvendiğiniz ağlarda kullanın, internete port açarak yayınlamayın. Eşli cihazları Remote penceresinden istediğiniz zaman kaldırabilirsiniz.
+Spypaper Remote **varsayılan olarak kapalıdır**. Açarsanız Yazılım bilgisayarınızda küçük bir web sunucusu çalıştırır ve yalnızca QR kodla eşlediğiniz cihazlara şu özetleri gösterir: sunucu durumu, RAM/CPU kullanımı, oyuncu adları ile can/açlık/zırh/seviye/oyun modu ve son log satırları. Log satırlarındaki **IP adresleri gizlenir**. Bilgisayarda o cihaza izin verdiyseniz telefon sunucu ayarlarını (RAM, otomatik bakım planı, `server.properties`) görebilir ve değiştirebilir; RCON/sorgu/yönetim ayarları ve parolalar telefona gönderilmez. Telefon, panelin dili yerine kendi dilini (tarayıcının bildirdiği dil) kullanır. Bu veriler, dış erişim için Cloudflare tüneli seçmediğiniz sürece hiçbir üçüncü tarafa gönderilmez; telefonunuz ile bilgisayarınız arasında yerel ağınızda (ya da kendi kurduğunuz Tailscale gibi bir ağ üzerinden) iletilir. Bağlantı şifrelenmemiş HTTP'dir; bu yüzden yalnızca güvendiğiniz ağlarda kullanın, internete port açarak yayınlamayın. Eşli cihazları Remote penceresinden istediğiniz zaman kaldırabilirsiniz.
+
+*Dış erişim (isteğe bağlı).* Remote penceresinde **Modemde portu otomatik aç (UPnP)** açıksa Yazılım, yerel ağınızdaki modeme UPnP ile (SSDP çok noktaya yayını ve modemin UPnP servisine istekler) panel portunu açar; kapatınca portu kapatır. Bu istekler yalnızca ağınızda kalır ve modemin dış IP adresi Remote penceresinde gösterilir. Port açmak paneli şifresiz (HTTP) internete çıkarır. **Tünel sağlayıcısı: Cloudflare** seçiliyse, sizin kurduğunuz cloudflared programı Cloudflare'in tünel ağına bağlanır ve telefonunuzdan gelen istekler Cloudflare sunucularından geçer; bu trafik [Cloudflare Gizlilik Bildirimi](https://www.cloudflare.com/privacypolicy/)'ne tabidir. Spypaper bu trafiği saklamaz. Eşli cihazların son bağlantı zamanları dışında Remote isteklerinin kaydı tutulmaz.
 
 ### 2.4 Spypaper güncelleme denetimi
 
