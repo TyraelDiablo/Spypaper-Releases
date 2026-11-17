@@ -15,8 +15,8 @@ class SpyModsView(QWidget):
         v = QVBoxLayout(self)
         v.setContentsMargins(0, 0, 0, 0)
         v.setSpacing(12)
-        v.addWidget(label("Spypaper'ın hazır modları veri paketi olarak kurulur: tüm sunucu türlerinde çalışır, "
-                          "oyuncuların bir şey kurması gerekmez. Kurduktan sonra sunucuyu yeniden başlat.",
+        v.addWidget(label("Spypaper'ın hazır modları veri ya da kaynak paketi olarak kurulur: tüm sunucu türlerinde "
+                          "çalışır, oyuncuların bir şey kurması gerekmez.",
                           "Muted", wrap=True))
         self.rows = {}
         for m in SM.MODS:
@@ -40,8 +40,9 @@ class SpyModsView(QWidget):
             sp, level = self._ctx()
         except Exception:
             sp, level = "", ""
+        rp_ids = self.app.config.get("spymods_rp") or []
         for mid, (status, btn) in self.rows.items():
-            on = bool(sp) and SM.installed(sp, level, mid)
+            on = bool(sp) and SM.installed(sp, level, mid, rp_ids)
             status.setText(t("Kurulu") if on else t("Kurulu değil"))
             status.setStyleSheet(f"color:{color('accent') if on else color('text_muted')};")
             btn.setText(t("Kaldır") if on else t("Kur"))
@@ -54,6 +55,8 @@ class SpyModsView(QWidget):
         if self.page.read_only():
             return
         m = SM.get(mid)
+        if m.get("kind") == "resource":
+            return self._toggle_rp(m)
         running = self.app.server.is_running
         try:
             sp, level = self._ctx()
@@ -68,9 +71,37 @@ class SpyModsView(QWidget):
                 else:
                     self.page.info(t("Kaldırıldı."))
             else:
-                SM.install(sp, level, detect_version(sp)[0], mid)
+                SM.install(sp, level, detect_version(sp)[0], mid, t)
                 self.page.info(t("Kuruldu. Etkinleşmesi için sunucuyu yeniden başlat.") if running
                                else t("Kuruldu. Sunucu açılınca etkinleşir."))
         except Exception as e:
             self.page.error(t(e.template, **e.kw) if hasattr(e, "template") else str(e))
+        self.prepare()
+
+    def _toggle_rp(self, m):
+        from .pages.content import rebuild_packs
+        ids = list(self.app.config.get("spymods_rp") or [])
+        on = m["id"] in ids
+        if on and not self.page.confirm(t("'{name}' kaldırılsın mı?", name=t(m["name"]))):
+            return
+        new = [i for i in ids if i != m["id"]] if on else ids + [m["id"]]
+        self.app.config.set("spymods_rp", new)
+        try:
+            rp, shared = rebuild_packs(self.app)
+        except Exception as e:
+            self.app.config.set("spymods_rp", ids)          # paket üretilemedi: eski hâline dön
+            self.page.error(t(e.template, **e.kw) if hasattr(e, "template") else str(e))
+            self.prepare()
+            return
+        head = t("Kaldırıldı.") if on else t("Kaynak paketine eklendi.")
+        if shared:
+            tail = t("Paylaşılan paket güncellendi. Oyuncular sunucu yeniden başlatılınca yeni paketi alır.")
+        elif rp:
+            tail = t("Oyunculara gitmesi için İçerik Editörü'nde kaynak paketi paylaşımını aç.")
+        else:
+            tail = ""
+        skipped = getattr(self.app, "last_skipped_content", None) or []
+        if skipped:
+            tail += "\n" + t("İçerik Editörü'ndeki eksik içerikler pakete eklenmedi: {names}", names=", ".join(skipped))
+        self.page.info((head + "\n" + tail).strip())
         self.prepare()

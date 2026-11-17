@@ -292,8 +292,9 @@ def _write(path, data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
-def build(server_path, level, version, items):
-    """Veri paketini ve (gerekirse) kaynak paketini üretir. (veri_paketi_klasörü, kaynak_paketi_yolu ya da None)."""
+def build(server_path, level, version, items, extra_rp=None):
+    """Veri paketini ve (gerekirse) kaynak paketini üretir. (veri_paketi_klasörü, kaynak_paketi_yolu ya da None).
+    extra_rp: Spypaper Modları'ndan gelen kaynak paketi dosyaları (arşiv yolu -> bayt); içerikler bunların üstüne yazar."""
     fmt = Fmt(version)
     if not fmt.ok:
         raise ContentError(N_("İçerik editörü için sunucu en az Minecraft {v} olmalı."), v="1.21")
@@ -318,7 +319,7 @@ def build(server_path, level, version, items):
         shutil.rmtree(dp)
     _write(os.path.join(dp, "pack.mcmeta"), _mcmeta("Spypaper içerikleri", data_format(fmt)))
     src = content_dir(server_path)
-    rp_files = {}
+    rp_files = dict(extra_rp or {})
     sounds = {}
     placeable = []
     for c in items:
