@@ -346,6 +346,7 @@ Spypaper-Releases/
    │  ├─ playit.py         Playit.gg: account link, tunnel address
    │  ├─ spymods.py        Spypaper Mods (ready-made data/resource packs)
    │  ├─ spymods_rp.py     generated sprites for resource-pack mods (flat bars)
+   │  ├─ uninstall.py      uninstall: what to delete, cleanup after exit
    │  ├─ ai.py, esplora.py AI providers, Esplora rules and preset questions
    │  ├─ safemode.py       safe mode and PIN
    │  └─ secrets.py        API key encryption
@@ -382,6 +383,10 @@ Planned next (order may change; share your ideas on [Issues](https://github.com/
 - [ ] Spypaper Remote: chat, player actions and notifications
 
 ---
+
+## Uninstalling
+
+Spypaper is a single exe with no installer. Use **☰ → Uninstall Spypaper**: Spypaper closes and deletes only its own files next to the exe (cache, game files, the exe itself). **Keep my settings** (on by default) leaves `config.json`, chat history and language files, so your servers and settings come back if you put Spypaper in the same folder again. Server folders, worlds and backups are never touched. The window also has a link to report a problem on GitHub; nothing is sent automatically.
 
 ## Troubleshooting
 

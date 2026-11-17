@@ -344,6 +344,7 @@ Spypaper-Releases/
    │  ├─ playit.py         Playit.gg: hesap bağlama, tünel adresi
    │  ├─ spymods.py        Spypaper Modları (hazır veri/kaynak paketleri)
    │  ├─ spymods_rp.py     kaynak paketi modlarının üretilen görselleri (düz barlar)
+   │  ├─ uninstall.py      kaldırma: silinecekler, kapandıktan sonra temizlik
    │  ├─ ai.py, esplora.py yapay zeka sağlayıcıları, Esplora kuralları ve hazır sorular
    │  ├─ safemode.py       güvenli mod ve PIN
    │  └─ secrets.py        API anahtarı şifreleme
@@ -380,6 +381,10 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 - [ ] Spypaper Remote: sohbet, oyuncu işlemleri ve bildirimler
 
 ---
+
+## Kaldırma
+
+Spypaper kurulum programı olmayan tek bir exe'dir. **☰ → Spypaper'ı kaldır** ile kaldırın: Spypaper kapanır ve yalnızca exe'nin yanındaki kendi dosyalarını siler (önbellek, oyun dosyaları, exe'nin kendisi). **Ayarlarımı sakla** (varsayılan olarak açık) seçiliyse `config.json`, sohbet geçmişi ve dil dosyaları kalır; Spypaper'ı aynı klasöre yeniden koyarsanız sunucularınız ve ayarlarınız geri gelir. Sunucu klasörlerine, dünyalara ve yedeklere asla dokunulmaz. Pencerede GitHub'da sorun bildirmek için bir bağlantı da var; kendiliğinden hiçbir şey gönderilmez.
 
 ## Sorun giderme
 

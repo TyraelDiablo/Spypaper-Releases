@@ -189,6 +189,7 @@ class Drawer(QWidget):
         v.addWidget(item("Güncellemeleri şimdi denetle", self._check_update, "circle-arrow-up"))
         v.addWidget(item("Lisans ve Gizlilik", self._legal, "scale"))
         v.addWidget(item("Hakkında", self._about, "info"))
+        v.addWidget(item("Spypaper'ı kaldır", self._uninstall, "circle-x"))
         v.addStretch(1)
         v.addWidget(label(f"Spypaper v{VERSION}", "Muted"))
 
@@ -270,6 +271,10 @@ class Drawer(QWidget):
     def _gamefiles(self):
         from .gamefiles_dialog import GameFilesDialog
         GameFilesDialog(self).exec()
+
+    def _uninstall(self):
+        from .uninstall_dialog import UninstallDialog
+        UninstallDialog(self.ctl, self).exec()
 
     def _legal(self):
         from .legal_dialog import LegalDialog
