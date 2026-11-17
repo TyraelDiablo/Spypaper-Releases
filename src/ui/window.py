@@ -85,6 +85,7 @@ class ServerPanel(QWidget):
         self.bridge = ServerBridge(app.server)
         app.players.set_language(i18n.current())   # eşya adları panel dilinde
         app.logtrans.ui_t = t                       # sunucu mesajları sözlüğü panel dilinde
+        app.logtrans.ui_lang = i18n.current          # İngilizce panelde sunucu satırları olduğu gibi kalır
 
         h = QHBoxLayout(self)
         h.setContentsMargins(0, 0, 0, 0)
