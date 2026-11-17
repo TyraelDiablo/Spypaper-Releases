@@ -267,6 +267,8 @@ Spypaper is not an AI provider: you connect to the provider and model with your 
 | Google Gemini | `gemini-3.8-flash` | If a model is retired and the service suggests a new one, the panel switches automatically |
 | OpenAI / compatible | `gpt-4o-mini` | Use the *Server URL* field for OpenRouter, LM Studio, Ollama, etc. |
 
+**History:** chats are saved per server on this computer (images excluded). With Esplora → **History** you can open an earlier chat and continue where you left off, search titles, delete chats or turn saving off. **New chat** closes the current chat; it stays in the history.
+
 **Server Info:** Esplora → **Server Info** lets you tell Esplora about your server (rules, staff, economy, how plugins are used, known issues). Esplora also gets the relevant parts of a built-in knowledge base and, when the question is about them, the server's configuration files (`spigot.yml`, `config/paper-world-defaults.yml`, the config of a plugin you name…) with passwords, tokens and webhook URLs replaced by `***`.
 
 **Images:** attach screenshots with the image button, paste them with Ctrl+V or drop them on the input (up to 4 per message, resized to at most 1568 px). The model must support images (Claude, Gemini and GPT-4o do).
@@ -327,6 +329,7 @@ Spypaper-Releases/
    │  ├─ packhost.py       resource pack sharing (small HTTP server)
    │  ├─ skins.py, homes.py player heads (Mojang), player homes
    │  ├─ esplora_kb.py     Esplora's built-in knowledge base
+   │  ├─ esplora_chats.py  Esplora chat history (saved on this computer)
    │  ├─ guard.py          Anti-Cheat (ore hiding, permission guard, GrimAC, bot verification)
    │  ├─ worldborder.py    World Border (/worldborder commands)
    │  ├─ autostart.py      start with Windows

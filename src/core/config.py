@@ -70,6 +70,7 @@ APP_DEFAULTS = {
     "hidden_pages": [],
     "dashboard_hidden": [],    # gösterge panelinde gizlenen kartlar
     "ai": {},                  # yapay zeka ayarları (core.ai)
+    "esplora_save_chats": True,  # Esplora sohbetleri bu bilgisayarda saklansın (core.esplora_chats)
     "servers": [],
     "last_server": "",
 }

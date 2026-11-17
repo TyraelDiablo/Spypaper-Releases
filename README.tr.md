@@ -265,6 +265,8 @@ Spypaper bir yapay zeka sağlayıcısı değildir: sağlayıcıya ve modele kend
 | Google Gemini | `gemini-3.8-flash` | Kapatılan bir model için servis yeni model önerirse panel otomatik geçer |
 | OpenAI / uyumlu | `gpt-4o-mini` | OpenRouter, LM Studio, Ollama vb. için *Sunucu adresi* alanını kullan |
 
+**Geçmiş:** Sohbetler sunucu başına bu bilgisayarda kaydedilir (görseller hariç). Esplora → **Geçmiş** ile eski bir sohbeti açıp kaldığın yerden devam edebilir, başlıkta arayabilir, sohbetleri silebilir ya da kaydetmeyi kapatabilirsin. **Yeni sohbet** açık sohbeti kapatır; o sohbet geçmişte kalır.
+
 **Sunucu Bilgileri:** Esplora → **Sunucu Bilgileri** ile Esplora'ya sunucunu anlatırsın (kurallar, yetkililer, ekonomi, eklentileri nasıl kullandığın, bilinen sorunlar). Esplora ayrıca gömülü bilgi bankasının ilgili bölümlerini ve soru onlarla ilgiliyse sunucunun yapılandırma dosyalarını (`spigot.yml`, `config/paper-world-defaults.yml`, adını verdiğin eklentinin ayarı…) alır; parola, token ve webhook adresleri `***` ile değiştirilir.
 
 **Görseller:** Görsel düğmesiyle ekran görüntüsü ekleyebilir, Ctrl+V ile yapıştırabilir ya da giriş kutusuna sürükleyebilirsin (mesaj başına en fazla 4, uzun kenar en fazla 1568 px). Modelin görsel desteklemesi gerekir (Claude, Gemini ve GPT-4o destekler).
@@ -325,6 +327,7 @@ Spypaper-Releases/
    │  ├─ packhost.py       kaynak paketi paylaşımı (küçük HTTP sunucusu)
    │  ├─ skins.py, homes.py oyuncu kafaları (Mojang), oyuncu evleri
    │  ├─ esplora_kb.py     Esplora'nın gömülü bilgi bankası
+   │  ├─ esplora_chats.py  Esplora sohbet geçmişi (bu bilgisayarda)
    │  ├─ guard.py          Hile Koruması (cevher gizleme, yetki koruması, GrimAC, bot doğrulaması)
    │  ├─ worldborder.py    Dünya Sınırı (/worldborder komutları)
    │  ├─ autostart.py      Windows ile başlatma

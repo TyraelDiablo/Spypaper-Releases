@@ -44,7 +44,7 @@ Oyuncu kafası görüntüleri Yazılımın yanındaki `cache/skins/`, Modrinth i
 
 *Windows açılınca başlat* seçeneğini açarsanız Windows kayıt defterine (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`) Yazılımın yolu yazılır; seçeneği kapatınca silinir.
 
-Esplora sohbet geçmişi **yalnızca bellekte** tutulur; Yazılım kapatıldığında silinir.
+Esplora sohbetleri, *Sohbetleri bu bilgisayarda kaydet* seçeneği açıksa (varsayılan) Yazılım'ın klasöründeki `esplora_chats/<sunucu>/` altında JSON dosyaları olarak **yalnızca bu bilgisayarda** saklanır: sorularınız, Esplora'nın yanıtları, onayladığınız veri notları ve zamanları. Gönderdiğiniz **görseller kaydedilmez**, yalnızca sayıları kalır. Sunucu başına en fazla 100 sohbet tutulur, daha eskiler silinir. Bu dosyalar hiçbir yere gönderilmez; ancak kayıtlı bir sohbete devam ederseniz önceki mesajlar, her soruda olduğu gibi, seçtiğiniz yapay zeka sağlayıcısına yeniden gönderilir. Esplora → **Geçmiş**'ten sohbetleri tek tek ya da toplu silebilir, kaydetmeyi kapatabilirsiniz.
 
 ## 2. Üçüncü taraflara gönderilen veriler
 

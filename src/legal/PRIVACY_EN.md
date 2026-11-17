@@ -46,7 +46,7 @@ Player head images are cached in `cache/skins/` next to the Software and Modrint
 
 If you turn on *Start Spypaper with Windows*, the Software's path is written to the Windows registry (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`); turning it off removes it.
 
-Esplora chat history is kept **in memory only** and is deleted when the Software closes.
+If *Save chats on this computer* is on (the default), Esplora chats are stored **only on this computer** as JSON files under `esplora_chats/<server>/` in the Software's folder: your questions, Esplora's answers, the data notes you approved, and their times. **Images you send are not saved**; only their count is kept. Up to 100 chats are kept per server; older ones are deleted. These files are not sent anywhere; however, if you continue a saved chat, the earlier messages are sent again to the AI provider you chose, as with every question. In Esplora → **History** you can delete chats one by one or all at once, and turn saving off.
 
 ## 2. Data sent to third parties
 
