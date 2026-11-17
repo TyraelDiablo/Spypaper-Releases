@@ -50,12 +50,12 @@ class PluginsPage(Page):
         self._upd_busy = False
         self.upd_done.connect(self._upd_done)
         from PySide6.QtWidgets import QStackedWidget
-        self.tabs = segmented([N_("Yüklü"), N_("Modrinth"), N_("Kaynak Paketi")], self._tab)
+        self.tabs = segmented([N_("Yüklü"), N_("Modrinth"), N_("Kaynak Paketi"), N_("Spypaper Modları")], self._tab)
         self.root.addWidget(self.tabs, 0, Qt.AlignLeft)
         self.stack = QStackedWidget()
         self.stack.addWidget(card)
         self.root.addWidget(self.stack, 1)
-        self.browser = self.packs = None
+        self.browser = self.packs = self.spymods = None
         self.items = []
         self._sel()
 
@@ -68,12 +68,18 @@ class PluginsPage(Page):
         if i == 2 and self.packs is None:
             self.packs = ResourcePackView(self)
             self.stack.addWidget(self.packs)
-        w = {0: self.card, 1: self.browser, 2: self.packs}[i]
+        if i == 3 and self.spymods is None:
+            from ..spymods_view import SpyModsView
+            self.spymods = SpyModsView(self)
+            self.stack.addWidget(self.spymods)
+        w = {0: self.card, 1: self.browser, 2: self.packs, 3: self.spymods}[i]
         self.stack.setCurrentWidget(w)
         if i == 1:
             self.browser.prepare()
         elif i == 2:
             self.packs.prepare()
+        elif i == 3:
+            self.spymods.prepare()
 
     def page_title(self):
         return t("Modlar") if self.app.plugins.modded else t("Eklentiler")
@@ -97,6 +103,8 @@ class PluginsPage(Page):
         n, on = len(self.items), sum(on for *_, on in self.items)
         self.hint.setText(t("{n} mod · {on} etkin", n=n, on=on) if mods else t("{n} eklenti · {on} etkin", n=n, on=on))
         self._sel()
+        if self.spymods is not None:
+            self.spymods.prepare()
 
     def check_updates(self):
         if self._upd_busy:
