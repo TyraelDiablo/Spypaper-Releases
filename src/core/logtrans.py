@@ -25,6 +25,8 @@ NAME_PREFIXES = ("entity.minecraft.", "item.minecraft.", "block.minecraft.", "ga
                  "effect.minecraft.", "enchantment.minecraft.")
 ADMIN = re.compile(r"^\[([^\]:]+): (.+)\]$")          # chat.type.admin "[%s: %s]"
 LOGGER = re.compile(r"^\[([^\]]+)\] (.*)$")
+# satır başı: '[12:00:00] [Server thread/INFO]:', '[12:00:00 INFO]:', Forge/NeoForge'da üçüncü [logger/MARKER] parantezi
+PREFIX = re.compile(r"^((?:\[[^\]]*\]\s*)+:\s?)(.*)$")
 ARG = re.compile(r"%(?:(\d+)\$)?s")
 
 # Sık Paper/vanilla sunucu mesajları -> panel dili (t ile)
@@ -171,7 +173,7 @@ class LogTranslator:
     def line(self, raw):
         """Tam log satırı: '[12:00:00] [Server thread/INFO]: mesaj' -> mesaj kısmı çevrilmiş satır.
         Öneksiz satırlar (ör. 'Starting org.bukkit.craftbukkit.Main') bütünüyle denenir."""
-        m = re.match(r"^(\[[^\]]*\](?:\s*\[[^\]]*\])?:\s?)(.*)$", raw)
+        m = PREFIX.match(raw)
         if not m:
             return self.message(raw)
         return m.group(1) + self.message(m.group(2))
