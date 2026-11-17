@@ -1,6 +1,6 @@
 # Spypaper Privacy Notice
 
-**Version 1.4 · Effective date: 16 November 2026**
+**Version 1.5 · Effective date: 17 November 2026**
 
 > If this English version conflicts with the Turkish version ([GIZLILIK.md](GIZLILIK.md)), the Turkish version prevails.
 
@@ -98,7 +98,9 @@ These providers process data under their own policies, and their servers may be 
 
 ### 2.3 Spypaper Remote (phone)
 
-Spypaper Remote is **off by default**. If you turn it on, the Software runs a small web server on your computer and shows only these summaries to devices you paired with a QR code: server status, RAM/CPU usage, player names with health/hunger/armor/level/game mode, and recent log lines. **IP addresses in log lines are hidden.** If you allowed it for that device on the computer, the phone can view and change server settings (RAM, maintenance schedule, `server.properties`); RCON/query/management settings and passwords are never sent to the phone. The phone uses its own language (the one its browser reports) instead of the panel's. This data is not sent to any third party; it travels directly between your phone and your computer on your local network (or a network you set up yourself, such as Tailscale). The connection is unencrypted HTTP, so use it only on networks you trust and do not expose it to the internet through port forwarding. Paired devices are stored as a device name, pairing and last-seen times, and only a SHA-256 hash of the device key; you can remove them at any time in the Remote window.
+Spypaper Remote is **off by default**. If you turn it on, the Software runs a small web server on your computer and shows only these summaries to devices you paired with a QR code: server status, RAM/CPU usage, player names with health/hunger/armor/level/game mode, and recent log lines. **IP addresses in log lines are hidden.** If you allowed it for that device on the computer, the phone can view and change server settings (RAM, maintenance schedule, `server.properties`); RCON/query/management settings and passwords are never sent to the phone. The phone uses its own language (the one its browser reports) instead of the panel's. Unless you choose the Cloudflare tunnel for external access, this data is not sent to any third party; it travels directly between your phone and your computer on your local network (or a network you set up yourself, such as Tailscale). The connection is unencrypted HTTP, so use it only on networks you trust and do not expose it to the internet through port forwarding. Paired devices are stored as a device name, pairing and last-seen times, and only a SHA-256 hash of the device key; you can remove them at any time in the Remote window.
+
+*External access (optional).* If **Open the port on the router automatically (UPnP)** is on in the Remote window, the Software uses UPnP on your local network (an SSDP multicast and requests to your router's UPnP service) to open the panel port, and closes it when you turn the option off. These requests stay on your network, and the router's external IP address is shown in the Remote window. Opening a port exposes the panel to the internet unencrypted (HTTP). If **Tunnel provider: Cloudflare** is selected, the cloudflared program you installed connects to Cloudflare's tunnel network, and requests from your phone pass through Cloudflare's servers; that traffic is subject to the [Cloudflare Privacy Policy](https://www.cloudflare.com/privacypolicy/). Spypaper does not store this traffic; apart from paired devices' last-seen times, no record of Remote requests is kept.
 
 ### 2.4 Spypaper update check
 

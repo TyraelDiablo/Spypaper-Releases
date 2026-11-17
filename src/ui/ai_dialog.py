@@ -26,6 +26,8 @@ class AIDialog(QDialog):
         v.setSpacing(10)
         v.addWidget(label("Yapay Zeka Ayarları", "PageTitle"))
         v.addWidget(label("Esplora bu ayarları kullanır. Anahtar bu bilgisayarda Windows hesabına bağlı olarak şifrelenir.", "Muted", wrap=True))
+        v.addWidget(label("Spypaper bir yapay zeka sağlayıcısı değildir. Sağlayıcıya ve modele kendi hesabınızdan, kendi "
+                          "ücretinizle bağlanırsınız; Spypaper yalnızca bu bağlantıyı kolaylaştırır.", "Muted", wrap=True))
 
         form = QFormLayout()
         form.setSpacing(9)

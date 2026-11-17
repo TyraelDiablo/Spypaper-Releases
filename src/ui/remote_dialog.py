@@ -12,7 +12,8 @@ from datetime import datetime
 from PySide6.QtCore import QObject, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QDialog, QFrame, QHBoxLayout, QLabel, QPushButton, QSpinBox, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QDialog, QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox,
+    QVBoxLayout, QWidget,
 )
 
 from core import N_, remote as R
@@ -325,6 +326,44 @@ class RemoteDialog(QDialog):
         self.allow.toggled.connect(lambda on: (self.rc.server.set_option("allow_control", bool(on)), self._refresh()))
         v.addWidget(self.allow)
 
+        # --- dış erişim (isteğe bağlı) ---
+        ext = QFrame()
+        ext.setObjectName("Card")
+        ev = QVBoxLayout(ext)
+        ev.setContentsMargins(14, 12, 14, 12)
+        ev.setSpacing(8)
+        ev.addWidget(label("Dış erişim (isteğe bağlı)", "CardTitle"))
+        self.upnp = QCheckBox(t("Modemde portu otomatik aç (UPnP)"))
+        self.upnp.setChecked(bool(self.rc.server.data.get("upnp")))
+        self.upnp.setToolTip(t("Modem UPnP destekliyorsa panel portunu modemde açar. Kapatınca port kapanır."))
+        self.upnp.toggled.connect(self._upnp_changed)
+        ev.addWidget(self.upnp)
+        trow = QHBoxLayout()
+        trow.setSpacing(8)
+        trow.addWidget(label("Tünel sağlayıcısı"))
+        self.tunnel = QComboBox()
+        for k, name in R.tunnel_choices():
+            self.tunnel.addItem(t(name), k)
+        self.tunnel.setCurrentIndex(max(0, self.tunnel.findData(self.rc.server.data.get("tunnel") or "off")))
+        self.tunnel.activated.connect(self._tunnel_changed)
+        trow.addWidget(self.tunnel, 1)
+        ev.addLayout(trow)
+        prow = QHBoxLayout()
+        prow.setSpacing(8)
+        prow.addWidget(label("cloudflared yolu"))
+        self.tpath = QLineEdit(self.rc.server.data.get("tunnel_path") or "")
+        self.tpath.setPlaceholderText(t("Boş bırakırsan PATH'te aranır"))
+        self.tpath.editingFinished.connect(self._tpath_changed)
+        prow.addWidget(self.tpath, 1)
+        prow.addWidget(button("Gözat", "ghost", self._browse))
+        ev.addLayout(prow)
+        self.exp_lbl = label("", "Muted", wrap=True, raw=True)
+        ev.addWidget(self.exp_lbl)
+        ev.addWidget(label("Modem portu açmak paneli şifresiz (HTTP) dışarı çıkarır. Dış erişimde tünel seçmeni öneririm: "
+                           "tünel HTTPS kullanır. Tünel için cloudflared programını kendin kurman gerekir; "
+                           "Spypaper onu indirmez.", "Muted", wrap=True))
+        v.addWidget(ext)
+
         # --- QR ---
         qr_card = QFrame()
         qr_card.setObjectName("Card")
@@ -391,6 +430,58 @@ class RemoteDialog(QDialog):
         self.code = ""
         self._refresh()
 
+    def _upnp_changed(self, on):
+        self.rc.server.set_option("upnp", bool(on))
+        self.rc.server.apply_exposure()
+        self._refresh()
+
+    def _tunnel_changed(self, _i=0):
+        self.rc.server.set_option("tunnel", self.tunnel.currentData())
+        self.rc.server.apply_exposure()
+        self._refresh()
+
+    def _tpath_changed(self):
+        path = self.tpath.text().strip()
+        if path == (self.rc.server.data.get("tunnel_path") or ""):
+            return
+        self.rc.server.set_option("tunnel_path", path)
+        if self.tunnel.currentData() == "cloudflare":
+            self.rc.server.apply_exposure()
+        self._refresh()
+
+    def _browse(self):
+        path, _ = QFileDialog.getOpenFileName(self, t("cloudflared programını seç"))
+        if path:
+            self.tpath.setText(path)
+            self._tpath_changed()
+
+    def _exposure_text(self):
+        s = self.rc.server
+        if not s.running:
+            return ""
+        e = s.exposure_state()
+        parts = []
+        if self.upnp.isChecked():
+            if e["upnp"] == "ok":
+                parts.append(t("Modem portu açıldı.") + (f" {t('Dış IP')}: {e['ext_ip']}" if e["ext_ip"] else ""))
+            elif e["upnp"] == "fail":
+                parts.append(t("Modem portu açılamadı: {e}", e=t(e["upnp_msg"])))
+            else:
+                parts.append(t("Modem portu açılıyor..."))
+        if self.tunnel.currentData() == "cloudflare":
+            if e["tunnel"] == "ok":
+                parts.append(t("Tünel açık: {url}", url=e["tunnel_url"]))
+            elif e["tunnel"] == "fail":
+                parts.append(t("Tünel açılamadı: {e}", e=t(e["tunnel_msg"])))
+            else:
+                parts.append(t("Tünel açılıyor..."))
+        return "\n".join(parts)
+
+    def _tick_exposure(self):
+        text = self._exposure_text()
+        if text != self.exp_lbl.text():
+            self.exp_lbl.setText(text)
+
     def new_code(self):
         if not self.rc.server.running:
             self.enabled.setChecked(True)
@@ -404,6 +495,9 @@ class RemoteDialog(QDialog):
     def _url(self, code=""):
         a = self.addr.currentData() or "127.0.0.1"
         base = f"http://{a}:{self.rc.server.port}"
+        tu = self.rc.server.exposure_state().get("tunnel_url") if self.rc.server.running else ""
+        if tu:
+            base = tu.rstrip("/")
         return base + (f"/pair?code={code}" if code else "")
 
     def _qr(self):
@@ -421,6 +515,7 @@ class RemoteDialog(QDialog):
         self.url_lbl.setText(url)
 
     def _tick(self):
+        self._tick_exposure()
         left = int(self.code_until - time.time()) if self.code else 0
         if self.code and left <= 0:
             self.code = ""

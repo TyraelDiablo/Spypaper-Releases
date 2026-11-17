@@ -247,13 +247,16 @@ The Java path and jar name can only be changed on the computer, and RCON/query/m
 - Pairing uses a one-time code that expires after 2 minutes. The phone keeps its key in an HttpOnly cookie; `config.json` only stores a SHA-256 hash of it. No database is involved.
 - If a server has a PIN, the phone asks for it for every change (5 wrong tries lock it for 5 minutes). Safe mode *High* (read-only) blocks changes from the phone, and *Allow changes from phones* turns all of them off at once (watch-only).
 - IP addresses in log lines are hidden before they reach the phone.
-- The connection is plain HTTP inside your own network. **Do not open a port on your router for it.** To reach it from outside (mobile data), install [Tailscale](https://tailscale.com) on the computer and the phone and pick the address marked *(Tailscale)* in the Remote window; the traffic is then encrypted by Tailscale.
+- The connection is plain HTTP inside your own network. To reach it from outside (mobile data), the easiest way is [Tailscale](https://tailscale.com): install it on the computer and the phone and pick the address marked *(Tailscale)* in the Remote window; the traffic is then encrypted by Tailscale.
+- If you don't want Tailscale, see the **External access** section of the Remote window. **Open the port on the router automatically (UPnP)** depends on your router's UPnP support and exposes the traffic unencrypted (HTTP), so it is not recommended. **Tunnel provider: Cloudflare** gives a temporary HTTPS address instead. For the tunnel, install the [cloudflared](https://github.com/cloudflare/cloudflared) program yourself and enter its path; Spypaper does not download it. The tunnel address changes each time it opens, and while it is open the QR pairing uses that address.
 
 ![Spypaper Remote window on the desktop](docs/screenshots/remote-desktop.png)
 
 ---
 
 ## Esplora (AI assistant)
+
+Spypaper is not an AI provider: you connect to the provider and model with your own account, at your own cost.
 
 1. ☰ → **AI** → choose a provider, enter your API key → **Test Connection**.
 2. Use **Fetch Models** to list the models your key can access.
@@ -333,6 +336,8 @@ Spypaper-Releases/
    │  ├─ creator.py        creating new servers
    │  ├─ bluemap.py        BlueMap detection, Modrinth install, configuration
    │  ├─ remote.py         Spypaper Remote web server (pairing, phone API)
+   │  ├─ portmap.py        Router port forwarding (UPnP)
+   │  ├─ tunnel.py         Cloudflare tunnel (cloudflared)
    │  ├─ ai.py, esplora.py AI providers, Esplora rules and preset questions
    │  ├─ safemode.py       safe mode and PIN
    │  └─ secrets.py        API key encryption
@@ -373,6 +378,8 @@ Planned next (order may change; share your ideas on [Issues](https://github.com/
 ## Troubleshooting
 
 - **Item names are in English or icons are missing:** click **Get Game Files** on the Players page. The bottom of the page shows which language file is in use.
+- **Router port could not be opened:** UPnP may be off in the router settings, or the router does not support UPnP. Use Tailscale or a tunnel instead.
+- **Tunnel could not be opened:** check the cloudflared path in the Remote window (choose it with *Browse*) and your internet connection.
 - **The phone can't reach Spypaper Remote:** the phone and computer must be on the same Wi-Fi (guest networks often block this), Windows Firewall must allow Spypaper on private networks, and the address in the Remote window must be your computer's local address (usually `192.168…`). If the port is busy, change it in the Remote window.
 - **`'uv' is not recognized` when building:** install uv (`winget install astral-sh.uv`) and open a new terminal.
 - **"Failed to build pyyaml" or similar when building:** your Python is too new for some packages. `build.bat` uses Python 3.12 through uv; if you run the commands by hand, add `--python 3.12`.
