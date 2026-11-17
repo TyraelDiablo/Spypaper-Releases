@@ -348,20 +348,39 @@ class RemoteDialog(QDialog):
         self.tunnel.activated.connect(self._tunnel_changed)
         trow.addWidget(self.tunnel, 1)
         ev.addLayout(trow)
-        prow = QHBoxLayout()
+        self.prow_w = QWidget()
+        prow = QHBoxLayout(self.prow_w)
+        prow.setContentsMargins(0, 0, 0, 0)
         prow.setSpacing(8)
-        prow.addWidget(label("cloudflared yolu"))
-        self.tpath = QLineEdit(self.rc.server.data.get("tunnel_path") or "")
+        self.tpath_lbl = label("", raw=True)
+        prow.addWidget(self.tpath_lbl)
+        self.tpath = QLineEdit()
         self.tpath.setPlaceholderText(t("Boş bırakırsan PATH'te aranır"))
         self.tpath.editingFinished.connect(self._tpath_changed)
         prow.addWidget(self.tpath, 1)
         prow.addWidget(button("Gözat", "ghost", self._browse))
-        ev.addLayout(prow)
+        ev.addWidget(self.prow_w)
+        # Playit.gg hesabı (yalnızca Playit seçiliyken görünür)
+        self.pl_w = QWidget()
+        pl = QHBoxLayout(self.pl_w)
+        pl.setContentsMargins(0, 0, 0, 0)
+        pl.setSpacing(8)
+        pl.addWidget(label("Playit hesabı"))
+        self.pl_lbl = label("", "Muted", wrap=True, raw=True)
+        pl.addWidget(self.pl_lbl, 1)
+        self.pl_link = button("Hesabı bağla", "ghost", self._playit_link)
+        pl.addWidget(self.pl_link)
+        pl.addWidget(button("Anahtar gir", "ghost", self._playit_key))
+        pl.addWidget(button("Tüneller", "ghost", self._playit_page))
+        ev.addWidget(self.pl_w)
+        self.linker = None
+        self._provider_ui()
         self.exp_lbl = label("", "Muted", wrap=True, raw=True)
         ev.addWidget(self.exp_lbl)
         ev.addWidget(label("Modem portu açmak paneli şifresiz (HTTP) dışarı çıkarır. Dış erişimde tünel seçmeni öneririm: "
-                           "tünel HTTPS kullanır. Tünel için cloudflared programını kendin kurman gerekir; "
-                           "Spypaper onu indirmez.", "Muted", wrap=True))
+                           "Cloudflare tüneli HTTPS kullanır. Tünel programlarını (cloudflared ya da playit) kendin kurman gerekir; "
+                           "Spypaper onları indirmez. Playit'te tüneli playit.gg'de sen oluşturursun: TCP, yerel port = panel portu.",
+                           "Muted", wrap=True))
         v.addWidget(ext)
 
         # --- QR ---
@@ -437,23 +456,93 @@ class RemoteDialog(QDialog):
 
     def _tunnel_changed(self, _i=0):
         self.rc.server.set_option("tunnel", self.tunnel.currentData())
+        self._provider_ui()
         self.rc.server.apply_exposure()
         self._refresh()
 
+    def _path_key(self):
+        return "playit_path" if self.tunnel.currentData() == "playit" else "tunnel_path"
+
+    def _provider_ui(self):
+        """Seçili sağlayıcıya göre yol alanını ve Playit hesabı satırını ayarlar."""
+        prov = self.tunnel.currentData()
+        self.prow_w.setVisible(prov in ("cloudflare", "playit"))
+        self.pl_w.setVisible(prov == "playit")
+        self.tpath_lbl.setText(t("playit yolu") if prov == "playit" else t("cloudflared yolu"))
+        self.tpath.setText(self.rc.server.data.get(self._path_key()) or "")
+        if prov == "playit":
+            self._playit_status()
+
     def _tpath_changed(self):
+        key = self._path_key()
         path = self.tpath.text().strip()
-        if path == (self.rc.server.data.get("tunnel_path") or ""):
+        if path == (self.rc.server.data.get(key) or ""):
             return
-        self.rc.server.set_option("tunnel_path", path)
-        if self.tunnel.currentData() == "cloudflare":
+        self.rc.server.set_option(key, path)
+        if self.tunnel.currentData() in ("cloudflare", "playit"):
             self.rc.server.apply_exposure()
         self._refresh()
 
     def _browse(self):
-        path, _ = QFileDialog.getOpenFileName(self, t("cloudflared programını seç"))
+        title = t("playit programını seç") if self.tunnel.currentData() == "playit" else t("cloudflared programını seç")
+        path, _ = QFileDialog.getOpenFileName(self, title)
         if path:
             self.tpath.setText(path)
             self._tpath_changed()
+
+    # --- Playit.gg hesabı (isteğe bağlı) ---
+    def _playit_binary(self):
+        from core import playit as PL
+        return PL.find_binary(self.rc.server.data.get("playit_path") or "")
+
+    def _playit_status(self):
+        lk = self.linker
+        if lk and lk.state in ("wait", "url"):
+            text = (t("Tarayıcıda onayla: {url}", url=lk.url) if lk.url else t("Bağlantı hazırlanıyor..."))
+        elif lk and lk.state == "fail":
+            text = t("Bağlanamadı: {e}", e=t(lk.msg))
+        elif self.rc.server.data.get("playit_key"):
+            text = t("Anahtar elle girildi.")
+        elif lk and lk.state == "done":
+            text = t(lk.msg) if lk.msg else t("Hesap bağlandı.")
+        elif self._playit_binary():
+            text = t("playit kurulu.")
+        else:
+            text = t("playit kurulu değil (playit.gg/download).")
+        if text != self.pl_lbl.text():
+            self.pl_lbl.setText(text)
+        self.pl_link.setEnabled(not (lk and lk.state in ("wait", "url")))
+
+    def _playit_link(self):
+        import webbrowser
+        from core import playit as PL
+        self.linker = PL.Linker(self._playit_binary(), open_url=webbrowser.open)
+        self.linker.start()
+        self._linker_done = False
+        self._playit_status()
+
+    def _playit_key(self):
+        from PySide6.QtWidgets import QInputDialog
+        from core import playit as PL
+        cur = self.rc.server.data.get("playit_key") or ""
+        text, ok = QInputDialog.getText(self, t("Playit anahtarı"),
+                                        t("playit.toml dosyasındaki secret_key değerini yapıştır. Boş bırakırsan "
+                                          "anahtar dosyadan okunur."), QLineEdit.Password, cur)
+        if not ok:
+            return
+        key = PL.parse_secret(text) if text.strip() else ""
+        if text.strip() and not key:
+            self.pl_lbl.setText(t("Anahtar geçersiz görünüyor."))
+            return
+        self.rc.server.set_option("playit_key", key)
+        self.rc.server.apply_exposure()
+        self._playit_status()
+        self._refresh()
+
+    def _playit_page(self):
+        import webbrowser
+        from core import playit as PL
+        webbrowser.open(PL.TUNNELS_PAGE)
 
     def _exposure_text(self):
         s = self.rc.server
@@ -468,19 +557,28 @@ class RemoteDialog(QDialog):
                 parts.append(t("Modem portu açılamadı: {e}", e=t(e["upnp_msg"])))
             else:
                 parts.append(t("Modem portu açılıyor..."))
-        if self.tunnel.currentData() == "cloudflare":
+        if self.tunnel.currentData() in ("cloudflare", "playit"):
             if e["tunnel"] == "ok":
                 parts.append(t("Tünel açık: {url}", url=e["tunnel_url"]))
             elif e["tunnel"] == "fail":
                 parts.append(t("Tünel açılamadı: {e}", e=t(e["tunnel_msg"])))
             else:
                 parts.append(t("Tünel açılıyor..."))
+            for o in e.get("tunnel_others") or []:
+                parts.append(t("Diğer Playit tüneli: {name} ({kind}) → {addr}",
+                               name=o.get("name") or "-", kind=o.get("type_display") or "-", addr=o.get("address") or "-"))
         return "\n".join(parts)
 
     def _tick_exposure(self):
         text = self._exposure_text()
         if text != self.exp_lbl.text():
             self.exp_lbl.setText(text)
+        if self.tunnel.currentData() == "playit":
+            self._playit_status()
+            lk = self.linker
+            if lk and lk.state == "done" and not getattr(self, "_linker_done", True):
+                self._linker_done = True            # hesap bağlandı: tünel adresini yeniden oku
+                self.rc.server.apply_exposure()
 
     def new_code(self):
         if not self.rc.server.running:

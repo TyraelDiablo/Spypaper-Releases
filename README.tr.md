@@ -247,6 +247,7 @@ Java yolu ve jar adı yalnızca bilgisayardan değiştirilebilir; RCON/sorgu/yö
 - Log satırlarındaki IP adresleri telefona gitmeden gizlenir.
 - Bağlantı kendi ağının içinde düz HTTP'dir. Dışarıdan (mobil veriyle) erişmek için en kolayı [Tailscale](https://tailscale.com): bilgisayara ve telefona kur, Remote penceresinde *(Tailscale)* yazan adresi seç; trafik Tailscale ile şifrelenir.
 - Tailscale istemiyorsanız Remote penceresindeki **Dış erişim** bölümüne bakın. **Modemde portu otomatik aç (UPnP)** modemin UPnP desteğine bağlıdır ve trafiği şifresiz (HTTP) dışarı açar; bu yüzden önerilmez. **Tünel sağlayıcısı: Cloudflare** ise HTTPS ile geçici bir adres verir. Tünel için [cloudflared](https://github.com/cloudflare/cloudflared) programını kendiniz kurup yolunu girersiniz; Spypaper onu indirmez. Tünelin adresi her açılışta değişir ve açıkken QR ile eşleşme bu adresi kullanır.
+- **Tünel sağlayıcısı: Playit.gg** (isteğe bağlı) kendi playit.gg hesabınızı kullanır. [playit](https://playit.gg/download) programını kendiniz kurun, sonra Remote penceresinde **Hesabı bağla**'ya basın: playit tarayıcıda bir onay bağlantısı açar. playit.gg'de yerel portu panel portu olan bir TCP tüneli ekleyin; Spypaper adresini okur ve diğer Playit tünellerinizi de (ör. Minecraft adresi) gösterir. Anahtar dosyası okunamazsa **Anahtar gir** ile `playit.toml` içindeki `secret_key` değerini yapıştırın. Spypaper playit hizmetini başlatmaz ve durdurmaz.
 
 ![Masaüstünde Spypaper Remote penceresi](docs/screenshots/remote-desktop.png)
 
@@ -340,6 +341,7 @@ Spypaper-Releases/
    │  ├─ remote.py         Spypaper Remote web sunucusu (eşleşme, telefon API'si)
    │  ├─ portmap.py        Modem port yönlendirme (UPnP)
    │  ├─ tunnel.py         Cloudflare tüneli (cloudflared)
+   │  ├─ playit.py         Playit.gg: hesap bağlama, tünel adresi
    │  ├─ ai.py, esplora.py yapay zeka sağlayıcıları, Esplora kuralları ve hazır sorular
    │  ├─ safemode.py       güvenli mod ve PIN
    │  └─ secrets.py        API anahtarı şifreleme
@@ -382,6 +384,7 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 - **Eşya adları İngilizce görünüyor ya da ikon yok:** Oyuncular sayfasında **Oyun Dosyalarını Al**'a bas. Sayfanın altında hangi dil dosyasının kullanıldığı yazar.
 - **Modem portu açılamadı:** modemin UPnP'si kapalı olabilir (modem ayarlarından açın) ya da modem UPnP desteklemiyor. Bu durumda Tailscale ya da tünel kullanın.
 - **Tünel açılamadı:** Remote penceresinde cloudflared yolunu kontrol edin (*Gözat* ile seçin) ve internet bağlantınızı deneyin.
+- **Playit tüneli bulunamadı:** playit.gg'de yerel portu panel portu olan bir TCP tüneli ekleyin ve playit hizmetinin çalıştığından emin olun.
 - **Telefon Spypaper Remote'a bağlanamıyor:** telefon ve bilgisayar aynı Wi-Fi'da olmalı (misafir ağları genelde bunu engeller), Windows güvenlik duvarı Spypaper'a özel ağlarda izin vermeli ve Remote penceresindeki adres bilgisayarın yerel adresi olmalı (genelde `192.168…`). Port meşgulse Remote penceresinden değiştir.
 - **Derlerken `'uv' is not recognized`:** uv'yi kur (`winget install astral-sh.uv`) ve yeni bir terminal aç.
 - **Derlerken "Failed to build pyyaml" gibi bir hata:** Python sürümün bazı paketler için fazla yeni. `build.bat` uv ile Python 3.12 kullanır; komutları elle çalıştırıyorsan `--python 3.12` ekle.
