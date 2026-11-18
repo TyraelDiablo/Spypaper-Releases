@@ -32,6 +32,9 @@ def main(config_path=None):
         sys.exit(0)
     win = MainWindow(settings)          # dil ve tema burada yüklenir
     win.show()
+    from ui import intro
+    from ui.home import HomeScreen
+    win.intro = intro.play(win, settings, HomeScreen._greeting())   # karşılama, sonra sunucular
     sys.exit(qt.exec())
 
 

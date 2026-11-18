@@ -57,6 +57,7 @@ APP_DEFAULTS = {
     "font_scale": 1.0,
     "high_contrast": False,
     "reduce_motion": False,
+    "show_intro": True,
     "confirm_on_close": True,
     "open_last_on_start": False,
     "console_max_lines": 5000,

@@ -278,6 +278,8 @@ class HomeScreen(QWidget):
         body.addLayout(row(self.tabs))
 
         self.pages = QStackedWidget()
+        from . import motion
+        motion.auto_fade(self.pages)
         body.addWidget(self.pages, 1)
 
         # sunucular

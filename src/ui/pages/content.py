@@ -120,6 +120,8 @@ class ContentPage(Page):
 
     def _build_types(self):
         self.types = QStackedWidget()
+        from .. import motion
+        motion.auto_fade(self.types, dy=0)
         self.col.addWidget(self.types)
         items = self._item_ids()
 

@@ -53,6 +53,8 @@ class PluginsPage(Page):
         self.tabs = segmented([N_("Yüklü"), N_("Modrinth"), N_("Kaynak Paketi"), N_("Spypaper Modları")], self._tab)
         self.root.addWidget(self.tabs, 0, Qt.AlignLeft)
         self.stack = QStackedWidget()
+        from .. import motion
+        motion.auto_fade(self.stack)
         self.stack.addWidget(card)
         self.root.addWidget(self.stack, 1)
         self.browser = self.packs = self.spymods = None

@@ -392,6 +392,8 @@ class PlayersPage(Page):
     def set_view(self, i):
         self.view = i
         self.show_view()
+        from .. import motion
+        motion.soft(self.homes_box if i == self.HOMES_VIEW else self.table)
 
     def show_view(self):
         d = self.details

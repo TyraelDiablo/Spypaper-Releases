@@ -129,7 +129,7 @@ class Drawer(QWidget):
         v.addWidget(self._toggle("Yüksek kontrast", "high_contrast",
                                  "Yazı ve kenarlıkları belirginleştirir"))
         v.addWidget(self._toggle("Animasyonları azalt", "reduce_motion",
-                                 "Menü kayma efektini kapatır"))
+                                 "Sayfa geçişlerini ve açılış ekranını kapatır"))
         v.addWidget(label("Kısayollar: Ctrl+, menü · Esc kapat · ↑↓ konsol geçmişi", "Muted", wrap=True))
 
         v.addWidget(self._toggle("Sunucu loglarını çevir", "translate_logs",
@@ -151,6 +151,8 @@ class Drawer(QWidget):
                                  "Kapalıysa sunucular sormadan durdurulur"))
         v.addWidget(self._toggle("Oyuncu kafalarını göster", "player_heads",
                                  "Oyuncuların kafa görüntüsü Mojang'dan indirilir"))
+        v.addWidget(self._toggle("Açılış ekranını göster", "show_intro",
+                                 "Spypaper açılırken kısa bir karşılama gösterir"))
         v.addWidget(self._toggle("Açılışta güncellemeleri denetle", "check_updates",
                                  "Spypaper açılırken GitHub'da yeni sürüm olup olmadığına bakar"))
         if autostart.supported():

@@ -45,6 +45,20 @@ def fade_in(widget, dy=10, ms=PAGE_MS):
     grp.start(QParallelAnimationGroup.DeleteWhenStopped)
 
 
+TAB_MS = 170
+
+
+def auto_fade(stack, dy=6, ms=TAB_MS):
+    """Sekme/alt sayfa değişince (QStackedWidget) yeni sayfa hafifçe solarak gelir."""
+    stack.currentChanged.connect(lambda _i: fade_in(stack.currentWidget(), dy=dy, ms=ms))
+    return stack
+
+
+def soft(widget, ms=TAB_MS):
+    """Yerinde değişen içerik (süzgeç, görünüm) için kaymasız kısa solma."""
+    fade_in(widget, dy=0, ms=ms)
+
+
 class SlideBar(QObject):
     """Bir düğme grubunda seçili düğmeyi izleyen kayan çubuk.
 
