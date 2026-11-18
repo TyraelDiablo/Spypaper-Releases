@@ -5,12 +5,12 @@ import threading
 from PySide6.QtCore import QTime, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QColor, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
-    QCheckBox, QFileDialog, QFormLayout, QGridLayout, QHBoxLayout, QLineEdit,
+    QCheckBox, QComboBox, QFileDialog, QFormLayout, QGridLayout, QHBoxLayout, QLineEdit,
     QListWidget, QProgressBar, QPushButton, QScrollArea, QSpinBox, QTableWidgetItem, QTimeEdit, QVBoxLayout,
     QWidget,
 )
 
-from core import N_, ServerError, modrinth as M
+from core import N_, ServerError, modrinth as M, motd as MOTD
 from core.config import detect_version
 from core.files import read_name_list
 from ..i18n import t
@@ -239,6 +239,20 @@ class SettingsPage(Page):
         self.icon.setStyleSheet(f"background:{color('surface_2')}; border-radius:8px;")
         self.icon.setAlignment(Qt.AlignCenter)
         ident.add(row(self.icon, button("Logo Değiştir", "ghost", self.change_icon)))
+        self.age = QComboBox()
+        self.age.addItem(t("Yok"), "")
+        for a in MOTD.AGES:
+            self.age.addItem(a, a)
+        self.age.setToolTip(t("Sunucu listesinde açıklamanın (MOTD) başına renkli bir etiket ekler, ör. [13+]. "
+                              "Kaydet'e basınca server.properties'e yazılır."))
+        self.age.currentIndexChanged.connect(self._age_changed)
+        ident.add(row(label("Yaş etiketi"), self.age))
+        self.motd_preview = label("", raw=True, wrap=True)
+        self.motd_preview.setTextFormat(Qt.RichText)
+        self.motd_preview.setStyleSheet(f"background:{color('surface_2')}; border-radius:6px; padding:6px 8px;"
+                                        "font-family: Consolas, monospace;")
+        self.motd_preview.setToolTip(t("Sunucu listesinde MOTD böyle görünür"))
+        ident.add(self.motd_preview)
         ident.end()
         top.addWidget(ident, 1)
 
@@ -317,6 +331,7 @@ class SettingsPage(Page):
         props = self.app.properties.load()
         if not props:
             self.grid.addWidget(label("server.properties bulunamadı. Sunucuyu bir kez başlatın.", "Muted"), 0, 0)
+            self._load_age()
             return
         for i, (k, v) in enumerate(props.items()):
             r, c0 = i // 2, (i % 2) * 3
@@ -332,6 +347,29 @@ class SettingsPage(Page):
             self.grid.addWidget(w, r, c0 + 1)
             self.fields[k] = (name, w)
         self._filter()
+        self._load_age()
+
+    def _load_age(self):
+        f = self.fields.get("motd")
+        age = MOTD.split(f[1].text())[0] if f else ""
+        self.age.blockSignals(True)
+        self.age.setCurrentIndex(max(0, self.age.findData(age)))
+        self.age.blockSignals(False)
+        self.age.setEnabled(f is not None)
+        self.motd_preview.setVisible(f is not None)
+        if f:
+            f[1].textChanged.connect(self._motd_preview)
+            self._motd_preview()
+
+    def _motd_preview(self, *_):
+        f = self.fields.get("motd")
+        if f:
+            self.motd_preview.setText(MOTD.to_html(f[1].text()))
+
+    def _age_changed(self, _i=0):
+        f = self.fields.get("motd")
+        if f:
+            f[1].setText(MOTD.compose(self.age.currentData() or "", f[1].text()))
 
     def _filter(self):
         q = self.search.text().lower()

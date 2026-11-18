@@ -141,6 +141,7 @@ class PlayersPage(Page):
             (N_("Son Ölüm Noktası"), "info", self.tp_death),
             (N_("Rastgele Işınla"), "info", lambda: self.cmd("random_tp")),
             (N_("Oyuncuya Işınla"), "purple", self.tp_player),
+            (N_("Skin Değiştir"), "ghost", self.change_skin),
         ]
         self.action_buttons = []
         for i, (txt, v, fn) in enumerate(actions):
@@ -275,8 +276,27 @@ class PlayersPage(Page):
         if self.current and self.current.uuid == uuid:
             self.face.setPixmap(heads.pixmap(uuid, self.current.name, 48))
 
+    def _apply_skin_overrides(self):
+        from core import skins
+        skins.OVERRIDES.clear()
+        skins.OVERRIDES.update(self.app.config.get("skin_overrides") or {})
+
+    def skins_changed(self, player):
+        """Skin değişti: kafayı yeni skin'den yeniden çiz."""
+        self._apply_skin_overrides()
+        heads._FACES.pop(player.uuid, None)
+        self.heads.request([(player.uuid, player.name)])
+        self._head_ready(player.uuid)
+
+    def change_skin(self):
+        if not self.current:
+            return
+        from ..skin_dialog import SkinDialog
+        SkinDialog(self, self.current).exec()
+
     # --- yaşam döngüsü ---
     def on_show(self):
+        self._apply_skin_overrides()
         if not self._loaded:
             self._loaded = True
             self.refresh()

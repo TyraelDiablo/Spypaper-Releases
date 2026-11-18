@@ -16,6 +16,9 @@ import urllib.request
 from .config import get_base_dir
 
 TTL = 86400
+# Spypaper'dan SkinsRestorer ile değiştirilen skin'ler: {uuid(tiresiz): oyuncu_adı | bağlantı}.
+# Gösterilen sunucuya göre Oyuncular sayfası ayarlar; kafalar bu skin'den çizilir.
+OVERRIDES = {}
 UA = {"User-Agent": "Spypaper"}
 _NAME_RE = re.compile(r"^[A-Za-z0-9_]{1,16}$")
 
@@ -54,11 +57,43 @@ def _uuid_for_name(name):
     return json.loads(raw).get("id") if raw else None
 
 
+def _override_path(u):
+    src = OVERRIDES.get(u)
+    if not src:
+        return None, None
+    import hashlib
+    return src, os.path.join(cache_dir(), f"{u}.{hashlib.sha1(src.encode()).hexdigest()[:10]}.png")
+
+
+def _override_file(u, src, path):
+    if os.path.exists(path):
+        return path
+    try:
+        if src.lower().startswith(("http://", "https://")):
+            data = _get(src)
+        else:
+            mojang = _uuid_for_name(src)
+            url = _skin_url_for(mojang) if mojang else None
+            data = _get(url) if url else b""
+        if data[:8] != b"\x89PNG\r\n\x1a\n":
+            return None
+        with open(path, "wb") as f:
+            f.write(data)
+        return path
+    except Exception:
+        return None
+
+
 def skin_file(uuid_str, name, account):
     """Ham skin PNG'sinin yolu ya da None. Ağ isteği yapabilir: arka planda çağır."""
     u = (uuid_str or "").replace("-", "").lower()
     if not re.fullmatch(r"[0-9a-f]{32}", u):
         return None
+    src, opath = _override_path(u)
+    if src:
+        got = _override_file(u, src, opath)
+        if got:
+            return got
     path = os.path.join(cache_dir(), u + ".png")
     miss = path + ".none"
     for p in (path, miss):
@@ -88,5 +123,10 @@ def skin_file(uuid_str, name, account):
 def cached(uuid_str):
     """Ağa çıkmadan, önbellekte varsa skin yolu."""
     u = (uuid_str or "").replace("-", "").lower()
+    _, opath = _override_path(u)
+    if opath and os.path.exists(opath):
+        return opath
+    if opath:
+        return None                                     # değiştirilmiş skin henüz indirilmedi: indirilsin
     p = os.path.join(cache_dir(), u + ".png") if len(u) == 32 else ""
     return p if p and os.path.exists(p) else None
