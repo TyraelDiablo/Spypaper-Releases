@@ -31,6 +31,8 @@ class ServerProcess:
         self.on_state = None  # fn(state)
         self.hooks = []       # fn(str): her satırda, arayüzden bağımsız (ör. core.guard)
         self.send_hooks = []  # fn(str): gönderilen her komutta
+        self.state_hooks = [] # fn(state): her durum değişiminde, arayüzden bağımsız (ör. core.discord)
+        self.line_filters = []  # fn(str) -> True: satır panelin kendi sorgusunun yanıtı, gösterilmez (core.perf)
         self.history = deque(maxlen=5000)   # arayüz yeniden kurulunca konsol buradan dolar
         self.stop_requested = False
         self.crashed = False                # son kapanış beklenmedik miydi (durdurulmadan kapandı)
@@ -45,6 +47,11 @@ class ServerProcess:
 
     def _set_state(self, state):
         self.state = state
+        for hook in list(self.state_hooks):
+            try:
+                hook(state)
+            except Exception as e:
+                print(f"[hook] {e}")
         if self.on_state:
             self.on_state(state)
 
@@ -125,6 +132,15 @@ class ServerProcess:
         except ServerError:
             return False
 
+    def _filtered(self, line):
+        for f in list(self.line_filters):
+            try:
+                if f(line):
+                    return True
+            except Exception as e:
+                print(f"[filter] {e}")
+        return False
+
     def _read_output(self):
         proc = self.process
         run = self.run_id
@@ -138,6 +154,8 @@ class ServerProcess:
             elif "Stopping server" in clean or "Stopping the server" in clean:
                 self.stop_requested = True          # konsoldan /stop da isteyerek durdurmadır
                 self._set_state(STOPPING)
+            if self._filtered(clean):
+                continue
             self.history.append(clean)
             for hook in list(self.hooks):
                 try:

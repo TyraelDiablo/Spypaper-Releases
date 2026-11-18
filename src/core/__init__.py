@@ -33,6 +33,14 @@ class App:
         self.logtrans = LogTranslator(self.players.translations)
         from .guard import Guard
         self.guard = Guard(profile, self.server)
+        from .scheduler import Scheduler
+        self.scheduler = Scheduler(profile, self.server, self.backups)
+        from .perf import PerfMonitor
+        self.perf = PerfMonitor(profile, self.server)
+        from .discord import Discord
+        self.discord = Discord(profile, self.server)
+        self.maintenance.notify = lambda started: self.discord.event("maintenance", started=started)
+        self.scheduler.notify = lambda name, status: self.discord.event("task", name=name, status=status)
 
     def online_players(self):
         """Log'daki giriş/çıkışlara göre şu an içerideki oyuncular (log'u panel okur, burada okunmaz:

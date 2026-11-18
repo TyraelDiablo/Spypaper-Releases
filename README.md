@@ -22,17 +22,21 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 |---|---|
 | **Home screen** | Lists all your servers as cards; quick start/stop, edit and open folder without entering the panel. |
 | **New server** | Create a server from scratch: pick the software and Minecraft version, set RAM, port, MOTD, game mode and difficulty; Spypaper downloads the server and prepares the folder. |
-| **Dashboard** | Live RAM/CPU, online players, today's joins, deaths, lag warnings and errors, hourly activity chart. |
-| **Live Console** | Colored console, command history, optional translation of server messages into the panel language. **Command suggestions as you type:** command names with descriptions, the syntax of the current argument (e.g. `give <player> <item> [count]`) and values to pick from (player names, items, effects, enchantments, game rules, game modes…). Tab or ↑↓ + Enter to accept. |
+| **Dashboard** | Live RAM/CPU, online players, today's joins, deaths, lag warnings and errors, hourly activity chart. **Performance:** TPS and MSPT (tick time) chart for the last hour. Spypaper asks the server every 15 seconds (Paper/Purpur/Spigot: `tps`, `mspt`; Forge/NeoForge: `forge tps`/`neoforge tps`; vanilla and Fabric 1.20.3+: `tick query`); the replies are hidden from the console, and monitoring can be turned off on the card. |
+| **Live Console** | Colored console, command history, optional translation of server messages into the panel language: startup, shutdown, connection, world-setting and warning lines of Paper, Purpur, Spigot, Vanilla, Fabric, Forge and NeoForge are translated into 15 languages from a built-in table; deaths, joins, advancements and command feedback (teleport, give, op…) come from Minecraft's language files. Plugin lines and chat are left alone, and with the panel in English lines stay as they are. **Command suggestions as you type:** command names with descriptions, the syntax of the current argument (e.g. `give <player> <item> [count]`) and values to pick from (player names, items, effects, enchantments, game rules, game modes…). Tab or ↑↓ + Enter to accept. |
 | **Log** | Events, sessions and charts from `logs/latest.log` and archived `.log.gz` files. Works even if the server was started outside the panel. |
 | **Esplora** | An AI assistant (bring your own API key: Anthropic Claude, Google Gemini, OpenAI and compatible services) scoped strictly to managing this server. It gets a built-in expert knowledge base (Java versions, performance tuning, common errors, command syntax by version, networking, permissions…), the **Server Info** you write about your server, and the relevant configuration files (secrets masked). Preset questions by category, chat bubbles, stop and regenerate. It never runs commands itself; you send the commands it suggests with **▶ Run**. You can attach screenshots, and **Data Permissions** decide what Esplora may see and what it must ask you for. |
-| **Players** | Health, hunger, armor and XP shown with Minecraft's own HUD bars, and the player's game mode. Inventory, armor and Ender chest with item icons (block items such as fences and stairs are rendered from the game's 3D models), enchantments, armor trims and durability. Item names in your language (from Minecraft's own language files). Common player commands. Supports Minecraft 26.x's new `world/players/` layout. Player heads next to names, account type (premium Mojang/Microsoft account or offline/cracked launcher, from the UUID). **Homes:** up to 10 saved positions per player (XYZ + dimension, or the player's current position) with a Teleport button. |
+| **Players** | **Change Skin** (this server only, through the SkinsRestorer plugin/mod, which Spypaper can install from Modrinth): another player's name or a PNG skin link, classic or slim arms; player heads in Spypaper follow the new skin. Health, hunger, armor and XP shown with Minecraft's own HUD bars, and the player's game mode. Inventory, armor and Ender chest with item icons (block items such as fences and stairs are rendered from the game's 3D models), enchantments, armor trims and durability. Item names in your language (from Minecraft's own language files). Common player commands. Supports Minecraft 26.x's new `world/players/` layout. Player heads next to names, account type (premium Mojang/Microsoft account or offline/cracked launcher, from the UUID). **Homes:** up to 10 saved positions per player (XYZ + dimension, or the player's current position) with a Teleport button. |
 | **Teams** | Create and delete teams (`/team`), add and remove members, and set color, display name, prefix/suffix, friendly fire, name tag and death message visibility and collision. Teams are read from `scoreboard.dat`, so you can see them even while the server is stopped. |
-| **Plugins / Mods** | Manages `plugins/` on Paper, Purpur and Spigot, and `mods/` on Fabric, Quilt, Forge and NeoForge: add, remove, disable. **Modrinth:** search plugins/mods filtered by your server's Minecraft version and loader, install with required dependencies (files verified with SHA-512). **Resource Pack:** pick a resource pack from Modrinth or enter a URL to set as the server resource pack (SHA-1, required/optional). |
+| **Plugins / Mods** | Manages `plugins/` on Paper, Purpur and Spigot, and `mods/` on Fabric, Quilt, Forge and NeoForge: add, remove, disable. **Modrinth:** search plugins/mods filtered by your server's Minecraft version and loader, install with required dependencies (files verified with SHA-512). **Resource Pack:** pick a resource pack from Modrinth or enter a URL to set as the server resource pack (SHA-1, required/optional). **Spypaper Mods:** ready-made data and resource packs installed with one click, working on every server type with nothing for players to install: **Flat health and hunger bars** (hearts, hunger, armor and air shown as flat filling bars; sent through the Content Editor's resource pack sharing), **Death coordinates** (a player who dies sees where, only in their own chat) and **Items don't despawn** (dropped items, including death drops, no longer vanish after 5 minutes). |
 | **Mod Language Files** | Finds the English language files inside mod and plugin jars wherever they are (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…), JSON or YAML, flat or nested. You write the translation; the panel saves it into the jar and into the plugin's own data folder copy. Format code checks (`%s`, `%player%`, `§a`, `&c`, `<red>`), import/export, restore original. |
-| **Server Settings** | `server.properties` editor, Java path, RAM, jar, server icon. **World Border:** enter two corners (X/Z) or a center and radius; Spypaper sends `/worldborder` for the Overworld, Nether or End, optionally with a transition time. The border is always square, so a rectangle is covered by its longer side. |
+| **Server Settings** | `server.properties` editor, Java path, RAM, jar, server icon. **Java Manager:** finds the Java installations on your PC (including the Minecraft Launcher's), recommends the one that fits the server's Minecraft version, or downloads Eclipse Temurin with SHA-256 verification into the `java` folder next to Spypaper (no system-wide install). Warns at server start if the selected Java is too old or missing. **Age label:** adds a colored tag such as `[13+]` to the start of the MOTD, with a live preview of how the server list shows it. **World Border:** enter two corners (X/Z) or a center and radius; Spypaper sends `/worldborder` for the Overworld, Nether or End, optionally with a transition time. The border is always square, so a rectangle is covered by its longer side. |
+| **Configuration** | Edit the server's config files (`paper-global.yml`, `spigot.yml`, `world/paper-world.yml`, `config/*.toml`, plugin `config.yml` files…) inside the panel: line numbers, highlighting and live YAML/TOML/JSON format checking. The faulty line is marked in red and explained in plain words (tabs, indentation, unclosed quotes/brackets, duplicate keys…). Comments and order are kept; the old version is copied to `backups/configs` before saving and can be restored. If the file changed on disk, it asks before overwriting. |
+| **Files** | The whole server folder as a tree with sizes and dates, plus a name search. Double-click a file to open it in VS Code, Notepad++, Notepad or the default program (detected automatically, selectable). Non-text files (jars, worlds, player data) are shown in File Explorer instead of being run. Right-click: open with, edit in Spypaper, show in folder, copy path, move to Recycle Bin (only while the server is stopped). |
 | **Whitelist & Bans** | Whitelist, ban and op lists. |
 | **Maintenance & Backups** | World backups (Overworld, Nether, End) and maintenance mode. Maintenance saves and empties the whitelist so nobody gets in even on whitelisted servers, kicks non-OP players and restores everything when it ends. Weekly schedule (days, time, duration) with in-game warnings. See [Maintenance](#maintenance). |
+| **Scheduled Tasks** | Restart, stop, start, world backup, console commands and announcements on chosen days at a set time or at regular intervals (e.g. every 30 minutes). Optional countdown for players before a restart or stop (10 min, 5 min, 1 min, 10 s). Ready-made templates, *Run Now*, each task's next run and last result. Commands go through safe mode. Tasks only run while Spypaper is open. |
+| **Discord** | Posts server events to a Discord channel: started, stopped, crashed, player joined/left/died, advancements, chat, maintenance and scheduled tasks (each can be turned on or off). No bot or account needed; paste the channel's webhook URL, which is stored encrypted on this computer. Test message, Discord rate limits respected, and @everyone and mentions never work in these messages. Player events only work for servers started by Spypaper. |
 | **Notes** | Your own notes for each server, saved automatically. |
 | **Content Editor** | Add content without mods (data pack + resource pack, Minecraft 1.21+): paintings from your images, music discs from a **Newgrounds ID** or your own audio file, tools/weapons and food based on existing items with your own damage, speed, durability, enchantments, effects and optional texture, plus a 3×3 crafting recipe. Spypaper can share the resource pack itself. New blocks are not possible without mods. See [Content Editor](#content-editor). |
 | **Anti-Cheat** | Modules named by what they do: **Ore Hiding** (Paper/Purpur's built-in anti-xray, makes X-Ray packs useless), **Permission Guard** (revokes OP that wasn't given from the panel and kicks the player), **Combat Cheat Check** (one-click install of the open-source GrimAC plugin from Modrinth for killaura, reach, fly and speed), **Bot Verification** (kicks joining players who don't actually download the server's resource pack). A single switch allows cheats and turns everything off. See [Anti-Cheat](#anti-cheat). |
@@ -43,7 +47,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Spypaper Remote** | Watch your servers from your phone; with the permissions you grant on the computer, start/stop them, run maintenance and change settings. Pair with a QR code; no app store, no account, no database. See [Spypaper Remote](#spypaper-remote-phone). |
 | **Updates** | Checks GitHub Releases for a new Spypaper version at startup (can be turned off) and updates the exe in one click. |
 | **Security** | 4-level safe mode (confirm, block or read-only for dangerous commands) and an optional per-server PIN. |
-| **Appearance** | 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons, themed in-app dialogs instead of Windows message boxes. **Panel Layout:** reorder or hide the panel's tabs and the Dashboard cards. Animated page transitions and a sliding indicator for the selected tab (off with *Reduce motion*). Scrolling over settings no longer changes dropdowns or number fields by accident. Colored buttons use a subtle tonal style (solid in high contrast). Optional start with Windows. |
+| **Appearance** | A short welcome screen at startup (large Spypaper title and a greeting for the time of day; click to skip, can be turned off in the menu), soft fades on page and tab changes; 7 themes, font size, high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons, themed in-app dialogs instead of Windows message boxes. The server panel's sidebar is split into groups (General, Players, Content, Server, Automation, Security); click a group heading to collapse or expand it, and the state is remembered. **Panel Layout:** reorder (within a group) or hide the panel's tabs and the Dashboard cards. Animated page transitions and a sliding indicator for the selected tab (off with *Reduce motion*). Scrolling over settings no longer changes dropdowns or number fields by accident. Colored buttons use a subtle tonal style (solid in high contrast). Optional start with Windows. |
 
 ---
 
@@ -249,6 +253,7 @@ The Java path and jar name can only be changed on the computer, and RCON/query/m
 - IP addresses in log lines are hidden before they reach the phone.
 - The connection is plain HTTP inside your own network. To reach it from outside (mobile data), the easiest way is [Tailscale](https://tailscale.com): install it on the computer and the phone and pick the address marked *(Tailscale)* in the Remote window; the traffic is then encrypted by Tailscale.
 - If you don't want Tailscale, see the **External access** section of the Remote window. **Open the port on the router automatically (UPnP)** depends on your router's UPnP support and exposes the traffic unencrypted (HTTP), so it is not recommended. **Tunnel provider: Cloudflare** gives a temporary HTTPS address instead. For the tunnel, install the [cloudflared](https://github.com/cloudflare/cloudflared) program yourself and enter its path; Spypaper does not download it. The tunnel address changes each time it opens, and while it is open the QR pairing uses that address.
+- **Tunnel provider: Playit.gg** (optional) uses your own playit.gg account. Install the [playit](https://playit.gg/download) program yourself, then press **Link account** in the Remote window: playit opens an approval link in the browser. On playit.gg, add a TCP tunnel whose local port is the panel port; Spypaper reads its address and shows your other Playit tunnels too (for example the Minecraft address). If the key file cannot be read, use **Enter key** to paste the `secret_key` value from `playit.toml`. Spypaper does not start or stop the playit service.
 
 ![Spypaper Remote window on the desktop](docs/screenshots/remote-desktop.png)
 
@@ -266,6 +271,8 @@ Spypaper is not an AI provider: you connect to the provider and model with your 
 | Anthropic (Claude) | `claude-sonnet-5-5` | |
 | Google Gemini | `gemini-3.8-flash` | If a model is retired and the service suggests a new one, the panel switches automatically |
 | OpenAI / compatible | `gpt-4o-mini` | Use the *Server URL* field for OpenRouter, LM Studio, Ollama, etc. |
+
+**History:** chats are saved per server on this computer (images excluded). With Esplora → **History** you can open an earlier chat and continue where you left off, search titles, delete chats or turn saving off. **New chat** closes the current chat; it stays in the history.
 
 **Server Info:** Esplora → **Server Info** lets you tell Esplora about your server (rules, staff, economy, how plugins are used, known issues). Esplora also gets the relevant parts of a built-in knowledge base and, when the question is about them, the server's configuration files (`spigot.yml`, `config/paper-world-defaults.yml`, the config of a plugin you name…) with passwords, tokens and webhook URLs replaced by `***`.
 
@@ -314,9 +321,15 @@ Spypaper-Releases/
    │  ├─ updater.py        downloads and verification
    │  ├─ players.py        player data (NBT), inventory, Minecraft translations
    │  ├─ logwatch.py       latest.log tracking, events, metrics
+   │  ├─ perf.py           TPS/MSPT monitoring (server queries, replies hidden from the console)
    │  ├─ logtrans.py       translating server messages into the panel language
+   │  ├─ logtrans_table.py built-in translations for Paper/vanilla server lines
    │  ├─ files.py          plugins/mods folder, server.properties, backups
    │  ├─ maintenance.py    maintenance mode, whitelist backup/restore, weekly schedule
+   │  ├─ scheduler.py      scheduled tasks (restart, backup, commands, announcements)
+   │  ├─ discord.py        Discord webhook notifications
+   │  ├─ explorer.py       Files tab: editor detection, opening files, Recycle Bin
+   │  ├─ configedit.py     Config editor: finding config files, format checking, saving with backups
    │  ├─ appupdate.py      Spypaper self-update (GitHub Releases)
    │  ├─ danger.py         Danger Zone actions (world reset, restore, delete)
    │  ├─ teams.py          teams (scoreboard.dat, /team commands)
@@ -327,9 +340,11 @@ Spypaper-Releases/
    │  ├─ packhost.py       resource pack sharing (small HTTP server)
    │  ├─ skins.py, homes.py player heads (Mojang), player homes
    │  ├─ esplora_kb.py     Esplora's built-in knowledge base
+   │  ├─ esplora_chats.py  Esplora chat history (saved on this computer)
    │  ├─ guard.py          Anti-Cheat (ore hiding, permission guard, GrimAC, bot verification)
    │  ├─ worldborder.py    World Border (/worldborder commands)
    │  ├─ autostart.py      start with Windows
+   │  ├─ javamgr.py        Java Manager: finding Java, version requirements, Temurin download
    │  ├─ gamefiles.py      Minecraft language files and icons (local install or Mojang)
    │  ├─ iconrender.py     renders block item icons from the game's 3D models
    │  ├─ modtrans.py       mod/plugin language file editor (JSON, YAML)
@@ -338,6 +353,12 @@ Spypaper-Releases/
    │  ├─ remote.py         Spypaper Remote web server (pairing, phone API)
    │  ├─ portmap.py        Router port forwarding (UPnP)
    │  ├─ tunnel.py         Cloudflare tunnel (cloudflared)
+   │  ├─ playit.py         Playit.gg: account link, tunnel address
+   │  ├─ spymods.py        Spypaper Mods (ready-made data/resource packs)
+   │  ├─ spymods_rp.py     generated sprites for resource-pack mods (flat bars)
+   │  ├─ uninstall.py      uninstall: what to delete, cleanup after exit
+   │  ├─ motd.py           MOTD age label and preview
+   │  ├─ skinsr.py         skin change through SkinsRestorer
    │  ├─ ai.py, esplora.py AI providers, Esplora rules and preset questions
    │  ├─ safemode.py       safe mode and PIN
    │  └─ secrets.py        API key encryption
@@ -355,7 +376,8 @@ Spypaper-Releases/
 
 Planned next (order may change; share your ideas on [Issues](https://github.com/TyraelDiablo/Spypaper-Releases/issues)):
 
-- [ ] **Scheduled tasks:** restart at a set time, countdown announcements, commands and backups
+- [x] **Scheduled tasks:** restart at a set time, countdown announcements, commands and backups
+- [x] **Files:** server folder browser, open files in VS Code / Notepad++ / Notepad
 - [x] **Crash watchdog:** automatic restart after an unexpected shutdown, stop after repeated crashes
 - [x] **Restore from backup** and a backup limit (delete old backups automatically)
 - [x] **Teams** and the **Danger Zone**
@@ -363,10 +385,11 @@ Planned next (order may change; share your ideas on [Issues](https://github.com/
 - [ ] Plugin/mod update notices, Hangar
 - [x] **Content Editor:** paintings, music discs, tools/weapons, food and recipes without mods
 - [x] Console command suggestions, player heads and homes
-- [ ] **Discord notifications:** server started, stopped, crashed, player joined (webhook)
-- [ ] **Java manager:** detect and download the right Java for your Minecraft version
-- [ ] **TPS / MSPT chart** on the Dashboard
-- [ ] **Config file editor** (`paper-global.yml`, `config/*.toml`…) with syntax checks
+- [x] **Discord notifications:** server started, stopped, crashed, player joined (webhook)
+- [ ] Discord: connect your own bot, slash commands and chat bridge
+- [x] **Java manager:** detect and download the right Java for your Minecraft version
+- [x] **TPS / MSPT chart** on the Dashboard
+- [x] **Config file editor** (`paper-global.yml`, `config/*.toml`…) with syntax checks
 - [x] **Self-update** via GitHub Releases
 - [x] **Scheduled maintenance** with whitelist protection
 - [x] **Spypaper Remote:** watch and control servers from your phone
@@ -375,15 +398,20 @@ Planned next (order may change; share your ideas on [Issues](https://github.com/
 
 ---
 
+## Uninstalling
+
+Spypaper is a single exe with no installer. Use **☰ → Uninstall Spypaper**: Spypaper closes and deletes only its own files next to the exe (cache, game files, the exe itself). **Keep my settings** (on by default) leaves `config.json`, chat history and language files, so your servers and settings come back if you put Spypaper in the same folder again. Server folders, worlds and backups are never touched. The window also has a link to report a problem on GitHub; nothing is sent automatically.
+
 ## Troubleshooting
 
 - **Item names are in English or icons are missing:** click **Get Game Files** on the Players page. The bottom of the page shows which language file is in use.
 - **Router port could not be opened:** UPnP may be off in the router settings, or the router does not support UPnP. Use Tailscale or a tunnel instead.
 - **Tunnel could not be opened:** check the cloudflared path in the Remote window (choose it with *Browse*) and your internet connection.
+- **Playit tunnel not found:** on playit.gg, add a TCP tunnel whose local port is the panel port, and make sure the playit service is running.
 - **The phone can't reach Spypaper Remote:** the phone and computer must be on the same Wi-Fi (guest networks often block this), Windows Firewall must allow Spypaper on private networks, and the address in the Remote window must be your computer's local address (usually `192.168…`). If the port is busy, change it in the Remote window.
 - **`'uv' is not recognized` when building:** install uv (`winget install astral-sh.uv`) and open a new terminal.
 - **"Failed to build pyyaml" or similar when building:** your Python is too new for some packages. `build.bat` uses Python 3.12 through uv; if you run the commands by hand, add `--python 3.12`.
-- **"Minecraft 26.1 and newer requires … Java 25":** install Java 25 (`winget install EclipseAdoptium.Temurin.25.JDK`), then restart Spypaper (or sign out of Windows once). If an older Java is still used, put the full path to Java 25's `java.exe` in **Server Settings → Java**, without quotes.
+- **"Minecraft 26.1 and newer requires … Java 25" or "UnsupportedClassVersionError":** pick or download Java 25 in **Server Settings → Java Manager**. To install it yourself, install Java 25 (`winget install EclipseAdoptium.Temurin.25.JDK`), then restart Spypaper (or sign out of Windows once). If an older Java is still used, put the full path to Java 25's `java.exe` in **Server Settings → Java**, without quotes.
 - **"Couldn't check for updates":** the computer is offline or the releases repository is private; Spypaper starts normally anyway.
 - **Player heads show letters instead of faces:** the player has no Mojang account with that name (offline/cracked), Mojang can't be reached, or *Show player heads* is off.
 - **Players don't get the Content Editor's paintings/music:** build the packs, restart the server, and make sure players can reach the resource pack address (port 8766 by default when Spypaper shares it).

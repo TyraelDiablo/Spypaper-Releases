@@ -21,11 +21,12 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIRS = ["ui", "core"]
 DIRECT = {"t", "N_", "label", "button", "Card", "section", "item", "_toggle", "StatCard", "UpdateError", "AIError",
-          "info", "warn", "error", "confirm", "ServerError"}
+          "info", "warn", "error", "confirm", "ServerError",
+          "tr"}                                   # core'daki self.tr("...") (arayüz t ile değiştirir)
 SECOND_ARG = {"icon_button": 1, "ask": (1, 2)}
 LISTS = {"segmented", "table"}
 TEXTY = re.compile(r"[A-Za-zÇĞİÖŞÜçğıöşü]")
-SKIP = {"Spypaper", "server.properties", "Java", "Whitelist"}   # çevrilmeyen özel adlar
+SKIP = {"Spypaper", "server.properties", "Java", "Whitelist", "Discord", "TPS", "MSPT", "Ctrl+S"}   # çevrilmeyen özel adlar
 
 
 def _name(f):

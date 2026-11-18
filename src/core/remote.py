@@ -44,7 +44,8 @@ MAX_BODY = 64 * 1024              # server.properties'in tamamı gönderilebilsi
 WEB_DIR = "remote_web"
 
 REMOTE_DEFAULTS = {"enabled": False, "port": DEFAULT_PORT, "allow_control": True, "devices": [],
-                   "upnp": False, "tunnel": "off", "tunnel_path": ""}
+                   "upnp": False, "tunnel": "off", "tunnel_path": "",
+                   "playit_path": "", "playit_key": ""}
 PERMS = {"control": True, "maintenance": False, "settings": False}     # yeni cihazın izinleri
 
 
@@ -297,7 +298,8 @@ class RemoteServer:
         self._tables = {}
         self.mapping = None              # portmap.Mapping (UPnP)
         self.tunnel = None               # tunnel.CloudflareTunnel
-        self.exposure = {"upnp": "", "upnp_msg": "", "ext_ip": "", "tunnel": "", "tunnel_msg": "", "tunnel_url": ""}
+        self.exposure = {"upnp": "", "upnp_msg": "", "ext_ip": "", "tunnel": "", "tunnel_msg": "", "tunnel_url": "",
+                         "tunnel_others": []}
 
     # ------------------------------------------------------------ dil
     def tr(self, lang):
@@ -414,11 +416,11 @@ class RemoteServer:
 
     def _start_exposure(self, port):
         """Modem eşlemesi ve tünel ayarlıysa arka planda kurar; ağ çağrıları arayüzü dondurmaz."""
-        self._set_exposure(upnp="", upnp_msg="", ext_ip="", tunnel="", tunnel_msg="", tunnel_url="")
+        self._set_exposure(upnp="", upnp_msg="", ext_ip="", tunnel="", tunnel_msg="", tunnel_url="", tunnel_others=[])
         if self.data.get("upnp"):
             self._set_exposure(upnp="wait")
             threading.Thread(target=self._upnp_up, args=(port,), daemon=True).start()
-        if self.data.get("tunnel") == "cloudflare":
+        if self.data.get("tunnel") in ("cloudflare", "playit"):
             self._set_exposure(tunnel="wait")
             threading.Thread(target=self._tunnel_up, args=(port,), daemon=True).start()
 
@@ -442,12 +444,19 @@ class RemoteServer:
 
     def _tunnel_up(self, port):
         from . import tunnel as TN
-        binary = TN.find_binary(self.data.get("tunnel_path") or "")
-        tn = TN.CloudflareTunnel(port, binary)
+        if self.data.get("tunnel") == "playit":
+            from . import playit as PL
+            tn = PL.PlayitTunnel(port, PL.find_binary(self.data.get("playit_path") or ""),
+                                 self.data.get("playit_key") or "")
+            errors = (PL.PlayitError,)
+        else:
+            tn = TN.CloudflareTunnel(port, TN.find_binary(self.data.get("tunnel_path") or ""))
+            errors = (TN.TunnelError,)
         try:
             url = tn.start()
-        except TN.TunnelError as e:
-            self._set_exposure(tunnel="fail", tunnel_msg=str(e))
+        except errors as e:
+            others = [dict(o) for o in getattr(tn, "others", [])]
+            self._set_exposure(tunnel="fail", tunnel_msg=str(e), tunnel_others=others)
             return
         with self.lock:
             if self.httpd is None:               # bu sırada panel durdu: tüneli kapat
@@ -457,7 +466,7 @@ class RemoteServer:
         if stale:
             tn.stop()
             return
-        self._set_exposure(tunnel="ok", tunnel_url=url)
+        self._set_exposure(tunnel="ok", tunnel_url=url, tunnel_others=[dict(o) for o in getattr(tn, "others", [])])
 
     def _stop_exposure(self):
         m, self.mapping = self.mapping, None
@@ -468,7 +477,7 @@ class RemoteServer:
             t.join(5)
         if tn:
             tn.stop()
-        self._set_exposure(upnp="", upnp_msg="", ext_ip="", tunnel="", tunnel_msg="", tunnel_url="")
+        self._set_exposure(upnp="", upnp_msg="", ext_ip="", tunnel="", tunnel_msg="", tunnel_url="", tunnel_others=[])
 
     def exposure_state(self):
         with self.lock:

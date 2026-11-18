@@ -149,6 +149,12 @@ QPushButton#NavButton {{
 }}
 QPushButton#NavButton:hover {{ background: {surface_2}; color: {text}; }}
 QPushButton#NavButton:checked {{ background: {surface_3}; color: {accent}; font-weight: 600; }}
+QPushButton#NavGroup {{
+    text-align: left; padding: 12px 14px 4px 18px; margin: 0 10px; border: none; background: transparent;
+    color: {text_muted}; font-size: 7.5pt; font-weight: 700; letter-spacing: 1px;
+}}
+QPushButton#NavGroup:hover {{ color: {text}; }}
+QScrollArea#NavScroll, QWidget#NavInner {{ background: transparent; border: none; }}
 
 /* --- üst bar --- */
 QWidget#TopBar {{ background: {bg}; border-bottom: 1px solid {border}; }}
@@ -212,12 +218,13 @@ QListWidget, QTableWidget {{
 QListWidget::item {{ padding: 7px 10px; border-radius: {radius_sm}; margin: 1px 4px; }}
 QListWidget::item:hover {{ background: {surface_2}; }}
 QListWidget::item:selected {{ background: {surface_3}; color: {accent}; }}
-QTreeWidget {{
+QTreeView {{
     background: {surface}; border: 1px solid {border}; border-radius: {radius}; outline: none; color: {text};
+    alternate-background-color: {surface_alt};
 }}
-QTreeWidget::item {{ padding: 5px 4px; color: {text}; }}
-QTreeWidget::item:hover {{ background: {surface_2}; }}
-QTreeWidget::item:selected {{ background: {surface_3}; color: {accent}; }}
+QTreeView::item {{ padding: 5px 4px; color: {text}; }}
+QTreeView::item:hover {{ background: {surface_2}; }}
+QTreeView::item:selected {{ background: {surface_3}; color: {accent}; }}
 QTableWidget::item {{ padding: 4px 8px; }}
 QTableWidget::item:selected {{ background: {surface_3}; color: {accent}; }}
 QHeaderView::section {{

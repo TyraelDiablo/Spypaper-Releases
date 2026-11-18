@@ -44,6 +44,8 @@ class BorderCard(Card):
         self.radius.setRange(1, WB.MAX_SIZE // 2)
         self.radius.setSingleStep(16)
         self.stack = QStackedWidget()
+        from . import motion
+        motion.auto_fade(self.stack, dy=0)
         a = QWidget()
         ga = QGridLayout(a)
         ga.setContentsMargins(0, 0, 0, 0)

@@ -5,12 +5,12 @@ import threading
 from PySide6.QtCore import QTime, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QColor, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
-    QCheckBox, QFileDialog, QFormLayout, QGridLayout, QHBoxLayout, QLineEdit,
+    QCheckBox, QComboBox, QFileDialog, QFormLayout, QGridLayout, QHBoxLayout, QLineEdit,
     QListWidget, QProgressBar, QPushButton, QScrollArea, QSpinBox, QTableWidgetItem, QTimeEdit, QVBoxLayout,
     QWidget,
 )
 
-from core import N_, ServerError, modrinth as M
+from core import N_, ServerError, modrinth as M, motd as MOTD
 from core.config import detect_version
 from core.files import read_name_list
 from ..i18n import t
@@ -50,12 +50,14 @@ class PluginsPage(Page):
         self._upd_busy = False
         self.upd_done.connect(self._upd_done)
         from PySide6.QtWidgets import QStackedWidget
-        self.tabs = segmented([N_("Yüklü"), N_("Modrinth"), N_("Kaynak Paketi")], self._tab)
+        self.tabs = segmented([N_("Yüklü"), N_("Modrinth"), N_("Kaynak Paketi"), N_("Spypaper Modları")], self._tab)
         self.root.addWidget(self.tabs, 0, Qt.AlignLeft)
         self.stack = QStackedWidget()
+        from .. import motion
+        motion.auto_fade(self.stack)
         self.stack.addWidget(card)
         self.root.addWidget(self.stack, 1)
-        self.browser = self.packs = None
+        self.browser = self.packs = self.spymods = None
         self.items = []
         self._sel()
 
@@ -68,12 +70,18 @@ class PluginsPage(Page):
         if i == 2 and self.packs is None:
             self.packs = ResourcePackView(self)
             self.stack.addWidget(self.packs)
-        w = {0: self.card, 1: self.browser, 2: self.packs}[i]
+        if i == 3 and self.spymods is None:
+            from ..spymods_view import SpyModsView
+            self.spymods = SpyModsView(self)
+            self.stack.addWidget(self.spymods)
+        w = {0: self.card, 1: self.browser, 2: self.packs, 3: self.spymods}[i]
         self.stack.setCurrentWidget(w)
         if i == 1:
             self.browser.prepare()
         elif i == 2:
             self.packs.prepare()
+        elif i == 3:
+            self.spymods.prepare()
 
     def page_title(self):
         return t("Modlar") if self.app.plugins.modded else t("Eklentiler")
@@ -97,6 +105,8 @@ class PluginsPage(Page):
         n, on = len(self.items), sum(on for *_, on in self.items)
         self.hint.setText(t("{n} mod · {on} etkin", n=n, on=on) if mods else t("{n} eklenti · {on} etkin", n=n, on=on))
         self._sel()
+        if self.spymods is not None:
+            self.spymods.prepare()
 
     def check_updates(self):
         if self._upd_busy:
@@ -231,6 +241,20 @@ class SettingsPage(Page):
         self.icon.setStyleSheet(f"background:{color('surface_2')}; border-radius:8px;")
         self.icon.setAlignment(Qt.AlignCenter)
         ident.add(row(self.icon, button("Logo Değiştir", "ghost", self.change_icon)))
+        self.age = QComboBox()
+        self.age.addItem(t("Yok"), "")
+        for a in MOTD.AGES:
+            self.age.addItem(a, a)
+        self.age.setToolTip(t("Sunucu listesinde açıklamanın (MOTD) başına renkli bir etiket ekler, ör. [13+]. "
+                              "Kaydet'e basınca server.properties'e yazılır."))
+        self.age.currentIndexChanged.connect(self._age_changed)
+        ident.add(row(label("Yaş etiketi"), self.age))
+        self.motd_preview = label("", raw=True, wrap=True)
+        self.motd_preview.setTextFormat(Qt.RichText)
+        self.motd_preview.setStyleSheet(f"background:{color('surface_2')}; border-radius:6px; padding:6px 8px;"
+                                        "font-family: Consolas, monospace;")
+        self.motd_preview.setToolTip(t("Sunucu listesinde MOTD böyle görünür"))
+        ident.add(self.motd_preview)
         ident.end()
         top.addWidget(ident, 1)
 
@@ -243,7 +267,9 @@ class SettingsPage(Page):
         self.ram_min = QLineEdit()
         self.ram_max = QLineEdit()
         self.bluemap = QLineEdit()
-        form.addRow(t("Java"), self.java)
+        form.addRow(t("Java"), row(self.java, button("Java Yöneticisi", "ghost", self.java_manager,
+                                                     tooltip="Bu sunucuya uygun Java'yı seç ya da indir"),
+                                   stretch_end=False))
         form.addRow(t("Jar dosyası"), self.jar)
         form.addRow(t("RAM (min / max)"), row(self.ram_min, self.ram_max, stretch_end=False))
         form.addRow(t("BlueMap adresi"), self.bluemap)
@@ -309,6 +335,7 @@ class SettingsPage(Page):
         props = self.app.properties.load()
         if not props:
             self.grid.addWidget(label("server.properties bulunamadı. Sunucuyu bir kez başlatın.", "Muted"), 0, 0)
+            self._load_age()
             return
         for i, (k, v) in enumerate(props.items()):
             r, c0 = i // 2, (i % 2) * 3
@@ -324,6 +351,29 @@ class SettingsPage(Page):
             self.grid.addWidget(w, r, c0 + 1)
             self.fields[k] = (name, w)
         self._filter()
+        self._load_age()
+
+    def _load_age(self):
+        f = self.fields.get("motd")
+        age = MOTD.split(f[1].text())[0] if f else ""
+        self.age.blockSignals(True)
+        self.age.setCurrentIndex(max(0, self.age.findData(age)))
+        self.age.blockSignals(False)
+        self.age.setEnabled(f is not None)
+        self.motd_preview.setVisible(f is not None)
+        if f:
+            f[1].textChanged.connect(self._motd_preview)
+            self._motd_preview()
+
+    def _motd_preview(self, *_):
+        f = self.fields.get("motd")
+        if f:
+            self.motd_preview.setText(MOTD.to_html(f[1].text()))
+
+    def _age_changed(self, _i=0):
+        f = self.fields.get("motd")
+        if f:
+            f[1].setText(MOTD.compose(self.age.currentData() or "", f[1].text()))
 
     def _filter(self):
         q = self.search.text().lower()
@@ -331,6 +381,15 @@ class SettingsPage(Page):
             vis = q in k.lower()
             name.setVisible(vis)
             w.setVisible(vis)
+
+    def java_manager(self):
+        if self.read_only():
+            return
+        from ..java_dialog import JavaDialog
+        d = JavaDialog(self.app, self)
+        d.exec()
+        if d.changed:
+            self.java.setText(self.app.config.get("java_path"))
 
     def change_icon(self):
         if self.read_only():
