@@ -87,6 +87,8 @@ class LogsPage(Page):
     def on_filter(self, i):
         self.kinds = FILTERS[i][1]
         self.rebuild()
+        from .. import motion
+        motion.soft(self.table)
 
     def toggle_follow(self):
         self.following = not self.following

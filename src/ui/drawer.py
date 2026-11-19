@@ -129,7 +129,7 @@ class Drawer(QWidget):
         v.addWidget(self._toggle("Yüksek kontrast", "high_contrast",
                                  "Yazı ve kenarlıkları belirginleştirir"))
         v.addWidget(self._toggle("Animasyonları azalt", "reduce_motion",
-                                 "Menü kayma efektini kapatır"))
+                                 "Sayfa geçişlerini ve açılış ekranını kapatır"))
         v.addWidget(label("Kısayollar: Ctrl+, menü · Esc kapat · ↑↓ konsol geçmişi", "Muted", wrap=True))
 
         v.addWidget(self._toggle("Sunucu loglarını çevir", "translate_logs",
@@ -151,6 +151,8 @@ class Drawer(QWidget):
                                  "Kapalıysa sunucular sormadan durdurulur"))
         v.addWidget(self._toggle("Oyuncu kafalarını göster", "player_heads",
                                  "Oyuncuların kafa görüntüsü Mojang'dan indirilir"))
+        v.addWidget(self._toggle("Açılış ekranını göster", "show_intro",
+                                 "Spypaper açılırken kısa bir karşılama gösterir"))
         v.addWidget(self._toggle("Açılışta güncellemeleri denetle", "check_updates",
                                  "Spypaper açılırken GitHub'da yeni sürüm olup olmadığına bakar"))
         if autostart.supported():
@@ -189,6 +191,7 @@ class Drawer(QWidget):
         v.addWidget(item("Güncellemeleri şimdi denetle", self._check_update, "circle-arrow-up"))
         v.addWidget(item("Lisans ve Gizlilik", self._legal, "scale"))
         v.addWidget(item("Hakkında", self._about, "info"))
+        v.addWidget(item("Spypaper'ı kaldır", self._uninstall, "circle-x"))
         v.addStretch(1)
         v.addWidget(label(f"Spypaper v{VERSION}", "Muted"))
 
@@ -270,6 +273,10 @@ class Drawer(QWidget):
     def _gamefiles(self):
         from .gamefiles_dialog import GameFilesDialog
         GameFilesDialog(self).exec()
+
+    def _uninstall(self):
+        from .uninstall_dialog import UninstallDialog
+        UninstallDialog(self.ctl, self).exec()
 
     def _legal(self):
         from .legal_dialog import LegalDialog

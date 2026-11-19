@@ -249,6 +249,8 @@ class ModTransPage(Page):
     def _set_filter(self, i):
         self.filter = i
         self._apply_filter()
+        from .. import motion
+        motion.soft(self.grid)
 
     def _apply_filter(self):
         q = self.search.text().lower()

@@ -22,17 +22,21 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 |---|---|
 | **Ana ekran** | Birden çok sunucuyu kartlar halinde listeler; paneli açmadan hızlı başlat/durdur, düzenle, klasörü aç. |
 | **Yeni sunucu** | Sıfırdan sunucu oluştur: yazılımı ve Minecraft sürümünü seç; RAM, port, MOTD, oyun modu ve zorluğu ayarla; Spypaper sunucuyu indirip klasörü hazırlar. |
-| **Dashboard** | Anlık RAM/CPU, çevrimiçi oyuncular, günlük giriş, ölüm, gecikme ve hata sayıları, saatlik etkinlik grafiği. |
-| **Canlı Konsol** | Renkli konsol, komut geçmişi, sunucu mesajlarının panel diline çevrilmesi (isteğe bağlı). **Yazdıkça komut önerisi:** açıklamalı komut adları, o anki argümanın sözdizimi (ör. `give <oyuncu> <eşya> [miktar]`) ve seçilecek değerler (oyuncu adları, eşyalar, efektler, büyüler, oyun kuralları, oyun modları…). Tab ya da ↑↓ + Enter ile seçilir. |
+| **Dashboard** | Anlık RAM/CPU, çevrimiçi oyuncular, günlük giriş, ölüm, gecikme ve hata sayıları, saatlik etkinlik grafiği. **Performans:** son 1 saatin TPS ve MSPT (tick süresi) grafiği. Spypaper 15 saniyede bir sunucuya sorar (Paper/Purpur/Spigot: `tps`, `mspt`; Forge/NeoForge: `forge tps`/`neoforge tps`; vanilla ve Fabric 1.20.3+: `tick query`); yanıtlar konsolda gösterilmez, ölçüm kartın üzerinden kapatılabilir. |
+| **Canlı Konsol** | Renkli konsol, komut geçmişi, sunucu mesajlarının panel diline çevrilmesi (isteğe bağlı): Paper, Purpur, Spigot, Vanilla, Fabric, Forge ve NeoForge'un açılış, kapanış, bağlantı, dünya ayarı ve uyarı satırları hazır bir tabloyla 15 dile çevrilir; ölüm, katılma, başarım ve komut yanıtları (ışınlama, eşya verme, OP…) Minecraft'ın dil dosyalarından gelir. Eklenti satırlarına ve sohbete dokunulmaz; panel İngilizceyken satırlar olduğu gibi kalır. **Yazdıkça komut önerisi:** açıklamalı komut adları, o anki argümanın sözdizimi (ör. `give <oyuncu> <eşya> [miktar]`) ve seçilecek değerler (oyuncu adları, eşyalar, efektler, büyüler, oyun kuralları, oyun modları…). Tab ya da ↑↓ + Enter ile seçilir. |
 | **Günlük** | `logs/latest.log` ve arşivlenmiş `.log.gz` dosyalarından olaylar, oturumlar ve grafikler. Sunucu panel dışında açılmış olsa bile takip eder. |
 | **Esplora** | API anahtarıyla çalışan, yalnızca bu sunucunun yönetimine odaklı yapay zeka asistanı (Anthropic Claude, Google Gemini, OpenAI ve uyumlu servisler). Kategorili hazır sorular, mesaj balonları, durdurma ve yeniden oluşturma. Komut çalıştırmaz; önerdiği komutları sen **▶ Çalıştır** ile gönderirsin. Gömülü bir uzman bilgi bankası, yazdığın **Sunucu Bilgileri** ve ilgili yapılandırma dosyalarıyla (gizli değerler maskelenir) cevap verir. Ekran görüntüsü eklenebilir; **Veri İzinleri** Esplora'nın neyi görebileceğini ve neyi sana sorması gerektiğini belirler. |
-| **Oyuncular** | Can, açlık, zırh ve XP Minecraft'ın kendi göstergeleriyle; oyuncunun oyun modu. Envanter, zırh ve Ender sandığı; eşya ikonları (çit, merdiven gibi blok eşyalar oyunun 3D modellerinden çizilir), büyüler, kaplamalar, dayanıklılık. Eşya adları seçili dilde (Minecraft'ın kendi dil dosyalarıyla). Sık kullanılan oyuncu komutları. Minecraft 26.x'in yeni `world/players/` düzenini de okur. İsimlerin yanında oyuncu kafası; hesap türü (UUID'den: lisanslı Mojang/Microsoft hesabı ya da lisanssız başlatıcı). **Evler:** oyuncu başına en fazla 10 kayıtlı konum (XYZ + boyut ya da oyuncunun şu anki konumu) ve Işınla düğmesi. |
+| **Oyuncular** | **Skin Değiştir** (yalnızca bu sunucuda, SkinsRestorer eklentisi/moduyla; Spypaper onu Modrinth'ten kurabilir): başka bir oyuncunun adı ya da PNG skin bağlantısı, klasik ya da ince kol; Spypaper'daki oyuncu kafaları yeni skin'i gösterir. Can, açlık, zırh ve XP Minecraft'ın kendi göstergeleriyle; oyuncunun oyun modu. Envanter, zırh ve Ender sandığı; eşya ikonları (çit, merdiven gibi blok eşyalar oyunun 3D modellerinden çizilir), büyüler, kaplamalar, dayanıklılık. Eşya adları seçili dilde (Minecraft'ın kendi dil dosyalarıyla). Sık kullanılan oyuncu komutları. Minecraft 26.x'in yeni `world/players/` düzenini de okur. İsimlerin yanında oyuncu kafası; hesap türü (UUID'den: lisanslı Mojang/Microsoft hesabı ya da lisanssız başlatıcı). **Evler:** oyuncu başına en fazla 10 kayıtlı konum (XYZ + boyut ya da oyuncunun şu anki konumu) ve Işınla düğmesi. |
 | **Takımlar** | Takım oluştur ve sil (`/team`), üye ekle/çıkar; renk, görünen ad, ön ek/son ek, dost ateşi, isim etiketi ve ölüm mesajı görünürlüğü ile çarpışmayı ayarla. Takımlar `scoreboard.dat`'tan okunur, sunucu kapalıyken de görünür. |
-| **Eklentiler / Modlar** | Paper, Purpur ve Spigot'ta `plugins/`, Fabric, Quilt, Forge ve NeoForge'da `mods/` klasörünü yönetir: ekle, sil, devre dışı bırak. **Modrinth:** sunucunun Minecraft sürümüne ve yükleyicisine göre süzülmüş eklenti/mod arama, gerekli bağımlılıklarıyla kurma (dosyalar SHA-512 ile doğrulanır). **Kaynak Paketi:** Modrinth'ten bir kaynak paketi seç ya da adres gir, sunucu kaynak paketi olsun (SHA-1, zorunlu/isteğe bağlı). |
+| **Eklentiler / Modlar** | Paper, Purpur ve Spigot'ta `plugins/`, Fabric, Quilt, Forge ve NeoForge'da `mods/` klasörünü yönetir: ekle, sil, devre dışı bırak. **Modrinth:** sunucunun Minecraft sürümüne ve yükleyicisine göre süzülmüş eklenti/mod arama, gerekli bağımlılıklarıyla kurma (dosyalar SHA-512 ile doğrulanır). **Kaynak Paketi:** Modrinth'ten bir kaynak paketi seç ya da adres gir, sunucu kaynak paketi olsun (SHA-1, zorunlu/isteğe bağlı). **Spypaper Modları:** tek tıkla kurulan hazır veri ve kaynak paketleri; tüm sunucu türlerinde çalışır, oyuncuların bir şey kurması gerekmez: **Düz can ve açlık barı** (kalp, açlık, zırh ve hava düz dolan barlar olarak görünür; İçerik Editörü'nün kaynak paketi paylaşımıyla gider), **Ölüm koordinatları** (ölen oyuncu nerede öldüğünü yalnızca kendi sohbetinde görür) ve **Eşyalar kaybolmasın** (yere düşen ve ölünce düşen eşyalar 5 dakika sonra kaybolmaz). |
 | **Mod Dil Dosyaları** | Mod ve eklenti jar'larının içindeki İngilizce dil dosyalarını, yolu ne olursa olsun bulur (`assets/*/lang/en_us.json`, `lang/en.yml`, `locales/locale.json`…). JSON ve YAML, düz ya da iç içe. Çeviriyi sen yazarsın; panel jar'ın içine ve eklentinin kendi klasöründeki kopyaya kaydeder. Biçim kodu kontrolü (`%s`, `%player%`, `§a`, `&c`, `<red>`), dışa/içe aktarma, orijinali geri yükleme. |
-| **Sunucu Ayarları** | `server.properties` düzenleyici, Java yolu, RAM, jar, sunucu ikonu. **Dünya Sınırı:** iki köşe (X/Z) ya da merkez ve yarıçap gir; Spypaper Overworld, Nether ya da End için `/worldborder` gönderir, istersen geçiş süresiyle. Sınır her zaman karedir; dikdörtgen girersen uzun kenarı kapsar. |
+| **Sunucu Ayarları** | `server.properties` düzenleyici, Java yolu, RAM, jar, sunucu ikonu. **Java Yöneticisi:** bilgisayardaki Java'ları (Minecraft Launcher'ınkiler dahil) bulur, sunucunun Minecraft sürümüne uygun olanı önerir ya da Eclipse Temurin'i SHA-256 doğrulamasıyla Spypaper'ın yanındaki `java` klasörüne indirir (sisteme kurmaz). Sunucu başlarken seçili Java çok eskiyse ya da bulunamıyorsa uyarır. **Yaş etiketi:** MOTD'nin başına `[13+]` gibi renkli bir etiket ekler; sunucu listesindeki görünümü canlı önizlenir. **Dünya Sınırı:** iki köşe (X/Z) ya da merkez ve yarıçap gir; Spypaper Overworld, Nether ya da End için `/worldborder` gönderir, istersen geçiş süresiyle. Sınır her zaman karedir; dikdörtgen girersen uzun kenarı kapsar. |
+| **Yapılandırma** | Sunucunun ayar dosyalarını (`paper-global.yml`, `spigot.yml`, `world/paper-world.yml`, `config/*.toml`, eklenti `config.yml`'leri…) panelin içinde düzenle: satır numaraları, renklendirme, yazarken YAML/TOML/JSON biçim denetimi. Hata satırı kırmızıyla işaretlenir ve Türkçe açıklanır (Tab, girinti, kapanmamış tırnak/parantez, aynı anahtarın iki kez yazılması…). Yorumlar ve sıra korunur; kaydetmeden önce eski hal `backups/configs`'e kopyalanır, yedeklerden geri yüklenebilir. Dosya dışarıda değiştiyse üzerine yazmadan sorar. |
+| **Dosyalar** | Sunucu klasörünün tamamı boyut ve tarihleriyle ağaç halinde, adla arama. Çift tıklayınca dosya VS Code, Notepad++, Not Defteri ya da varsayılan programda açılır (kendiliğinden bulunur, seçilebilir). Metin olmayan dosyalar (jar, dünya, oyuncu verisi) çalıştırılmaz, Gezgin'de gösterilir. Sağ tık: birlikte aç, Spypaper'da düzenle, klasörde göster, yolu kopyala, Geri Dönüşüm Kutusu'na taşı (yalnızca sunucu kapalıyken). |
 | **Whitelist & Ban** | Whitelist, ban ve op listeleri. |
 | **Bakım & Yedek** | Dünya (Overworld, Nether, End) yedeği ve bakım modu. Bakımda whitelist yedeklenip boşaltılır, böylece whitelist kullanan sunuculara da kimse giremez; OP olmayan oyuncular atılır, bakım bitince her şey geri gelir. Gün, saat ve süreli haftalık plan, oyun içi uyarılarla. Bkz. [Bakım](#bakım). |
+| **Zamanlanmış Görevler** | Seçili günlerde belirli saatte ya da belli aralıklarla (ör. her 30 dakikada) yeniden başlatma, durdurma, başlatma, dünya yedeği, konsol komutları ve duyurular. Yeniden başlatma ve durdurmada oyunculara isteğe bağlı geri sayım (10 dk, 5 dk, 1 dk, 10 sn). Hazır şablonlar, *Şimdi Çalıştır*, her görevin sonraki çalışma zamanı ve son sonucu. Komutlar güvenli moddan geçer. Görevler yalnızca Spypaper açıkken çalışır. |
+| **Discord** | Sunucu olaylarını bir Discord kanalına gönderir: açıldı, kapandı, çöktü, oyuncu girdi/çıktı/öldü, başarımlar, sohbet, bakım ve zamanlanmış görevler (her biri ayrı açılıp kapanır). Bot ya da hesap gerekmez; kanalın webhook adresini yapıştırırsın, adres bu bilgisayarda şifreli saklanır. Test mesajı, Discord'un hız sınırına uyum, mesajlarda @everyone ve etiketler hiçbir zaman çalışmaz. Oyuncu olayları yalnızca Spypaper'ın başlattığı sunucularda çalışır. |
 | **Notlar** | Her sunucu için kendi notların; kendiliğinden kaydedilir. |
 | **İçerik Editörü** | Mod olmadan içerik ekle (veri paketi + kaynak paketi, Minecraft 1.21+): kendi resimlerinden tablo, **Newgrounds ID**'si ya da kendi ses dosyandan müzik diski, var olan eşyalardan hasarı, hızı, dayanıklılığı, büyüleri, efektleri ve isteğe bağlı dokusu senin belirlediğin alet/silah ve yiyecek; 3×3 tarif. Kaynak paketini Spypaper kendisi paylaşabilir. Mod olmadan yeni blok eklenemez. Bkz. [İçerik Editörü](#i̇çerik-editörü). |
 | **Hile Koruması** | İşlevine göre adlandırılmış modüller: **Cevher Gizleme** (Paper/Purpur'un yerleşik anti-xray'i, X-Ray paketlerini işe yaramaz yapar), **Yetki Koruması** (panelden verilmeyen OP'u geri alır, oyuncuyu atar), **Savaş Hilesi Denetimi** (killaura, uzaktan vurma, uçma ve hız için açık kaynak GrimAC eklentisini Modrinth'ten tek tıkla kurar), **Bot Doğrulaması** (sunucunun kaynak paketini gerçekten indirmeyen oyuncuyu atar). Tek anahtarla hilelere izin verilip hepsi kapatılabilir. Bkz. [Hile Koruması](#hile-koruması). |
@@ -43,7 +47,7 @@ Python + PySide6 ile yazılmıştır, Windows için tek bir `.exe` olarak derlen
 | **Spypaper Remote** | Sunucularını telefondan izle; bilgisayardan verdiğin izinlerle başlat/durdur, bakıma al ve ayarlarını değiştir. QR kodla eşleşir; mağaza, hesap ya da veritabanı gerekmez. Bkz. [Spypaper Remote](#spypaper-remote-telefon). |
 | **Güncelleme** | Açılışta GitHub Releases'ta yeni Spypaper sürümü olup olmadığına bakar (kapatılabilir) ve exe'yi tek tıkla günceller. |
 | **Güvenlik** | 4 seviyeli güvenli mod (tehlikeli komutlar için onay, engelleme ya da salt okunur) ve sunucu başına isteğe bağlı PIN. |
-| **Görünüm** | 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller, [Lucide](https://lucide.dev) ikonları, Windows mesaj kutuları yerine panele özel uyarı/soru pencereleri. **Panel Düzeni:** paneldeki sekmeleri ve Dashboard kartlarını sırala ya da gizle. Sayfa geçiş animasyonları ve seçili sekmede kayan gösterge (*Animasyonları azalt* ile kapanır). Ayarlarda kaydırırken açılır listeler ve sayı kutuları artık kazara değişmez. Renkli butonlar göz yormayan tonlu bir stilde (yüksek kontrastta dolu). İsteğe bağlı Windows ile başlatma. |
+| **Görünüm** | Açılışta kısa karşılama ekranı (büyük Spypaper yazısı ve günün saatine göre selamlama; tıklayınca geçilir, menüden kapatılabilir), sayfa ve sekme geçişlerinde hafif solma; 7 tema, yazı boyutu, yüksek kontrast, animasyonları azaltma, sağdan sola diller, [Lucide](https://lucide.dev) ikonları, Windows mesaj kutuları yerine panele özel uyarı/soru pencereleri. Sunucu panelinin kenar çubuğu gruplara ayrılır (Genel, Oyuncular, İçerik, Sunucu, Otomasyon, Güvenlik); grup başlığına tıklayınca açılıp kapanır, durum hatırlanır. **Panel Düzeni:** paneldeki sekmeleri (grup içinde) ve Dashboard kartlarını sırala ya da gizle. Sayfa geçiş animasyonları ve seçili sekmede kayan gösterge (*Animasyonları azalt* ile kapanır). Ayarlarda kaydırırken açılır listeler ve sayı kutuları artık kazara değişmez. Renkli butonlar göz yormayan tonlu bir stilde (yüksek kontrastta dolu). İsteğe bağlı Windows ile başlatma. |
 
 ---
 
@@ -247,6 +251,7 @@ Java yolu ve jar adı yalnızca bilgisayardan değiştirilebilir; RCON/sorgu/yö
 - Log satırlarındaki IP adresleri telefona gitmeden gizlenir.
 - Bağlantı kendi ağının içinde düz HTTP'dir. Dışarıdan (mobil veriyle) erişmek için en kolayı [Tailscale](https://tailscale.com): bilgisayara ve telefona kur, Remote penceresinde *(Tailscale)* yazan adresi seç; trafik Tailscale ile şifrelenir.
 - Tailscale istemiyorsanız Remote penceresindeki **Dış erişim** bölümüne bakın. **Modemde portu otomatik aç (UPnP)** modemin UPnP desteğine bağlıdır ve trafiği şifresiz (HTTP) dışarı açar; bu yüzden önerilmez. **Tünel sağlayıcısı: Cloudflare** ise HTTPS ile geçici bir adres verir. Tünel için [cloudflared](https://github.com/cloudflare/cloudflared) programını kendiniz kurup yolunu girersiniz; Spypaper onu indirmez. Tünelin adresi her açılışta değişir ve açıkken QR ile eşleşme bu adresi kullanır.
+- **Tünel sağlayıcısı: Playit.gg** (isteğe bağlı) kendi playit.gg hesabınızı kullanır. [playit](https://playit.gg/download) programını kendiniz kurun, sonra Remote penceresinde **Hesabı bağla**'ya basın: playit tarayıcıda bir onay bağlantısı açar. playit.gg'de yerel portu panel portu olan bir TCP tüneli ekleyin; Spypaper adresini okur ve diğer Playit tünellerinizi de (ör. Minecraft adresi) gösterir. Anahtar dosyası okunamazsa **Anahtar gir** ile `playit.toml` içindeki `secret_key` değerini yapıştırın. Spypaper playit hizmetini başlatmaz ve durdurmaz.
 
 ![Masaüstünde Spypaper Remote penceresi](docs/screenshots/remote-desktop.png)
 
@@ -264,6 +269,8 @@ Spypaper bir yapay zeka sağlayıcısı değildir: sağlayıcıya ve modele kend
 | Anthropic (Claude) | `claude-sonnet-5-5` | |
 | Google Gemini | `gemini-3.8-flash` | Kapatılan bir model için servis yeni model önerirse panel otomatik geçer |
 | OpenAI / uyumlu | `gpt-4o-mini` | OpenRouter, LM Studio, Ollama vb. için *Sunucu adresi* alanını kullan |
+
+**Geçmiş:** Sohbetler sunucu başına bu bilgisayarda kaydedilir (görseller hariç). Esplora → **Geçmiş** ile eski bir sohbeti açıp kaldığın yerden devam edebilir, başlıkta arayabilir, sohbetleri silebilir ya da kaydetmeyi kapatabilirsin. **Yeni sohbet** açık sohbeti kapatır; o sohbet geçmişte kalır.
 
 **Sunucu Bilgileri:** Esplora → **Sunucu Bilgileri** ile Esplora'ya sunucunu anlatırsın (kurallar, yetkililer, ekonomi, eklentileri nasıl kullandığın, bilinen sorunlar). Esplora ayrıca gömülü bilgi bankasının ilgili bölümlerini ve soru onlarla ilgiliyse sunucunun yapılandırma dosyalarını (`spigot.yml`, `config/paper-world-defaults.yml`, adını verdiğin eklentinin ayarı…) alır; parola, token ve webhook adresleri `***` ile değiştirilir.
 
@@ -312,9 +319,15 @@ Spypaper-Releases/
    │  ├─ updater.py        indirme ve doğrulama
    │  ├─ players.py        oyuncu verisi (NBT), envanter, Minecraft çevirileri
    │  ├─ logwatch.py       latest.log takibi, olaylar, metrikler
+   │  ├─ perf.py           TPS/MSPT ölçümü (sunucuya sorgu, yanıtı konsoldan gizleme)
    │  ├─ logtrans.py       sunucu mesajlarını panel diline çevirme
+   │  ├─ logtrans_table.py Paper/vanilla sunucu satırları için hazır çeviri tablosu
    │  ├─ files.py          eklenti/mod klasörü, server.properties, yedekler
+   │  ├─ explorer.py       Dosyalar sekmesi: düzenleyici bulma, dosya açma, Geri Dönüşüm Kutusu
+   │  ├─ configedit.py     Yapılandırma editörü: ayar dosyalarını bulma, biçim denetimi, yedekli kaydetme
    │  ├─ maintenance.py    bakım modu, whitelist yedekleme/geri yükleme, haftalık plan
+   │  ├─ scheduler.py      zamanlanmış görevler (yeniden başlatma, yedek, komut, duyuru)
+   │  ├─ discord.py        Discord webhook bildirimleri
    │  ├─ appupdate.py      Spypaper'ın kendi güncellemesi (GitHub Releases)
    │  ├─ danger.py         Tehlikeli Bölge işlemleri (dünya sıfırlama, geri yükleme, silme)
    │  ├─ teams.py          takımlar (scoreboard.dat, /team komutları)
@@ -325,9 +338,11 @@ Spypaper-Releases/
    │  ├─ packhost.py       kaynak paketi paylaşımı (küçük HTTP sunucusu)
    │  ├─ skins.py, homes.py oyuncu kafaları (Mojang), oyuncu evleri
    │  ├─ esplora_kb.py     Esplora'nın gömülü bilgi bankası
+   │  ├─ esplora_chats.py  Esplora sohbet geçmişi (bu bilgisayarda)
    │  ├─ guard.py          Hile Koruması (cevher gizleme, yetki koruması, GrimAC, bot doğrulaması)
    │  ├─ worldborder.py    Dünya Sınırı (/worldborder komutları)
    │  ├─ autostart.py      Windows ile başlatma
+   │  ├─ javamgr.py        Java Yöneticisi: Java bulma, sürüm gereksinimi, Temurin indirme
    │  ├─ gamefiles.py      Minecraft dil dosyaları ve ikonlar (yerel kurulum ya da Mojang)
    │  ├─ iconrender.py     blok eşya ikonlarını oyunun 3D modellerinden çizer
    │  ├─ modtrans.py       mod/eklenti dil dosyası düzenleyici (JSON, YAML)
@@ -336,6 +351,12 @@ Spypaper-Releases/
    │  ├─ remote.py         Spypaper Remote web sunucusu (eşleşme, telefon API'si)
    │  ├─ portmap.py        Modem port yönlendirme (UPnP)
    │  ├─ tunnel.py         Cloudflare tüneli (cloudflared)
+   │  ├─ playit.py         Playit.gg: hesap bağlama, tünel adresi
+   │  ├─ spymods.py        Spypaper Modları (hazır veri/kaynak paketleri)
+   │  ├─ spymods_rp.py     kaynak paketi modlarının üretilen görselleri (düz barlar)
+   │  ├─ uninstall.py      kaldırma: silinecekler, kapandıktan sonra temizlik
+   │  ├─ motd.py           MOTD yaş etiketi ve önizleme
+   │  ├─ skinsr.py         SkinsRestorer ile skin değiştirme
    │  ├─ ai.py, esplora.py yapay zeka sağlayıcıları, Esplora kuralları ve hazır sorular
    │  ├─ safemode.py       güvenli mod ve PIN
    │  └─ secrets.py        API anahtarı şifreleme
@@ -353,7 +374,8 @@ Spypaper-Releases/
 
 Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com/TyraelDiablo/Spypaper-Releases/issues) sayfasına yazabilirsin):
 
-- [ ] **Zamanlanmış görevler:** belirli saatte yeniden başlatma, geri sayım duyurusu, komut ve yedek
+- [x] **Zamanlanmış görevler:** belirli saatte yeniden başlatma, geri sayım duyurusu, komut ve yedek
+- [x] **Dosyalar:** sunucu klasörü gezgini, dosyaları VS Code / Notepad++ / Not Defteri'nde açma
 - [x] **Çökme bekçisi:** beklenmedik kapanmada otomatik yeniden başlatma, art arda çökmede durma
 - [x] **Yedekten geri yükleme** ve yedek sayısı sınırı (eski yedekleri otomatik silme)
 - [x] **Takımlar** ve **Tehlikeli Bölge**
@@ -361,10 +383,11 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 - [ ] Eklenti/mod güncelleme uyarısı, Hangar
 - [x] **İçerik Editörü:** mod olmadan tablo, müzik diski, alet/silah, yiyecek ve tarif
 - [x] Konsolda komut önerileri, oyuncu kafaları ve evler
-- [ ] **Discord bildirimleri:** açıldı, kapandı, çöktü, oyuncu girdi (webhook)
-- [ ] **Java yöneticisi:** Minecraft sürümüne uygun Java'yı algılama ve indirme
-- [ ] **TPS / MSPT grafiği** Dashboard'da
-- [ ] **Yapılandırma dosyası editörü** (`paper-global.yml`, `config/*.toml`…) ve biçim denetimi
+- [x] **Discord bildirimleri:** açıldı, kapandı, çöktü, oyuncu girdi (webhook)
+- [ ] Discord: kendi botunu bağlama, slash komutları ve sohbet köprüsü
+- [x] **Java yöneticisi:** Minecraft sürümüne uygun Java'yı algılama ve indirme
+- [x] **TPS / MSPT grafiği** Dashboard'da
+- [x] **Yapılandırma dosyası editörü** (`paper-global.yml`, `config/*.toml`…) ve biçim denetimi
 - [x] **Panelin kendini güncellemesi** (GitHub Releases)
 - [x] **Otomatik bakım** ve whitelist koruması
 - [x] **Spypaper Remote:** sunucuları telefondan izleme ve kontrol
@@ -373,15 +396,20 @@ Sıradaki planlar (sıra değişebilir; önerilerini [Issues](https://github.com
 
 ---
 
+## Kaldırma
+
+Spypaper kurulum programı olmayan tek bir exe'dir. **☰ → Spypaper'ı kaldır** ile kaldırın: Spypaper kapanır ve yalnızca exe'nin yanındaki kendi dosyalarını siler (önbellek, oyun dosyaları, exe'nin kendisi). **Ayarlarımı sakla** (varsayılan olarak açık) seçiliyse `config.json`, sohbet geçmişi ve dil dosyaları kalır; Spypaper'ı aynı klasöre yeniden koyarsanız sunucularınız ve ayarlarınız geri gelir. Sunucu klasörlerine, dünyalara ve yedeklere asla dokunulmaz. Pencerede GitHub'da sorun bildirmek için bir bağlantı da var; kendiliğinden hiçbir şey gönderilmez.
+
 ## Sorun giderme
 
 - **Eşya adları İngilizce görünüyor ya da ikon yok:** Oyuncular sayfasında **Oyun Dosyalarını Al**'a bas. Sayfanın altında hangi dil dosyasının kullanıldığı yazar.
 - **Modem portu açılamadı:** modemin UPnP'si kapalı olabilir (modem ayarlarından açın) ya da modem UPnP desteklemiyor. Bu durumda Tailscale ya da tünel kullanın.
 - **Tünel açılamadı:** Remote penceresinde cloudflared yolunu kontrol edin (*Gözat* ile seçin) ve internet bağlantınızı deneyin.
+- **Playit tüneli bulunamadı:** playit.gg'de yerel portu panel portu olan bir TCP tüneli ekleyin ve playit hizmetinin çalıştığından emin olun.
 - **Telefon Spypaper Remote'a bağlanamıyor:** telefon ve bilgisayar aynı Wi-Fi'da olmalı (misafir ağları genelde bunu engeller), Windows güvenlik duvarı Spypaper'a özel ağlarda izin vermeli ve Remote penceresindeki adres bilgisayarın yerel adresi olmalı (genelde `192.168…`). Port meşgulse Remote penceresinden değiştir.
 - **Derlerken `'uv' is not recognized`:** uv'yi kur (`winget install astral-sh.uv`) ve yeni bir terminal aç.
 - **Derlerken "Failed to build pyyaml" gibi bir hata:** Python sürümün bazı paketler için fazla yeni. `build.bat` uv ile Python 3.12 kullanır; komutları elle çalıştırıyorsan `--python 3.12` ekle.
-- **"Minecraft 26.1 and newer requires … Java 25":** Java 25'i kur (`winget install EclipseAdoptium.Temurin.25.JDK`), sonra Spypaper'ı yeniden aç (ya da Windows'ta bir kez oturumu kapatıp aç). Hâlâ eski Java kullanılıyorsa **Sunucu Ayarları → Java** alanına Java 25'in `java.exe` tam yolunu tırnaksız yaz.
+- **"Minecraft 26.1 and newer requires … Java 25" ya da "UnsupportedClassVersionError":** **Sunucu Ayarları → Java Yöneticisi**'nden Java 25'i seç ya da indir. Elle kurmak istersen Java 25'i kur (`winget install EclipseAdoptium.Temurin.25.JDK`), sonra Spypaper'ı yeniden aç (ya da Windows'ta bir kez oturumu kapatıp aç). Hâlâ eski Java kullanılıyorsa **Sunucu Ayarları → Java** alanına Java 25'in `java.exe` tam yolunu tırnaksız yaz.
 - **"Güncelleme denetlenemedi":** bilgisayar çevrimdışı ya da sürüm reposu gizli; Spypaper yine normal açılır.
 - **Oyuncu kafası yerine harf görünüyor:** oyuncunun bu adla bir Mojang hesabı yok (lisanssız), Mojang'a ulaşılamıyor ya da *Oyuncu kafalarını göster* kapalı.
 - **İçerik Editörü'nün tabloları/müzikleri oyuncularda görünmüyor:** paketleri oluştur, sunucuyu yeniden başlat ve oyuncuların kaynak paketi adresine ulaşabildiğinden emin ol (Spypaper paylaşıyorsa varsayılan port 8766).

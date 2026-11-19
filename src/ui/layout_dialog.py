@@ -25,8 +25,8 @@ class LayoutDialog(QDialog):
         cols.setSpacing(18)
         left = QVBoxLayout()
         left.addWidget(label("Sekmeler", "CardTitle"))
-        left.addWidget(label("Sürükleyerek sırala, işareti kaldırarak gizle. İlk görünen sekme sunucu açılınca gelir.",
-                             "Muted", wrap=True))
+        left.addWidget(label("Sürükleyerek sırala, işareti kaldırarak gizle. Sekmeler kendi grupları içinde sıralanır; "
+                             "ilk görünen sekme sunucu açılınca gelir.", "Muted", wrap=True))
         self.pages = QListWidget()
         self.pages.setDragDropMode(QAbstractItemView.InternalMove)
         self.pages.setDefaultDropAction(Qt.MoveAction)
@@ -60,10 +60,12 @@ class LayoutDialog(QDialog):
         self._fill(order, hidden, set(ctl.settings.get("dashboard_hidden") or []))
 
     def _fill(self, order, hidden, dash_hidden):
+        from .window import GROUP_OF, GROUPS
+        titles = {key: title for key, title, _ in GROUPS}
         self.pages.clear()
         for i in order:
             cls = self.PAGES[i]
-            it = QListWidgetItem("  ⋮⋮   " + t(cls.title))
+            it = QListWidgetItem("  ⋮⋮   " + t(titles[GROUP_OF[cls]]) + "  ·  " + t(cls.title))
             it.setData(Qt.UserRole, cls.__name__)
             it.setFlags(it.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsDragEnabled)
             it.setCheckState(Qt.Unchecked if i in hidden else Qt.Checked)

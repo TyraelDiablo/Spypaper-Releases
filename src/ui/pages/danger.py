@@ -36,6 +36,8 @@ class DangerPage(Page):
     def __init__(self, app, bridge):
         super().__init__(app, bridge)
         self.stack = QStackedWidget()
+        from .. import motion
+        motion.auto_fade(self.stack)
         self.root.addWidget(self.stack, 1)
 
         # --- kilitli ---

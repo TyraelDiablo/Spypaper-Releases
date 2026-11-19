@@ -33,6 +33,9 @@ SERVER_DEFAULTS = {
     "bluemap_url": "http://localhost:8100",
     "maintenance_schedule": {},   # core.maintenance.SCHEDULE_DEFAULTS
     "maintenance_state": {},
+    "scheduled_tasks": [],     # core.scheduler: zamanlanmış görevler
+    "discord": {},             # core.discord: webhook bildirimleri (adres şifreli)
+    "perf_monitor": True,      # core.perf: TPS/MSPT ölçümü (sunucuya 15 sn'de bir tps/mspt sorar)
     "notes": "",               # kullanıcının bu sunucu için notları
     "homes": {},               # core.homes: oyuncu başına en fazla 10 ev
     "esplora_knowledge": "",   # sunucu sahibinin Esplora için yazdığı bilgiler
@@ -57,6 +60,7 @@ APP_DEFAULTS = {
     "font_scale": 1.0,
     "high_contrast": False,
     "reduce_motion": False,
+    "show_intro": True,
     "confirm_on_close": True,
     "open_last_on_start": False,
     "console_max_lines": 5000,
@@ -70,6 +74,8 @@ APP_DEFAULTS = {
     "hidden_pages": [],
     "dashboard_hidden": [],    # gösterge panelinde gizlenen kartlar
     "ai": {},                  # yapay zeka ayarları (core.ai)
+    "esplora_save_chats": True,  # Esplora sohbetleri bu bilgisayarda saklansın (core.esplora_chats)
+    "file_editor": "auto",     # Dosyalar sekmesinde dosyaların açılacağı düzenleyici (core.explorer.EDITORS)
     "servers": [],
     "last_server": "",
 }

@@ -3,14 +3,14 @@ from datetime import date, datetime, timedelta
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QListWidget, QListWidgetItem, QVBoxLayout
+from PySide6.QtWidgets import QCheckBox, QGridLayout, QHBoxLayout, QListWidget, QListWidgetItem, QVBoxLayout
 
 from core import N_
 from core.logwatch import KINDS, hourly_counts, online_timeline, sessions
 from ..charts import BarChart, LineChart
 from ..i18n import t
 from ..theme import TOKENS
-from ..widgets import Card, Page, label
+from ..widgets import Card, Page, label, segmented
 
 def kind_color(k):
     return {
@@ -69,8 +69,21 @@ DASH_CARDS = [
     ("online", N_("Çevrimiçi")), ("joins", N_("Bugün Giren")), ("deaths", N_("Bugün Ölüm")),
     ("chat", N_("Sohbet Mesajı")), ("lag", N_("Gecikme Uyarısı")), ("uptime", N_("Çalışma Süresi")),
     ("online_chart", N_("Çevrimiçi Oyuncular")), ("feed", N_("Son Olaylar")), ("hourly", N_("Saatlik Etkinlik")),
-    ("week", N_("Son 7 Gün")), ("resources", N_("Sunucu Kaynakları")), ("top", N_("En çok oynayanlar")),
+    ("week", N_("Son 7 Gün")), ("resources", N_("Sunucu Kaynakları")), ("perf", N_("Performans (TPS / MSPT)")),
+    ("top", N_("En çok oynayanlar")),
 ]
+
+
+def tps_color(tps):
+    if tps is None:
+        return TOKENS["text_muted"]
+    return TOKENS["accent"] if tps >= 19 else TOKENS["warn"] if tps >= 15 else TOKENS["danger"]
+
+
+def mspt_color(ms):
+    if ms is None:
+        return TOKENS["text_muted"]
+    return TOKENS["accent"] if ms < 40 else TOKENS["warn"] if ms <= 50 else TOKENS["danger"]
 
 
 class DashboardPage(Page):
@@ -116,7 +129,7 @@ class DashboardPage(Page):
         hc = Card("Saatlik Etkinlik", "Giriş, sohbet, ölüm, başarım, komut")
         self.hour_chart = BarChart(TOKENS["info"])
         hc.add(self.hour_chart, 1)
-        bot.addWidget(hc, 3)
+        bot.addWidget(hc, 2)
 
         wc = Card("Son 7 Gün", "Tekil oyuncu sayısı")
         self.week_chart = BarChart(TOKENS["purple"])
@@ -130,6 +143,27 @@ class DashboardPage(Page):
         rc.add(self.ram_chart, 1)
         rc.add(self.res_lbl)
         bot.addWidget(rc, 2)
+
+        pc = Card("Performans", "Son 1 saat")
+        pc.setToolTip(t("Son 1 saat · 20 TPS ve 50 ms altı MSPT sağlıklıdır"))
+        self.perf_mode = segmented(["TPS", "MSPT"], lambda _i: self.update_perf())
+        pc.header_actions.addWidget(self.perf_mode)
+        self.perf_chart = LineChart(TOKENS["accent"])
+        self.perf_chart.integer = False
+        pc.add(self.perf_chart, 1)
+        self.perf_lbl = label("", "Muted")
+        self.perf_lbl.setTextFormat(Qt.RichText)
+        self.perf_on = QCheckBox(t("TPS ölçümü"))
+        self.perf_on.setToolTip(t("Spypaper sunucuya 15 saniyede bir tps/mspt (ya da tick query) komutunu gönderir; "
+                                  "yanıtlar konsolda gösterilmez ama sunucunun latest.log dosyasına yazılır."))
+        self.perf_on.setCursor(Qt.PointingHandCursor)
+        self.perf_on.setChecked(app.perf.enabled)
+        self.perf_on.toggled.connect(self._perf_toggled)
+        perf_row = QHBoxLayout()
+        perf_row.addWidget(self.perf_lbl, 1)
+        perf_row.addWidget(self.perf_on)
+        pc.add(perf_row)
+        bot.addWidget(pc, 2)
         self.root.addLayout(bot, 2)
 
         # --- en çok oynayanlar ---
@@ -140,7 +174,7 @@ class DashboardPage(Page):
         hidden = set(app.config.settings.get("dashboard_hidden") or [])
         widgets = {"online": self.c_online, "joins": self.c_players, "deaths": self.c_deaths, "chat": self.c_chat,
                    "lag": self.c_lag, "uptime": self.c_uptime, "online_chart": oc, "feed": feed, "hourly": hc,
-                   "week": wc, "resources": rc, "top": self.top_lbl}
+                   "week": wc, "resources": rc, "perf": pc, "top": self.top_lbl}
         for key, w in widgets.items():
             if key in hidden:
                 w.setVisible(False)
@@ -159,6 +193,7 @@ class DashboardPage(Page):
     def on_show(self):
         self.refresh()
         self.update_week()
+        self.update_perf()
 
     def on_server_path_changed(self):
         self.metric_hist.clear()
@@ -236,7 +271,47 @@ class DashboardPage(Page):
             [t(GUN[d.weekday()]) for d, *_ in hist], [u for _, u, _, _ in hist], highlight=len(hist) - 1,
             tips=[f"{d:%d.%m} · " + t("{u} oyuncu · {j} giriş · {dd} ölüm", u=u, j=j, dd=dt) for d, u, j, dt in hist])
 
+    # --- performans ---
+    def _perf_toggled(self, on):
+        if self.read_only():
+            self.perf_on.blockSignals(True)
+            self.perf_on.setChecked(not on)
+            self.perf_on.blockSignals(False)
+            return
+        self.app.perf.set_enabled(on)
+        self.update_perf()
+
+    def update_perf(self):
+        perf = self.app.perf
+        mspt_mode = self.perf_mode.group.checkedId() == 1
+        now = datetime.now()
+        hour_ago = now - timedelta(hours=1)
+        key = 2 if mspt_mode else 1
+        pts = [((tm - hour_ago).total_seconds() / 60, s[key]) for s in perf.samples
+               for tm in (s[0],) if tm >= hour_ago and s[key] is not None]
+        self.perf_chart.color = QColor(TOKENS["info"] if mspt_mode else TOKENS["accent"])
+        self.perf_chart.y_min_max = 50 if mspt_mode else 20
+        self.perf_chart.y_fmt = (lambda v: f"{v:g}ms") if mspt_mode else (lambda v: f"{v:g}")
+        self.perf_chart.set_data(pts, (0, 60), lambda x: (hour_ago + timedelta(minutes=x)).strftime("%H:%M"))
+        last = perf.latest()
+        if perf.status == "ok" and last and (last[1] is not None or last[2] is not None):
+            tps, ms = last[1], last[2]
+            parts = []
+            if tps is not None:
+                parts.append(f'<b style="color:{tps_color(tps)}">TPS {tps:.1f}</b>')
+            if ms is not None:
+                parts.append(f'<b style="color:{mspt_color(ms)}">MSPT {ms:.1f} ms</b>')
+            vals = [s[1] for s in perf.samples if s[0] >= hour_ago and s[1] is not None]
+            self.perf_lbl.setToolTip(t("en düşük TPS (1 sa): {v}", v=f"{min(vals):.1f}") if vals else "")
+            self.perf_lbl.setText("  ·  ".join(parts))
+        else:
+            from core.perf import STATUS
+            self.perf_lbl.setToolTip("")
+            self.perf_lbl.setWordWrap(True)
+            self.perf_lbl.setText(t(STATUS.get(perf.status, STATUS["waiting"])))
+
     def sample_metrics(self):
+        self.update_perf()
         s = self.app.metrics.sample()
         if not s:
             if self.app.metrics.available:

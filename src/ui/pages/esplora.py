@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from core import N_, ai, detect_version
 from core import esplora_access as EA
+from core import esplora_chats as EC
 from core import esplora_kb
 from core.esplora import build_system, config_files, latest_crash, preset_items, quick_items
 from .. import icons
@@ -170,8 +171,12 @@ class Bubble(QFrame):
                 strip.setSpacing(6)
                 for im in images:
                     th = QLabel()
-                    th.setPixmap(image_pixmap(im))
-                    th.setStyleSheet("background: transparent;")
+                    if im.get("data"):
+                        th.setPixmap(image_pixmap(im))
+                        th.setStyleSheet("background: transparent;")
+                    else:                       # kayıtlı sohbet: görsel diske yazılmadı
+                        th.setText(t("[görsel]"))
+                        th.setStyleSheet(f"color:{k['text_muted']}; font-style: italic; background: transparent;")
                     strip.addWidget(th)
                 strip.addStretch(1)
                 v.addLayout(strip)
@@ -277,10 +282,16 @@ class EsploraPage(Page):
         super().__init__(app, bridge)
         if not hasattr(app, "esplora_history"):
             app.esplora_history = []          # arayüz yeniden kurulsa da kalır
+        if not hasattr(app, "esplora_chat_id"):
+            app.esplora_chat_id = None        # kayıtlı sohbetin kimliği (core.esplora_chats)
+        self.store = EC.ChatStore.for_profile(app.config)
+        self._saved_sig = None
         self.busy = False
 
         head = Card("Esplora", "Bu sunucuya özel yapay zeka asistanı. Yalnızca sunucu yönetimiyle ilgili sorulara yanıt verir.")
         head.header_actions.addWidget(button("Yeni sohbet", "ghost", self.reset))
+        head.header_actions.addWidget(button("Geçmiş", "ghost", self.open_history,
+                                             tooltip="Kayıtlı sohbetleri aç ya da sil"))
         head.header_actions.addWidget(button("Sunucu Bilgileri", "ghost", self.edit_knowledge,
                                              tooltip="Esplora'ya sunucun hakkında bilmesi gerekenleri yaz"))
         head.header_actions.addWidget(button("Veri İzinleri", "ghost", self.open_access,
@@ -439,8 +450,55 @@ class EsploraPage(Page):
         self.on_show()
 
     def reset(self):
+        if self.busy:
+            self.stop()
         self.app.esplora_history.clear()
+        self.app.esplora_chat_id = None
+        self.pending = None
+        self.rounds = 0
         self.render()
+
+    # --- sohbet geçmişi ---
+    def _persist(self):
+        """Açık sohbeti diske yazar (ayar kapalıysa yazmaz). Değişmediyse tekrar yazmaz."""
+        hist = self.app.esplora_history
+        if not hist or not self.app.config.settings.get("esplora_save_chats"):
+            return
+        sig = (self.app.esplora_chat_id, len(hist), hist[-1].get("content", "")[:200])
+        if sig == self._saved_sig:
+            return
+        if not self.app.esplora_chat_id:
+            self.app.esplora_chat_id = EC.new_id()
+        try:
+            self.store.save(self.app.esplora_chat_id, hist)
+            self._saved_sig = (self.app.esplora_chat_id, len(hist), hist[-1].get("content", "")[:200])
+        except OSError as e:
+            print(f"[esplora] sohbet kaydedilemedi: {e}")
+
+    def open_history(self):
+        from ..chat_history_dialog import ChatHistoryDialog
+        self._persist()
+        dlg = ChatHistoryDialog(self.store, self.app.config.settings, self.app.esplora_chat_id, self)
+        dlg.exec()
+        if dlg.chosen:
+            self.open_chat(dlg.chosen)
+        elif self.app.esplora_chat_id and not any(c["id"] == self.app.esplora_chat_id for c in self.store.list()):
+            self.app.esplora_chat_id = None          # açık sohbet silindi: sonraki kayıt yeni dosyaya gider
+            self._saved_sig = None
+
+    def open_chat(self, chat_id):
+        msgs = self.store.load(chat_id)
+        if msgs is None:
+            return False
+        if self.busy:
+            self.stop()
+        self.app.esplora_history[:] = msgs
+        self.app.esplora_chat_id = chat_id
+        self.pending = None
+        self.rounds = 0
+        self._saved_sig = (chat_id, len(msgs), msgs[-1].get("content", "")[:200] if msgs else "")
+        self.render()
+        return True
 
     # --- bağlam ---
     def context(self, question=""):
@@ -512,7 +570,8 @@ class EsploraPage(Page):
         """Hata/durdurma/not balonlarını çıkarır, art arda gelen aynı rolleri birleştirir (bazı API'ler ister).
         Görseller yalnızca son IMAGE_HISTORY görselli mesajda gönderilir; öncekiler "[görsel]" olur."""
         recent = hist[-24:]
-        with_img = [i for i, m in enumerate(recent) if m.get("images")][-IMAGE_HISTORY:]
+        with_img = [i for i, m in enumerate(recent)
+                    if any(im.get("data") for im in m.get("images") or [])][-IMAGE_HISTORY:]
         out = []
         for i, m in enumerate(recent):
             if m.get("error") or m.get("stopped") or m.get("note"):
@@ -520,7 +579,8 @@ class EsploraPage(Page):
             parts = [{"type": "text", "text": m["content"]}] if m["content"] else []
             if m.get("images"):
                 if i in with_img:
-                    parts = [{"type": "image", **im} for im in m["images"]] + (parts or [{"type": "text", "text": "(image)"}])
+                    parts = ([{"type": "image", **im} for im in m["images"] if im.get("data")]
+                             + (parts or [{"type": "text", "text": "(image)"}]))
                 else:
                     parts = [{"type": "text", "text": f"[{len(m['images'])} image(s) sent earlier]"}] + parts
             if not parts:
@@ -755,20 +815,28 @@ class EsploraPage(Page):
                      + "- " + t("**Güvenlik ve yedek:** güvenlik kontrolü, yedekleme planı, griefing sonrası") + "\n\n"
                      + t("Aşağıdaki hızlı sorulara ya da “Tüm hazır sorular” menüsüne tıklayabilirsin."))
             self._add(Bubble(self, "assistant", hello), right=False)
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        def when(m):
+            d = m.get("date")
+            if d and d != today and len(d) == 10:
+                return f"{d[8:10]}.{d[5:7]}.{d[:4]} {m.get('time', '')}".strip()
+            return m.get("time", "")
         for i, m in enumerate(hist):
             if m.get("data") or m.get("note"):
-                self._add(Bubble(self, "note", m.get("label") or m["content"], m.get("time", "")), right=False)
+                self._add(Bubble(self, "note", m.get("label") or m["content"], when(m)), right=False)
                 continue
             if m["role"] == "user":
                 role = "user"
             else:
                 role = "error" if m.get("error") else "stopped" if m.get("stopped") else "assistant"
-            self._add(Bubble(self, role, m.get("label") or m["content"], m.get("time", ""), m.get("images")),
+            self._add(Bubble(self, role, m.get("label") or m["content"], when(m), m.get("images")),
                       right=(role == "user"))
             if i == len(hist) - 1 and m["role"] == "assistant" and not thinking and not self.pending:
                 self._add(self._actions(m), right=False)
         if self.pending and not thinking:
             self._add(self._approval(self.pending), right=False)
+        self._persist()
         self.thinking = None
         if thinking:
             self.thinking = Bubble(self, "thinking", "")

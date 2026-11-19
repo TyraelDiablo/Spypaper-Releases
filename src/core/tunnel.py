@@ -15,7 +15,7 @@ from .config import N_
 
 URL_RE = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com", re.I)
 START_TIMEOUT = 40          # sn; ilk bağlantı yavaş olabilir
-PROVIDERS = {"off": N_("Kapalı"), "cloudflare": N_("Cloudflare (cloudflared)")}
+PROVIDERS = {"off": N_("Kapalı"), "cloudflare": N_("Cloudflare (cloudflared)"), "playit": N_("Playit.gg")}
 
 
 class TunnelError(Exception):

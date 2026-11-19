@@ -6,6 +6,8 @@ config.json.tmp
 Translation/
 Icons/
 Languages/
+# Windows'ta büyük/küçük harf ayrılmadığı için Icons/ kuralı arayüz ikonlarını da yakalıyordu
+!src/ui/icons/
 
 # derleme çıktıları
 build/

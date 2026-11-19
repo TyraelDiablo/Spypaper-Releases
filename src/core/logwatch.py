@@ -11,10 +11,12 @@ from datetime import date, datetime, timedelta
 
 from .config import N_
 
-# Vanilla/Paper dosya formatı:  [17:01:02] [Server thread/INFO]: mesaj
-# Paper konsol formatı:         [17:01:02 INFO]: mesaj
+# Vanilla/Paper/Fabric dosya formatı: [17:01:02] [Server thread/INFO]: mesaj
+# Paper konsol formatı:                [17:01:02 INFO]: mesaj
+# Forge/NeoForge:  [17Nov2026 17:01:02.123] [Server thread/INFO] [minecraft/DedicatedServer]: mesaj
 LINE_RES = (
-    re.compile(r"^\[(\d{2}):(\d{2}):(\d{2})\]\s*\[[^\]]*?/(\w+)\]:\s?(.*)$"),
+    re.compile(r"^\[(?:\d{1,2}[A-Za-z]{3}\d{4} )?(\d{2}):(\d{2}):(\d{2})(?:[.,]\d+)?\]\s*\[[^\]]*?/(\w+)\]"
+               r"(?:\s*\[[^\]]*\])*:\s?(.*)$"),
     re.compile(r"^\[(\d{2}):(\d{2}):(\d{2})\s+(\w+)\]:\s?(.*)$"),
 )
 NAME = r"([A-Za-z0-9_.*~-]{2,32})"

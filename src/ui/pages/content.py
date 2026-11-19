@@ -120,6 +120,8 @@ class ContentPage(Page):
 
     def _build_types(self):
         self.types = QStackedWidget()
+        from .. import motion
+        motion.auto_fade(self.types, dy=0)
         self.col.addWidget(self.types)
         items = self._item_ids()
 
@@ -865,7 +867,9 @@ class ContentPage(Page):
         items = [x for x in self.items if x.get("id")]
         try:
             level = level_name(self.app.properties)
-            dp, rp = C.build(self.app.config.server_path, level, self._version(), items)
+            from core import spymods as SM
+            dp, rp = C.build(self.app.config.server_path, level, self._version(), items,
+                             SM.rp_files(self.app.config.get("spymods_rp") or []))
         except Exception as e:
             text = t(e.template, **e.kw) if hasattr(e, "template") else str(e)
             self.error((f"{e.item}: " if getattr(e, "item", None) else "") + text)
@@ -923,6 +927,41 @@ class ContentPage(Page):
             self.warn(t("Geçersiz oyuncu adı: {name}", name=who))
             return
         self.send(C.give_command(who, self.cur, self._version()))
+
+
+def rebuild_packs(app):
+    """İçerik ve Spypaper Modları paketlerini kayıtlı ayarlarla yeniden üretir; paylaşım açıksa yeni paketi yayınlar.
+    (kaynak_paketi_yolu ya da None, paylaşıldı_mı). Hata olursa istisna fırlatır."""
+    from core import guard as G, modrinth as M, spymods as SM
+    sp = app.config.server_path
+    version = detect_version(sp)[0]
+    fmt = C.Fmt(version)
+    items, skipped = [], []
+    for x in app.config.get("content") or []:
+        if not x.get("id"):
+            continue
+        try:
+            C.validate(x, fmt)            # yarım kalmış içerik (ör. sesi olmayan disk) paketi bozmasın: atlanır
+            items.append(x)
+        except Exception:
+            skipped.append(x.get("name") or x["id"])
+    app.last_skipped_content = skipped
+    _, rp = C.build(sp, level_name(app.properties), version, items,
+                    SM.rp_files(app.config.get("spymods_rp") or []))
+    cfg = app.config.get("content_share") or {}
+    if not (rp and cfg.get("enabled") and cfg.get("address")):
+        if not rp:
+            HOST.unregister(app.id)
+            cur = M.current_resource_pack(app.properties).get("url") or ""
+            if f"/{app.id}/" in cur and str(int(cfg.get("port") or DEFAULT_PORT)) in cur:
+                M.clear_resource_pack(app.properties)        # artık paket yok: oyunculara olmayan adres gönderilmesin
+        return rp, False
+    HOST.start(int(cfg.get("port") or DEFAULT_PORT))
+    sha = C.sha1_file(rp)
+    HOST.register(app.id, rp, sha)
+    required = cfg.get("required") or G.active(app.config, "captcha")
+    M.set_resource_pack(app.properties, HOST.url(cfg["address"], app.id, sha), sha, required)
+    return rp, True
 
 
 def restore_sharing(settings_servers):
