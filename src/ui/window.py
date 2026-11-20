@@ -4,7 +4,7 @@ import time
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QPoint, QSize, Qt, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QApplication, QButtonGroup, QHBoxLayout, QMainWindow, QMessageBox, QPushButton,
+    QApplication, QButtonGroup, QFrame, QHBoxLayout, QMainWindow, QMessageBox, QPushButton, QScrollArea,
     QStackedWidget, QVBoxLayout, QWidget,
 )
 
@@ -26,19 +26,38 @@ from .pages.teams import TeamsPage
 from .pages.danger import DangerPage
 from .pages.content import ContentPage, restore_sharing
 from .pages.guard import GuardPage
+from .pages.files import FilesPage
+from .pages.tasks import TasksPage
+from .pages.discord import DiscordPage
+from .pages.configs import ConfigsPage
 
-PAGES = [DashboardPage, ConsolePage, LogsPage, EsploraPage, PlayersPage, TeamsPage, PluginsPage, ModTransPage,
-         SettingsPage, AdminPage, MaintenancePage, MapPage, NotesPage, ContentPage, GuardPage, DangerPage]
+from core import N_
+
+# Kenar çubuğu grupları (anahtar, başlık, sayfalar). Sekmeler yalnızca kendi grupları içinde sıralanır.
+GROUPS = [
+    ("general", N_("Genel"), [DashboardPage, ConsolePage, LogsPage, MapPage, EsploraPage, NotesPage]),
+    ("players", N_("Oyuncular"), [PlayersPage, TeamsPage, AdminPage]),
+    ("content", N_("İçerik"), [PluginsPage, ModTransPage, ContentPage]),
+    ("server", N_("Sunucu"), [SettingsPage, ConfigsPage, FilesPage]),
+    ("automation", N_("Otomasyon"), [MaintenancePage, TasksPage, DiscordPage]),
+    ("security", N_("Güvenlik"), [GuardPage, DangerPage]),
+]
+PAGES = [cls for _, _, pages in GROUPS for cls in pages]
+GROUP_OF = {cls: key for key, _, pages in GROUPS for cls in pages}
 CRASH_LIMIT = 3            # bu kadar çökme...
 CRASH_WINDOW = 600         # ...bu kadar saniye içinde olursa otomatik yeniden başlatma durur
 RESTART_DELAY = 10
 
 
 def page_order(settings):
-    """Kenar çubuğundaki sayfa sırası (PAGES indeksleri) ve gizlenenler."""
+    """Kenar çubuğundaki sayfa sırası (PAGES indeksleri) ve gizlenenler.
+    Kullanıcının sırası grup içinde uygulanır; gruplar her zaman GROUPS sırasındadır."""
     names = [c.__name__ for c in PAGES]
-    order = [names.index(n) for n in (settings.get("page_order") or []) if n in names]
-    order += [i for i in range(len(PAGES)) if i not in order]           # yeni eklenen sayfalar sona
+    user = [names.index(n) for n in (settings.get("page_order") or []) if n in names]
+    user += [i for i in range(len(PAGES)) if i not in user]             # yeni eklenen sayfalar grubunun sonuna
+    rank = {i: r for r, i in enumerate(user)}
+    group_rank = {key: g for g, (key, _, _) in enumerate(GROUPS)}
+    order = sorted(range(len(PAGES)), key=lambda i: (group_rank[GROUP_OF[PAGES[i]]], rank[i]))
     hidden = {names.index(n) for n in (settings.get("hidden_pages") or []) if n in names}
     if len(hidden) >= len(PAGES):
         hidden = set()
@@ -117,16 +136,43 @@ class ServerPanel(QWidget):
             b.setCheckable(True)
             b.setCursor(Qt.PointingHandCursor)
             self.nav.addButton(b, i)
-        for i in self.order:                        # kullanıcının sırası; gizlenenler kenar çubuğunda görünmez
-            b = self.nav.button(i)
-            b.setVisible(i not in self.hidden)
-            sv.addWidget(b)
-        self.navbar = motion.SlideBar(self.nav, side, "left")
+        # gruplar: başlığa tıklayınca açılır/kapanır; durum ayarlarda saklanır. Uzun listede kaydırılır.
+        scroll = QScrollArea()
+        scroll.setObjectName("NavScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        navw = QWidget()
+        navw.setObjectName("NavInner")
+        nv = QVBoxLayout(navw)
+        nv.setContentsMargins(0, 0, 0, 0)
+        nv.setSpacing(0)
+        self.collapsed = set(ctl.settings.get("nav_collapsed") or [])
+        self.group_btns, self.group_pages = {}, {}
+        for key, title, classes in GROUPS:
+            idx = [i for i in self.order if GROUP_OF[PAGES[i]] == key]
+            visible = [i for i in idx if i not in self.hidden]
+            hb = QPushButton(t(title).upper())
+            hb.setObjectName("NavGroup")
+            hb.setCursor(Qt.PointingHandCursor)
+            hb.clicked.connect(lambda _c=False, k=key: self.toggle_group(k))
+            hb.setVisible(bool(visible))                # tüm sekmeleri gizlenmiş grup görünmez
+            self.group_btns[key], self.group_pages[key] = hb, visible
+            nv.addWidget(hb)
+            for i in idx:
+                nv.addWidget(self.nav.button(i))
+                if i in self.hidden:                    # Panel Düzeni'nde gizlenen sekme hiç görünmez
+                    self.nav.button(i).setVisible(False)
+        nv.addStretch(1)
+        scroll.setWidget(navw)
+        sv.addWidget(scroll, 1)
+        self._apply_groups()
+        self.navbar = motion.SlideBar(self.nav, navw, "left")
         danger_btn = self.nav.button(PAGES.index(DangerPage))
         danger_btn.setIcon(icons.icon("triangle-alert", TOKENS["danger"], 16))
         self._nav_texts()
-        sv.addStretch(1)
         path = label(app.config.server_path, "BrandSub", raw=True)
+        path.setStyleSheet("padding-top: 10px;")
         path.setWordWrap(True)
         sv.addWidget(path)
         self.nav.idClicked.connect(self.go)
@@ -229,7 +275,33 @@ class ServerPanel(QWidget):
     def first_page(self):
         return next((i for i in self.order if i not in self.hidden), 0)
 
+    # --- gruplar ---
+    def _apply_groups(self):
+        for key, hb in self.group_btns.items():
+            closed = key in self.collapsed
+            hb.setIcon(icons.icon("chevron-right" if closed else "chevron-down", TOKENS["text_muted"], 12))
+            hb.setToolTip(t("Grubu aç") if closed else t("Grubu kapat"))
+            hb.setProperty("closed", closed)
+            for i in self.group_pages[key]:
+                self.nav.button(i).setVisible(not closed)
+        if getattr(self, "navbar", None):                # gösterge seçili düğmeyi izler; kapalı grupta gizlenir
+            self.navbar.move(self.nav.checkedButton(), animate=False)
+
+    def toggle_group(self, key, open_=None):
+        """open_=None: aç/kapat; True: aç; False: kapat."""
+        if open_ is None:
+            open_ = key in self.collapsed
+        if open_:
+            self.collapsed.discard(key)
+        else:
+            self.collapsed.add(key)
+        self.ctl.settings.set("nav_collapsed", sorted(self.collapsed))
+        self._apply_groups()
+
     def go(self, i):
+        key = GROUP_OF[PAGES[i]]
+        if key in self.collapsed:                        # kapalı gruptaki sekmeye gidilince grup açılır
+            self.toggle_group(key, open_=True)
         changed = self.stack.currentIndex() != i
         self.current = i
         self.nav.button(i).setChecked(True)
@@ -251,8 +323,38 @@ class ServerPanel(QWidget):
     def _eula_ok(self):
         return eula_ok(self, self.app.config.server_path)
 
+    def _java_ok(self):
+        """Seçili Java sunucunun Minecraft sürümü için yetersizse ya da bulunamıyorsa sorar."""
+        from core import javamgr
+        try:
+            req, major, exe = javamgr.check(self.app.config)
+        except Exception as e:
+            print(f"[java] {e}")
+            return True
+        if exe and (req is None or major is None or major >= req):
+            return True
+        from .msgbox import choose
+        if not exe:
+            text = t("Seçili Java ({path}) bulunamadı.", path=self.app.config.get("java_path") or "java")
+        else:
+            text = t("Bu sunucu Java {req} ya da daha yenisini gerektiriyor ama seçili Java {n}. "
+                     "Sunucu büyük olasılıkla açılmayacak.", req=req, n=major)
+        res = choose(self, "warning", t("Java"), text,
+                     [(t("İptal"), "ghost"), (t("Yine de Başlat"), "ghost"), (t("Java Yöneticisini Aç"), "primary")],
+                     default=2, cancel=0)
+        if res == 1:
+            return True
+        if res == 2:
+            from .java_dialog import JavaDialog
+            d = JavaDialog(self.app, self)
+            d.exec()
+            if d.changed:
+                self.pages[PAGES.index(SettingsPage)].on_show()
+                return self._java_ok()
+        return False
+
     def start(self):
-        if not self._eula_ok():
+        if not self._eula_ok() or not self._java_ok():
             return
         try:
             self.app.server.start()
@@ -413,6 +515,8 @@ class MainWindow(QMainWindow):
             app = self.apps[sid] = App(self.settings.server(sid))
             app.maintenance.tr = t                  # oyunculara giden uyarılar panel dilinde
             app.guard.tr = t
+            app.scheduler.tr = t
+            app.discord.tr = t
         return self.apps[sid]
 
     def watchdog(self):
@@ -458,9 +562,19 @@ class MainWindow(QMainWindow):
                 app.guard.tick()
             except Exception as e:
                 print(f"[koruma] {app.config.name}: {e}")
+            try:
+                app.perf.tick()                     # TPS/MSPT sorgusu (yalnızca çalışan sunucularda)
+            except Exception as e:
+                print(f"[tps] {app.config.name}: {e}")
         for prof in self.settings.servers():
             if not prof.exists:
                 continue
+            if any(x.get("enabled", True) for x in prof.get("scheduled_tasks") or []):
+                try:                                # zamanlanmış görevler (paneli açık olmasa da)
+                    if self.app_for(prof.id).scheduler.tick():
+                        self.server_state_changed()
+                except Exception as e:
+                    print(f"[görev] {prof.name}: {e}")
             if not (prof.get("maintenance_state") or {}).get("active") and \
                     not (prof.get("maintenance_schedule") or {}).get("enabled"):
                 continue
@@ -590,6 +704,12 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------ çıkış
     def closeEvent(self, e):
         """Çalışan sunucular her zaman düzgünce durdurulur (dünya kaydı bozulmasın)."""
+        unsaved = [f"{p.app.config.name}: {pg.rel}" for p in self.panels.values() for pg in p.pages
+                   if isinstance(pg, ConfigsPage) and pg.dirty]
+        if unsaved and not ask(self, t("Kaydedilmemiş yapılandırma değişiklikleri var:\n{files}\n\nYine de çıkılsın mı?",
+                                       files="\n".join(unsaved)), t("Çıkış")):
+            e.ignore()
+            return
         running = [a for a in self.apps.values() if a.server.is_running]
         if running and self.settings.get("confirm_on_close"):
             names = ", ".join(a.config.name for a in running)

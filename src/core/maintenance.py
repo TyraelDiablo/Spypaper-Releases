@@ -87,6 +87,7 @@ class Maintenance:
         self.backups = backups
         self.online = online or (lambda: [])          # çevrimiçi oyuncu adları
         self.tr = lambda s, **kw: s.format(**kw) if kw else s   # arayüz panel diline çevirir
+        self.notify = None                             # fn(started: bool) — Discord bildirimi (core.discord)
         self._warned = set()
 
     # ------------------------------------------------------------ durum
@@ -231,6 +232,7 @@ class Maintenance:
                 if name.lower() not in ops:
                     self.server.try_send(f"kick {name} {reason}")
             self.server.try_send("save-all flush")
+        self._notify(True)
         if not backup:
             return None
         if not wait:
@@ -278,3 +280,11 @@ class Maintenance:
         except OSError:
             pass
         self._warned.clear()
+        self._notify(False)
+
+    def _notify(self, started):
+        if self.notify:
+            try:
+                self.notify(started)
+            except Exception as e:
+                print(f"[bakım] bildirim: {e}")

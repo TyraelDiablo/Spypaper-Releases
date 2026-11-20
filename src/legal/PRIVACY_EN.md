@@ -1,6 +1,6 @@
 # Spypaper Privacy Notice
 
-**Version 1.5 · Effective date: 17 November 2026**
+**Version 1.6 · Effective date: 18 November 2026**
 
 > If this English version conflicts with the Turkish version ([GIZLILIK.md](GIZLILIK.md)), the Turkish version prevails.
 
@@ -50,9 +50,9 @@ If *Save chats on this computer* is on (the default), Esplora chats are stored *
 
 ## 2. Data sent to third parties
 
-### 2.1 Server software downloads (Update window)
+### 2.1 Server software and Java downloads (Update window, Java Manager)
 
-When you open the Update window or download, the Software connects to the official servers of the software you select:
+When you open the Update window or download, or click *Download Java* in the Java Manager, the Software connects to the official servers of the software you select:
 
 | Service | Address |
 |---|---|
@@ -62,6 +62,7 @@ When you open the Update window or download, the Software connects to the offici
 | FabricMC | meta.fabricmc.net |
 | Minecraft Forge | files.minecraftforge.net, maven.minecraftforge.net |
 | NeoForged | maven.neoforged.net |
+| Eclipse Adoptium (Java) | api.adoptium.net, github.com |
 
 Sent: your IP address (as with any internet connection), the requested version, and a User-Agent containing "Spypaper/version". If you entered the **contact information** PaperMC asks for, it is included in the User-Agent. Your server files, player data and logs are **not** sent.
 
@@ -122,7 +123,11 @@ If *Show player heads* is on (the default), the Players page downloads players' 
 
 If you turn on *Let Spypaper share the resource pack* in the Content Editor, the Software runs a small web server on the port you choose (default 8766) that only serves the generated resource pack file. The IP addresses of players downloading the pack reach your computer through this connection but are not written to disk. When **Bot Verification** is on, these IP addresses and download times are kept in memory only (at most the last 1000 downloads) to compare them with the IP in the server log of a player who logs in, and are cleared when the Software closes. This option is off by default.
 
-### 2.8 Other connections
+### 2.8 Discord notifications
+
+If you turn on notifications on a server's **Discord** page and enter a webhook URL, the Software sends a message to that URL (`discord.com`) for the events you choose. Messages include your server's name and, depending on the event: that the server started, stopped or crashed (with its exit code), the name of a player who joined, left or died and the death message, an advancement earned, maintenance starting or ending, scheduled task results and, if **Chat messages** is on, the player's name and what they wrote. IP addresses are never sent. The webhook URL is stored encrypted in `config.json` (DPAPI on Windows). See the [Discord Privacy Policy](https://discord.com/privacy). The feature is off by default; the *Deaths*, *Advancements*, *Chat* and *Scheduled tasks* events are not sent unless you select them separately.
+
+### 2.9 Other connections
 
 - The **Live Map** page opens the map address you configured (default `http://localhost:8100`).
 - Documentation links in the drawer open in your default browser.
@@ -132,6 +137,7 @@ If you turn on *Let Spypaper share the resource pack* in the Content Editor, the
 You are the **data controller** for the personal data of players who connect to your server (player names, IP addresses, chat content); the Software is only a tool you use. You may have obligations under the GDPR, Türkiye's Law No. 6698 (KVKK) or local law. In particular:
 
 - If you use Esplora, you may need to inform players that logs containing their names and chat may be sent to an AI provider abroad.
+- If you turn on player events or chat in Discord notifications, inform your players that their names and chat messages are posted to a Discord channel.
 - Some Minecraft players may be children; take extra care with their data.
 - Keep your backups and `config.json` secure and do not share them.
 

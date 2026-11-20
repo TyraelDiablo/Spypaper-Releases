@@ -267,7 +267,9 @@ class SettingsPage(Page):
         self.ram_min = QLineEdit()
         self.ram_max = QLineEdit()
         self.bluemap = QLineEdit()
-        form.addRow(t("Java"), self.java)
+        form.addRow(t("Java"), row(self.java, button("Java Yöneticisi", "ghost", self.java_manager,
+                                                     tooltip="Bu sunucuya uygun Java'yı seç ya da indir"),
+                                   stretch_end=False))
         form.addRow(t("Jar dosyası"), self.jar)
         form.addRow(t("RAM (min / max)"), row(self.ram_min, self.ram_max, stretch_end=False))
         form.addRow(t("BlueMap adresi"), self.bluemap)
@@ -379,6 +381,15 @@ class SettingsPage(Page):
             vis = q in k.lower()
             name.setVisible(vis)
             w.setVisible(vis)
+
+    def java_manager(self):
+        if self.read_only():
+            return
+        from ..java_dialog import JavaDialog
+        d = JavaDialog(self.app, self)
+        d.exec()
+        if d.changed:
+            self.java.setText(self.app.config.get("java_path"))
 
     def change_icon(self):
         if self.read_only():

@@ -1,6 +1,6 @@
 # Spypaper Gizlilik Bildirimi
 
-**Sürüm 1.5 · Yürürlük tarihi: 17.11.2026**
+**Sürüm 1.6 · Yürürlük tarihi: 18.11.2026**
 
 Bu bildirim, Spypaper'ın ("Yazılım") hangi verileri işlediğini, nerede sakladığını ve hangi durumlarda üçüncü taraflara gönderdiğini açıklar.
 
@@ -48,9 +48,9 @@ Esplora sohbetleri, *Sohbetleri bu bilgisayarda kaydet* seçeneği açıksa (var
 
 ## 2. Üçüncü taraflara gönderilen veriler
 
-### 2.1 Sunucu yazılımı indirme (Güncelle penceresi)
+### 2.1 Sunucu yazılımı ve Java indirme (Güncelle penceresi, Java Yöneticisi)
 
-Güncelle penceresini açtığınızda ve indirme yaptığınızda Yazılım, seçtiğiniz yazılımın resmi sunucularına bağlanır:
+Güncelle penceresini açtığınızda ve indirme yaptığınızda ya da Java Yöneticisi'nde *Java İndir*'e bastığınızda Yazılım, seçtiğiniz yazılımın resmi sunucularına bağlanır:
 
 | Hizmet | Adres |
 |---|---|
@@ -60,6 +60,7 @@ Güncelle penceresini açtığınızda ve indirme yaptığınızda Yazılım, se
 | FabricMC | meta.fabricmc.net |
 | Minecraft Forge | files.minecraftforge.net, maven.minecraftforge.net |
 | NeoForged | maven.neoforged.net |
+| Eclipse Adoptium (Java) | api.adoptium.net, github.com |
 
 Gönderilenler: IP adresiniz (her internet bağlantısında olduğu gibi), istenen sürüm bilgisi ve "Spypaper/sürüm" bilgisini içeren User-Agent. PaperMC'nin istediği **iletişim bilgisini** girdiyseniz bu bilgi de User-Agent içinde gönderilir. Sunucu dosyalarınız, oyuncu verileriniz ya da loglarınız **gönderilmez**.
 
@@ -120,7 +121,11 @@ Spypaper Remote **varsayılan olarak kapalıdır**. Açarsanız Yazılım bilgis
 
 İçerik Editörü'nde *Kaynak paketini Spypaper paylaşsın* seçeneğini açarsanız Yazılım, seçtiğiniz portta (varsayılan 8766) küçük bir web sunucusu çalıştırır ve yalnızca oluşturulan kaynak paketi dosyasını verir. Paketi indiren oyuncuların IP adresleri bu bağlantıda bilgisayarınıza ulaşır ama diske kaydedilmez. **Bot Doğrulaması** açıksa bu IP adresleri ve indirme zamanları, giriş yapan oyuncunun sunucu logundaki IP'siyle karşılaştırmak için yalnızca bellekte (en fazla son 1000 indirme) tutulur ve Yazılım kapanınca silinir. Seçenek varsayılan olarak kapalıdır.
 
-### 2.8 Diğer bağlantılar
+### 2.8 Discord bildirimleri
+
+Bir sunucunun **Discord** sayfasında bildirimleri açıp bir webhook adresi girerseniz Yazılım, seçtiğiniz olaylarda o adrese (`discord.com`) bir mesaj gönderir. Mesajda sunucunuzun adı ve olaya göre şu bilgiler bulunur: sunucunun açıldığı, kapandığı ya da çöktüğü (çıkış koduyla), giren/çıkan/ölen oyuncunun adı ve ölüm mesajı, kazanılan başarım, bakımın başladığı/bittiği, zamanlanmış görevlerin sonucu ve **Sohbet mesajları** açıksa oyuncunun adı ve yazdığı mesaj. IP adresleri gönderilmez. Webhook adresi `config.json`'da şifreli (Windows'ta DPAPI) saklanır. Bkz. [Discord Gizlilik Politikası](https://discord.com/privacy). Özellik varsayılan olarak kapalıdır; *Ölüm*, *Başarımlar*, *Sohbet* ve *Zamanlanmış görevler* olayları açılsa bile ayrıca seçilmedikçe gönderilmez.
+
+### 2.9 Diğer bağlantılar
 
 - **Canlı Harita** sayfası, ayarladığınız harita adresini (varsayılan `http://localhost:8100`) açar.
 - Çekmecedeki belge bağlantıları varsayılan tarayıcınızda açılır.
@@ -130,6 +135,7 @@ Spypaper Remote **varsayılan olarak kapalıdır**. Açarsanız Yazılım bilgis
 Sunucunuza bağlanan oyuncuların kişisel verilerinin (oyuncu adı, IP adresi, sohbet içeriği) **veri sorumlusu siz**siniz; Yazılım yalnızca sizin kullandığınız bir araçtır. 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK), GDPR ya da bulunduğunuz yerdeki mevzuat kapsamında yükümlülükleriniz olabilir. Özellikle:
 
 - Esplora'yı kullanıyorsanız, oyuncu adları ve sohbet içeren logların yurt dışındaki bir yapay zeka sağlayıcısına aktarılabileceğini oyuncularınıza bildirmeniz gerekebilir.
+- Discord bildirimlerinde oyuncu olaylarını ya da sohbeti açtıysanız, oyuncu adlarının ve sohbet mesajlarının bir Discord kanalına aktarıldığını oyuncularınıza bildirin.
 - Minecraft oyuncularının bir kısmı çocuk olabilir; onların verilerini işlerken ek özen gösterin.
 - Yedeklerinizi ve `config.json` dosyanızı güvenli tutun, başkalarıyla paylaşmayın.
 
