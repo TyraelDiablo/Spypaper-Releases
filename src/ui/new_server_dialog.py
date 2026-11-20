@@ -90,6 +90,10 @@ class NewServerDialog(QDialog):
         form.addRow("", self.online)
         form.addRow("", self.white)
         v.addLayout(form)
+        from .world_picker import WorldPicker
+        v.addWidget(label("Dünya", "CardTitle"))
+        self.world = WorldPicker(settings.get("update_contact") or "")
+        v.addWidget(self.world)
 
         self.eula = QCheckBox(t("Minecraft EULA'sını okudum ve kabul ediyorum"))
         eula_link = label("", "Muted")
@@ -149,6 +153,8 @@ class NewServerDialog(QDialog):
         self.btn.setEnabled(True)
 
     def _ver_changed(self, v):
+        if hasattr(self, "world"):
+            self.world.set_server_version(v)
         if v:
             self.java_lbl.setText(t("Bu sürüm için en az Java {n} gerekir.", n=creator.java_hint(v)))
 
@@ -159,6 +165,10 @@ class NewServerDialog(QDialog):
             return
         if os.path.isdir(path) and os.listdir(path):
             self.status.setText(t("Seçilen klasör boş değil: {path}", path=path))
+            return
+        err = self.world.validate()
+        if err:
+            self.status.setText(err)
             return
         if not self.eula.isChecked():
             self.status.setText(t("Sunucuyu çalıştırabilmek için Minecraft EULA'sını kabul etmen gerekiyor."))
@@ -171,6 +181,10 @@ class NewServerDialog(QDialog):
                     difficulty=self.diff.currentData(), online_mode=self.online.isChecked(),
                     whitelist=self.white.isChecked(), accept_eula=True,
                     java="java", contact=self.settings.get("update_contact"))
+        if self.world.is_template():
+            opts["template"] = self.world.template()
+        else:
+            opts["world"] = self.world.world_options()
         key, ver = self.sw.currentData(), self.ver.currentText()
         self.status.setText(t("İndiriliyor…"))
 

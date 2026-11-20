@@ -116,6 +116,12 @@ class DangerPage(Page):
         w.add(row(None, self.btn_reset, stretch_end=False))
         col.addWidget(w)
 
+        # taslak harita
+        tp = danger_card("Dünyayı Taslakla Değiştir", "Hazır bir harita (Skyblock, PvP arenası…) şu anki dünyanın yerine konur")
+        self.btn_template = button("Harita Seç", "danger", self.replace_template)
+        tp.add(row(None, self.btn_template, stretch_end=False))
+        col.addWidget(tp)
+
         # yedekten geri yükle
         r = danger_card("Yedekten Geri Yükle", "Şu anki dünya silinir ve seçilen yedek yerine konur")
         self.backup_box = QComboBox()
@@ -221,7 +227,7 @@ class DangerPage(Page):
         self.run_lbl.setText(t("Sunucu çalışıyor: bu işlemler için önce sunucuyu durdur.") if running else "")
         self.run_lbl.setVisible(running)
         ok = not running and not self.busy
-        for b in (self.btn_reset, self.btn_players, self.btn_delete):
+        for b in (self.btn_reset, self.btn_players, self.btn_delete, self.btn_template):
             b.setEnabled(ok)
         self.btn_restore.setEnabled(ok and bool(self.backup_box.currentData()))
 
@@ -269,6 +275,14 @@ class DangerPage(Page):
             tops, bk = res
             self.info(t("Yedek geri yüklendi: {dirs}", dirs=", ".join(tops)) +
                       ("\n" + t("Önceki dünyanın yedeği: {file}", file=os.path.basename(bk)) if bk else ""))
+        elif job == "template":
+            moved, applied = res
+            msg = t("Harita kuruldu.")
+            if moved:
+                msg += "\n" + t("Önceki dünya: {dirs}", dirs=", ".join(moved))
+            if applied:
+                msg += "\n" + t("Değiştirilen ayarlar: {props}", props=", ".join(f"{k}={v}" for k, v in applied.items()))
+            self.info(msg)
         elif job == "players":
             self.info(t("Oyuncu verileri silindi ({n} klasör).", n=len(res)))
         elif job == "delete":
@@ -281,6 +295,26 @@ class DangerPage(Page):
             QTimer.singleShot(0, lambda: win.forget_server(sid))
 
     # ------------------------------------------------------------ işlemler
+    def replace_template(self):
+        from core import maps
+        from core.config import detect_version
+        from ..template_dialog import TemplateDialog
+        if self.read_only():
+            return
+        sp = self.app.config.server_path
+        dlg = TemplateDialog(self.window().settings.get("update_contact") or "", detect_version(sp)[0], self)
+        if not dlg.exec() or not dlg.chosen():
+            return
+        m = dlg.chosen()
+        from .. import i18n
+        from core.danger import level_name
+        name = maps.text(m.get("name"), i18n.current())
+        if not self._confirm_name(t("Dünya '{map}' haritasıyla değiştirilecek.", map=name)):
+            return
+        level = level_name(self.app.properties)
+        contact = self.window().settings.get("update_contact") or ""
+        self._bg("template", lambda: maps.install(m, sp, level, contact, replace=True))
+
     def reset_world(self):
         dims = {k for k, cb in self.dim.items() if cb.isChecked()}
         if not dims:

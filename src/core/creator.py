@@ -33,7 +33,7 @@ def safe_folder_name(name):
     return s or "Sunucu"
 
 
-def properties_text(motd, port, max_players, gamemode, difficulty, online_mode, whitelist):
+def properties_text(motd, port, max_players, gamemode, difficulty, online_mode, whitelist, world=None):
     lines = [
         "#Minecraft server properties",
         f"#Spypaper ile oluşturuldu: {datetime.now():%Y-%m-%d %H:%M}",
@@ -49,13 +49,21 @@ def properties_text(motd, port, max_players, gamemode, difficulty, online_mode, 
         "simulation-distance=10",
         "spawn-protection=16",
     ]
+    w = world or {}
+    if w.get("seed"):
+        lines.append(f"level-seed={w['seed']}")
+    if w.get("level_type"):
+        lines.append(f"level-type={w['level_type']}")
+    if "structures" in w:
+        lines.append(f"generate-structures={'true' if w['structures'] else 'false'}")
     return "\n".join(lines) + "\n"
 
 
 def create(path, software_key, version, *, motd="A Minecraft Server", port=25565, max_players=20,
            gamemode="survival", difficulty="normal", online_mode=True, whitelist=False,
-           accept_eula=False, java="java", contact="", progress=None, log=None):
-    """Sunucuyu oluşturur. Başlatılacak dosyanın adını (jar ya da Forge/NeoForge argüman dosyası) döndürür."""
+           accept_eula=False, java="java", contact="", progress=None, log=None, world=None, template=None):
+    """Sunucuyu oluşturur. Başlatılacak dosyanın adını (jar ya da Forge/NeoForge argüman dosyası) döndürür.
+    world: {"seed", "level_type", "structures"} (normal dünya); template: core.maps kaydı (taslak harita)."""
     log = log or (lambda s: None)
     if os.path.isdir(path) and os.listdir(path):
         raise updater.UpdateError(N_("Seçilen klasör boş değil: {path}"), path=path)
@@ -67,7 +75,12 @@ def create(path, software_key, version, *, motd="A Minecraft Server", port=25565
     else:
         start = updater.download(info, path, "", contact, progress=progress)
     with open(os.path.join(path, "server.properties"), "w", encoding="utf-8") as f:
-        f.write(properties_text(motd, port, max_players, gamemode, difficulty, online_mode, whitelist))
+        f.write(properties_text(motd, port, max_players, gamemode, difficulty, online_mode, whitelist,
+                                None if template else world))
+    if template:
+        from . import maps
+        log(f"{maps.text(template.get('name'), 'en')}")
+        maps.install(template, path, "world", contact, progress=progress)
     if accept_eula:
         # kullanıcı pencerede Minecraft EULA'sını açıkça kabul etti
         with open(os.path.join(path, "eula.txt"), "w", encoding="utf-8") as f:
