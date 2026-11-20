@@ -1,6 +1,7 @@
 """Hazır harita taslakları (Skyblock, PvP arenaları...).
 
-Haritalar Spypaper'ın içinde değil, Spypaper-Releases deposundaki "haritalar" sürümünde durur:
+Haritalar Spypaper'ın içinde değil, Spypaper-Releases deposunun "haritalar" dalında durur (exe küçük kalır;
+raw.githubusercontent.com üzerinden indirilir):
   maps.json            harita listesi (aşağıdaki biçim)
   <id>.zip             dünya klasörü (içinde level.dat)
   <id>.png / .jpg      kart görseli
@@ -27,7 +28,7 @@ from datetime import datetime
 from .config import N_, get_base_dir
 from . import updater
 
-BASE = "https://github.com/TyraelDiablo/Spypaper-Releases/releases/download/haritalar/"
+BASE = "https://raw.githubusercontent.com/TyraelDiablo/Spypaper-Releases/haritalar/"
 MANIFEST = BASE + "maps.json"
 LEVEL_TYPES = [("minecraft:normal", N_("Normal")), ("minecraft:flat", N_("Düz")),
                ("minecraft:large_biomes", N_("Geniş biyomlar")), ("minecraft:amplified", N_("Büyütülmüş (Amplified)"))]
