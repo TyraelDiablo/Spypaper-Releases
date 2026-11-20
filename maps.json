@@ -1,0 +1,159 @@
+{
+ "version": 1,
+ "maps": [
+  {
+   "id": "skyblock",
+   "category": "skyblock",
+   "mc": "26.3",
+   "name": {
+    "tr": "Skyblock",
+    "en": "Skyblock"
+   },
+   "desc": {
+    "tr": "Boşlukta yüzen 8 ada: başlangıç adası (ağaç, lav kovası, buz), çöl, kar, mantar, kil, Nether ve kale kalıntısı adaları ile cevherli maden adası. Her adada başlangıç sandığı var.",
+    "en": "8 floating islands in the void: a starter island (tree, lava bucket, ice), desert, snow, mushroom, clay, Nether and stronghold ruin islands, plus an ore-rich mine island. Every island has a starter chest."
+   },
+   "zip": "skyblock.zip",
+   "image": "skyblock.jpg",
+   "properties": {
+    "gamemode": "survival",
+    "force-gamemode": "false",
+    "spawn-protection": "0",
+    "allow-nether": "true",
+    "generate-structures": "false"
+   },
+   "sha256": "b57cf0beba3adbaf3a91d46916f3ea246fb6a0e885314f73012ed89a38dcbb1e",
+   "size": 4978982
+  },
+  {
+   "id": "arena-kale",
+   "category": "pvp",
+   "mc": "26.3",
+   "name": {
+    "tr": "PvP Arenası: Kale",
+    "en": "PvP Arena: Castle"
+   },
+   "desc": {
+    "tr": "Taş tuğla kale duvarları, yosunlu taşlar ve parlak taş ışıklar. 41×41 arena; kırmızı ve mavi takım odaları (her birinde iki ekipman sandığı: demir zırh, kılıç, yay, kalkan, yiyecek), siperler ve camlı seyirci lobisi. Macera modunda açılır: bloklar kırılmaz, yaratık doğmaz, hep öğle vakti.",
+    "en": "Stone brick castle walls, mossy stones and glowstone lights. 41×41 arena; red and blue team rooms (two gear chests each: iron armor, sword, bow, shield, food), cover and a glass-walled spectator lobby. Opens in Adventure mode: blocks can't be broken, no mobs, always noon."
+   },
+   "zip": "arena-kale.zip",
+   "image": "arena-kale.jpg",
+   "properties": {
+    "gamemode": "adventure",
+    "force-gamemode": "true",
+    "pvp": "true",
+    "spawn-protection": "0",
+    "allow-nether": "false",
+    "spawn-monsters": "false",
+    "generate-structures": "false"
+   },
+   "sha256": "e01f523618c07c96b64d410e5ff9cb2f9269345f8297de6945992815946623c5",
+   "size": 4967903
+  },
+  {
+   "id": "arena-nether",
+   "category": "pvp",
+   "mc": "26.3",
+   "name": {
+    "tr": "PvP Arenası: Nether",
+    "en": "PvP Arena: Nether"
+   },
+   "desc": {
+    "tr": "Kızıl Nether tuğlaları, kara taş zemin ve mantar ışıkları. 41×41 arena; kırmızı ve mavi takım odaları (her birinde iki ekipman sandığı: demir zırh, kılıç, yay, kalkan, yiyecek), siperler ve camlı seyirci lobisi. Macera modunda açılır: bloklar kırılmaz, yaratık doğmaz, hep öğle vakti.",
+    "en": "Red nether bricks, blackstone floor and shroomlights. 41×41 arena; red and blue team rooms (two gear chests each: iron armor, sword, bow, shield, food), cover and a glass-walled spectator lobby. Opens in Adventure mode: blocks can't be broken, no mobs, always noon."
+   },
+   "zip": "arena-nether.zip",
+   "image": "arena-nether.jpg",
+   "properties": {
+    "gamemode": "adventure",
+    "force-gamemode": "true",
+    "pvp": "true",
+    "spawn-protection": "0",
+    "allow-nether": "false",
+    "spawn-monsters": "false",
+    "generate-structures": "false"
+   },
+   "sha256": "332c3f4226447a1c8654e750a4a73a755470e8874cfe71f0e7d8d755502f1b5b",
+   "size": 4967964
+  },
+  {
+   "id": "arena-tapinak",
+   "category": "pvp",
+   "mc": "26.3",
+   "name": {
+    "tr": "PvP Arenası: Antik Tapınak",
+    "en": "PvP Arena: Ancient Temple"
+   },
+   "desc": {
+    "tr": "Kum taşı tapınak, turuncu pişmiş kil sütunlar. 41×41 arena; kırmızı ve mavi takım odaları (her birinde iki ekipman sandığı: demir zırh, kılıç, yay, kalkan, yiyecek), siperler ve camlı seyirci lobisi. Macera modunda açılır: bloklar kırılmaz, yaratık doğmaz, hep öğle vakti.",
+    "en": "Sandstone temple with orange terracotta pillars. 41×41 arena; red and blue team rooms (two gear chests each: iron armor, sword, bow, shield, food), cover and a glass-walled spectator lobby. Opens in Adventure mode: blocks can't be broken, no mobs, always noon."
+   },
+   "zip": "arena-tapinak.zip",
+   "image": "arena-tapinak.jpg",
+   "properties": {
+    "gamemode": "adventure",
+    "force-gamemode": "true",
+    "pvp": "true",
+    "spawn-protection": "0",
+    "allow-nether": "false",
+    "spawn-monsters": "false",
+    "generate-structures": "false"
+   },
+   "sha256": "e8f06b1ed58a4ee320d7ed87c3566b271ce677129391570a4248fa91b04457f8",
+   "size": 4968487
+  },
+  {
+   "id": "arena-orman",
+   "category": "pvp",
+   "mc": "26.3",
+   "name": {
+    "tr": "PvP Arenası: Orman",
+    "en": "PvP Arena: Forest"
+   },
+   "desc": {
+    "tr": "Yosun zemin, ağaç sütunlar ve yapraklı siperler. 41×41 arena; kırmızı ve mavi takım odaları (her birinde iki ekipman sandığı: demir zırh, kılıç, yay, kalkan, yiyecek), siperler ve camlı seyirci lobisi. Macera modunda açılır: bloklar kırılmaz, yaratık doğmaz, hep öğle vakti.",
+    "en": "Moss floor, tree pillars and leafy cover. 41×41 arena; red and blue team rooms (two gear chests each: iron armor, sword, bow, shield, food), cover and a glass-walled spectator lobby. Opens in Adventure mode: blocks can't be broken, no mobs, always noon."
+   },
+   "zip": "arena-orman.zip",
+   "image": "arena-orman.jpg",
+   "properties": {
+    "gamemode": "adventure",
+    "force-gamemode": "true",
+    "pvp": "true",
+    "spawn-protection": "0",
+    "allow-nether": "false",
+    "spawn-monsters": "false",
+    "generate-structures": "false"
+   },
+   "sha256": "ffa65c8d75444842c2b3e20ca974128436173b37b44172a4a9249baa1edff17e",
+   "size": 4968162
+  },
+  {
+   "id": "arena-buz",
+   "category": "pvp",
+   "mc": "26.3",
+   "name": {
+    "tr": "PvP Arenası: Buz",
+    "en": "PvP Arena: Ice"
+   },
+   "desc": {
+    "tr": "Kar zemin, buz duvarlar ve deniz fenerleri. 41×41 arena; kırmızı ve mavi takım odaları (her birinde iki ekipman sandığı: demir zırh, kılıç, yay, kalkan, yiyecek), siperler ve camlı seyirci lobisi. Macera modunda açılır: bloklar kırılmaz, yaratık doğmaz, hep öğle vakti.",
+    "en": "Snow floor, ice walls and sea lanterns. 41×41 arena; red and blue team rooms (two gear chests each: iron armor, sword, bow, shield, food), cover and a glass-walled spectator lobby. Opens in Adventure mode: blocks can't be broken, no mobs, always noon."
+   },
+   "zip": "arena-buz.zip",
+   "image": "arena-buz.jpg",
+   "properties": {
+    "gamemode": "adventure",
+    "force-gamemode": "true",
+    "pvp": "true",
+    "spawn-protection": "0",
+    "allow-nether": "false",
+    "spawn-monsters": "false",
+    "generate-structures": "false"
+   },
+   "sha256": "60e0a05fb78b7c2db2543169d63601997817d8de0b70be98793ebaf353758727",
+   "size": 4966896
+  }
+ ]
+}
