@@ -1,6 +1,9 @@
 """Hazır harita taslakları (Skyblock, PvP arenaları...).
 
-Haritalar Spypaper'ın içinde değil, Spypaper-Releases deposundaki "haritalar" sürümünde durur:
+Haritaların bir kısmı exe'nin içine gömülüdür (src/maps/: maps.json, zip'ler ve görseller); internet olmadan da
+çalışır. Ek haritalar Spypaper-Releases deposundaki "haritalar" sürümünden okunur ve listeye eklenir (gömülü
+olanla aynı kimlikte bir harita varsa gömülü olan kullanılır). Çevrimiçi liste alınamazsa sessizce gömülülerle
+devam edilir. Çevrimiçi sürümdeki dosyalar:
   maps.json            harita listesi (aşağıdaki biçim)
   <id>.zip             dünya klasörü (içinde level.dat)
   <id>.png / .jpg      kart görseli
@@ -14,6 +17,7 @@ maps.json:
 Dosya adları maps.json'un bulunduğu adrese göre çözülür.
 """
 import hashlib
+import json
 import os
 import random
 import re
@@ -24,7 +28,7 @@ import urllib.request
 import zipfile
 from datetime import datetime
 
-from .config import N_, get_base_dir
+from .config import N_, get_base_dir, resource_dir
 from . import updater
 
 BASE = "https://github.com/TyraelDiablo/Spypaper-Releases/releases/download/haritalar/"
@@ -71,11 +75,36 @@ def _valid(m):
             and m.get("zip") and re.fullmatch(r"[0-9a-fA-F]{64}", str(m.get("sha256", ""))))
 
 
-def fetch_manifest(contact="", url=MANIFEST):
-    data = updater._get_json(url, contact)
-    maps = [m for m in (data.get("maps") or []) if _valid(m)]
-    for m in maps:
-        m["_base"] = url.rsplit("/", 1)[0] + "/"
+def builtin(folder=None):
+    """Exe'ye gömülü haritalar."""
+    folder = folder or os.path.join(resource_dir(), "maps")
+    try:
+        with open(os.path.join(folder, "maps.json"), encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return []
+    out = []
+    for m in data.get("maps") or []:
+        if _valid(m) and os.path.isfile(os.path.join(folder, os.path.basename(m["zip"]))):
+            m["_local"] = folder
+            out.append(m)
+    return out
+
+
+def fetch_manifest(contact="", url=MANIFEST, local=None):
+    """Gömülü + çevrimiçi haritalar. Gömülü harita varken çevrimiçi hata yutulur."""
+    maps = builtin(local)
+    try:
+        data = updater._get_json(url, contact)
+    except Exception:
+        if maps:
+            return maps
+        raise
+    have = {m["id"] for m in maps}
+    for m in data.get("maps") or []:
+        if _valid(m) and m["id"] not in have:
+            m["_base"] = url.rsplit("/", 1)[0] + "/"
+            maps.append(m)
     return maps
 
 
@@ -84,6 +113,9 @@ def image_path(m, contact=""):
     img = m.get("image")
     if not img:
         return None
+    if m.get("_local"):
+        p = os.path.join(m["_local"], os.path.basename(img))
+        return p if os.path.isfile(p) else None
     ext = os.path.splitext(urllib.parse.urlparse(img).path)[1].lower()
     if ext not in (".png", ".jpg", ".jpeg", ".webp"):
         return None
@@ -114,8 +146,24 @@ def compatible(m, server_version):
     return not server_version or not m.get("mc") or _vkey(server_version) >= _vkey(m["mc"])
 
 
+def _sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def download(m, contact="", progress=None):
-    """Zip'i indirir ve SHA-256 ile doğrular; geçici dosyanın yolunu döndürür."""
+    """Zip'i indirir (gömülüyse diskten alır) ve SHA-256 ile doğrular. (yol, geçici_mi)"""
+    if m.get("_local"):
+        p = os.path.join(m["_local"], os.path.basename(m["zip"]))
+        if _sha256(p).lower() != m["sha256"].lower():
+            raise MapError(N_("Harita doğrulanamadı (SHA-256 uyuşmuyor)."))
+        if progress:
+            size = os.path.getsize(p)
+            progress(size, size)
+        return p, False
     fd, tmp = tempfile.mkstemp(prefix="spypaper_map_", suffix=".zip")
     os.close(fd)
     h = hashlib.sha256()
@@ -145,7 +193,7 @@ def download(m, contact="", progress=None):
     if h.hexdigest().lower() != m["sha256"].lower():
         os.remove(tmp)
         raise MapError(N_("Harita doğrulanamadı (SHA-256 uyuşmuyor)."))
-    return tmp
+    return tmp, True
 
 
 def extract_world(zip_path, dest):
@@ -210,7 +258,7 @@ def install(m, server_path, level="world", contact="", progress=None, replace=Fa
     dest = os.path.join(server_path, level)
     if os.path.exists(dest) and not replace:
         raise MapError(N_("Hedef klasör zaten var: {path}"), path=dest)
-    zip_path = download(m, contact, progress)
+    zip_path, is_tmp = download(m, contact, progress)
     moved = []
     stamp = f"-yedek-{datetime.now():%Y%m%d-%H%M%S}"
     try:
@@ -230,6 +278,7 @@ def install(m, server_path, level="world", contact="", progress=None, replace=Fa
             moved = []
             raise
     finally:
-        os.remove(zip_path)
+        if is_tmp:
+            os.remove(zip_path)
     applied = apply_properties(os.path.join(server_path, "server.properties"), m.get("properties"))
     return [os.path.basename(d) + stamp for d in moved], applied
