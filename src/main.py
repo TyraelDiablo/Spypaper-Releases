@@ -30,6 +30,9 @@ def main(config_path=None):
     qt.setStyleSheet(theme.stylesheet())
     if splash.run(settings):                          # güncelleme kuruldu: yeni exe başladı
         sys.exit(0)
+    from ui import motion
+    qt._fader = motion.DialogFader()                # diyaloglar solarak açılır
+    qt.installEventFilter(qt._fader)
     win = MainWindow(settings)          # dil ve tema burada yüklenir
     win.show()
     from ui import intro

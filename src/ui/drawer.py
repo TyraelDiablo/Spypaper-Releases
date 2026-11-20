@@ -76,6 +76,7 @@ class Drawer(QWidget):
         v = QVBoxLayout(inner)
         v.setContentsMargins(14, 0, 14, 14)
         v.setSpacing(6)
+        self._inner = v
         sc.setWidget(inner)
         outer.addWidget(sc, 1)
 
@@ -273,6 +274,11 @@ class Drawer(QWidget):
     def _gamefiles(self):
         from .gamefiles_dialog import GameFilesDialog
         GameFilesDialog(self).exec()
+
+    def items(self):
+        """Açılış animasyonu için çekmecedeki öğeler (yukarıdan aşağıya)."""
+        lay = self._inner
+        return [lay.itemAt(i).widget() for i in range(lay.count()) if lay.itemAt(i).widget()]
 
     def _uninstall(self):
         from .uninstall_dialog import UninstallDialog

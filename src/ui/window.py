@@ -685,16 +685,21 @@ class MainWindow(QMainWindow):
         end = QPoint(self._drawer_x(opening), 0)
         if not animate:
             self.drawer.move(end)
+            self.scrim.setGraphicsEffect(None)
             if not opening:
                 self.drawer.hide()
                 self.scrim.hide()
             return
         self._anim = QPropertyAnimation(self.drawer, b"pos", self)
-        self._anim.setDuration(180)
-        self._anim.setEasingCurve(QEasingCurve.OutCubic)
+        self._anim.setDuration(300 if opening else 220)
+        self._anim.setEasingCurve(QEasingCurve.OutQuint if opening else QEasingCurve.InCubic)
         self._anim.setEndValue(end)
-        if not opening:
-            self._anim.finished.connect(lambda: (self.drawer.hide(), self.scrim.hide()))
+        if opening:
+            motion.fade_opacity(self.scrim, 0.0, 1.0, 300)
+            motion.stagger(self.drawer.items(), step=22, dy=0, ms=240, max_delay=300)
+        else:
+            motion.fade_opacity(self.scrim, 1.0, 0.0, 220)
+            self._anim.finished.connect(lambda: (self.drawer.hide(), self.scrim.hide(), self.scrim.setGraphicsEffect(None)))
         self._anim.start()
 
     def resizeEvent(self, e):
