@@ -26,7 +26,7 @@ SETTINGS = [CONFIG_FILE, "esplora_chats", "Languages"]
 
 # klasörler yalnızca içerikleri Spypaper'ınkine benziyorsa silinir (exe'nin yanında kullanıcının aynı adlı
 # bir klasörü olabilir: ör. Masaüstü'nde "Icons"). cache: yalnızca bilinen alt klasörler; diğerleri: dosya uzantıları.
-CACHE_SUBDIRS = {"modrinth", "skins"}
+CACHE_SUBDIRS = {"modrinth", "skins", "maps"}
 DIR_EXTS = {"Translation": (".json",), "Icons": (".png",), "Languages": (".json",),
             "esplora_chats": (".json", ".tmp")}
 
