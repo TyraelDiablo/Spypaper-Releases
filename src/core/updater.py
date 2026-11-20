@@ -61,20 +61,28 @@ def _vkey(v):
     return tuple(int(x) if x.isdigit() else -1 for x in re.split(r"[.\-]", v))
 
 
-def list_versions(contact=""):
+def _api(project):
+    return API.rsplit("/", 1)[0] + "/" + project
+
+
+def list_versions(contact="", project="paper"):
     """Kararlı Minecraft sürümleri, en yeni önce (pre/rc hariç)."""
-    data = _get_json(API, contact)
+    data = _get_json(_api(project), contact)
     vers = [v for group in data.get("versions", {}).values() for v in group]
     vers = [v for v in vers if re.fullmatch(r"\d+\.\d+(\.\d+)?", v)]
     return sorted(set(vers), key=_vkey, reverse=True)
 
 
-def latest_build(mc_version, contact=""):
-    """{'version', 'build', 'url', 'name', 'sha256', 'size'} — en yeni STABLE build."""
-    builds = _get_json(f"{API}/versions/{mc_version}/builds", contact)
+def latest_build(mc_version, contact="", project="paper", allow_beta=False):
+    """{'version', 'build', 'url', 'name', 'sha256', 'size'} — en yeni STABLE build.
+    allow_beta: kararlı build yoksa en yeni BETA/ALPHA (Folia genelde yalnızca bunları yayınlar)."""
+    builds = _get_json(f"{_api(project)}/versions/{mc_version}/builds", contact)
     if isinstance(builds, dict):
         builds = builds.get("builds", [])
     stable = [b for b in builds if str(b.get("channel", "")).upper() == "STABLE"]
+    beta = False
+    if not stable and allow_beta and builds:
+        stable, beta = builds, True
     if not stable:
         raise UpdateError(N_("{v} için kararlı (STABLE) Paper sürümü yok."), v=mc_version)
     b = max(stable, key=lambda x: int(x.get("id", 0)))
@@ -83,8 +91,9 @@ def latest_build(mc_version, contact=""):
         raise UpdateError(N_("İndirme adresi bulunamadı."))
     return {
         "version": mc_version, "build": int(b["id"]), "url": dl["url"],
-        "name": dl.get("name") or f"paper-{mc_version}-{b['id']}.jar",
+        "name": dl.get("name") or f"{project}-{mc_version}-{b['id']}.jar",
         "sha256": (dl.get("checksums") or {}).get("sha256", ""), "size": dl.get("size", 0),
+        "beta": beta,
     }
 
 

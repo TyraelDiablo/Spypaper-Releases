@@ -127,6 +127,9 @@ class ServerPanel(QWidget):
         self.stack = QStackedWidget()
         self.pages = []
         self.order, self.hidden = page_order(ctl.settings)
+        from core.config import detect_version
+        if detect_version(app.config.server_path)[1] == "Vanilla":     # vanilla eklenti/mod yükleyemez
+            self.hidden = set(self.hidden) | {PAGES.index(PluginsPage), PAGES.index(ModTransPage)}
         for i, cls in enumerate(PAGES):
             page = cls(app, self.bridge)
             self.pages.append(page)

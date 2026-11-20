@@ -59,6 +59,15 @@ def _paper_latest(version, contact):
     return updater.latest_build(version, contact)
 
 
+# ---------- Folia (PaperMC, çok iş parçacıklı; eklentilerin Folia'yı desteklemesi gerekir) ----------
+def _folia_versions(contact):
+    return updater.list_versions(contact, project="folia")
+
+
+def _folia_latest(version, contact):
+    return updater.latest_build(version, contact, project="folia", allow_beta=True)
+
+
 # ---------- Purpur ----------
 def _purpur_versions(contact):
     data = _get(PURPUR_API, contact)
@@ -200,6 +209,7 @@ def _neoforge_latest(version, contact):
 SOFTWARE = {
     "paper":    {"name": "Paper",    "versions": _paper_versions,    "latest": _paper_latest,    "modded": False},
     "purpur":   {"name": "Purpur",   "versions": _purpur_versions,   "latest": _purpur_latest,   "modded": False},
+    "folia":    {"name": "Folia",    "versions": _folia_versions,    "latest": _folia_latest,    "modded": False},
     "vanilla":  {"name": "Vanilla",  "versions": _vanilla_versions,  "latest": _vanilla_latest,  "modded": False},
     "fabric":   {"name": "Fabric",   "versions": _fabric_versions,   "latest": _fabric_latest,   "modded": True},
     "forge":    {"name": "Forge",    "versions": _forge_versions,    "latest": _forge_latest,    "modded": True},
@@ -233,6 +243,7 @@ def current(server_path, jar_name):
     pats = (
         ("paper",    r"^paper-(" + _MC_RE + r")-(\d+)\.jar$"),
         ("purpur",   r"^purpur-(" + _MC_RE + r")-(\d+)\.jar$"),
+        ("folia",    r"^folia-(" + _MC_RE + r")-(\d+)\.jar$"),
         ("vanilla",  r"^minecraft_server\.(" + _MC_RE + r")\.jar$"),
         ("fabric",   r"^fabric-server-mc\.(" + _MC_RE + r")-loader\.([\w.+\-]+?)-launcher"),
     )
