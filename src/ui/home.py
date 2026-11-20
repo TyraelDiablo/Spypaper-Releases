@@ -323,8 +323,11 @@ class HomeScreen(QWidget):
                 w.deleteLater()
         servers = sorted(self.ctl.settings.servers(), key=lambda p: p.get("last_opened") or "", reverse=True)
         self.cards = [ServerCard(self, p) for p in servers]
-        for i, c in enumerate(self.cards + [AddCard(self.add_server, self.new_server)]):
+        allc = self.cards + [AddCard(self.add_server, self.new_server)]
+        for i, c in enumerate(allc):
             self.grid.addWidget(c, i // COLS, i % COLS)
+        from . import motion
+        motion.stagger(allc)
         for c in range(COLS):
             self.grid.setColumnStretch(c, 1)
         self.grid.setRowStretch((len(self.cards) + 1) // COLS + 1, 1)

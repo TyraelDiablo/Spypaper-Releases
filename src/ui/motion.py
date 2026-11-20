@@ -8,8 +8,8 @@ from PySide6.QtWidgets import QFrame, QGraphicsOpacityEffect
 from .theme import TOKENS
 
 REDUCED = False          # MainWindow ayarlardan günceller
-PAGE_MS = 200
-BAR_MS = 220
+PAGE_MS = 260
+BAR_MS = 240
 
 
 def fade_in(widget, dy=10, ms=PAGE_MS):
@@ -45,7 +45,7 @@ def fade_in(widget, dy=10, ms=PAGE_MS):
     grp.start(QParallelAnimationGroup.DeleteWhenStopped)
 
 
-TAB_MS = 170
+TAB_MS = 220
 
 
 def auto_fade(stack, dy=6, ms=TAB_MS):
@@ -57,6 +57,60 @@ def auto_fade(stack, dy=6, ms=TAB_MS):
 def soft(widget, ms=TAB_MS):
     """Yerinde değişen içerik (süzgeç, görünüm) için kaymasız kısa solma."""
     fade_in(widget, dy=0, ms=ms)
+
+
+def stagger(widgets, step=35, dy=12, ms=PAGE_MS, max_delay=420):
+    """Liste/ızgara öğeleri sırayla (kademeli) solarak gelir."""
+    if REDUCED:
+        return
+    for i, w in enumerate(widgets):
+        if w is None:
+            continue
+        eff = QGraphicsOpacityEffect(w)
+        eff.setOpacity(0.0)
+        w.setGraphicsEffect(eff)
+        QTimer.singleShot(min(i * step, max_delay), lambda w=w: fade_in(w, dy=dy, ms=ms))
+
+
+def fade_opacity(widget, start, end, ms=PAGE_MS, done=None):
+    """Bir widget'ın saydamlığını canlandırır (ör. çekmecenin arkasındaki karartma)."""
+    if REDUCED:
+        widget.setGraphicsEffect(None)
+        if done:
+            done()
+        return None
+    eff = widget.graphicsEffect()
+    if not isinstance(eff, QGraphicsOpacityEffect):
+        eff = QGraphicsOpacityEffect(widget)
+        widget.setGraphicsEffect(eff)
+    eff.setOpacity(start)
+    a = QPropertyAnimation(eff, b"opacity", widget)
+    a.setDuration(ms)
+    a.setStartValue(start)
+    a.setEndValue(end)
+    a.setEasingCurve(QEasingCurve.OutCubic)
+    if done:
+        a.finished.connect(done)
+    a.start(QPropertyAnimation.DeleteWhenStopped)
+    return a
+
+
+class DialogFader(QObject):
+    """Uygulamadaki her pencere/diyalog açılırken kısa bir solma ile gelir (uygulama genelinde olay süzgeci)."""
+
+    def eventFilter(self, obj, ev):
+        if ev.type() == QEvent.Show and not REDUCED and obj.isWindow() and not getattr(obj, "_faded", False):
+            from PySide6.QtWidgets import QDialog, QMessageBox
+            if isinstance(obj, (QDialog, QMessageBox)):
+                obj._faded = True
+                obj.setWindowOpacity(0.0)
+                a = QPropertyAnimation(obj, b"windowOpacity", obj)
+                a.setDuration(180)
+                a.setStartValue(0.0)
+                a.setEndValue(1.0)
+                a.setEasingCurve(QEasingCurve.OutCubic)
+                a.start(QPropertyAnimation.DeleteWhenStopped)
+        return False
 
 
 class SlideBar(QObject):
