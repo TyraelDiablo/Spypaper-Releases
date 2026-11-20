@@ -99,17 +99,19 @@ class DialogFader(QObject):
     """Uygulamadaki her pencere/diyalog açılırken kısa bir solma ile gelir (uygulama genelinde olay süzgeci)."""
 
     def eventFilter(self, obj, ev):
-        if ev.type() == QEvent.Show and not REDUCED and obj.isWindow() and not getattr(obj, "_faded", False):
-            from PySide6.QtWidgets import QDialog, QMessageBox
-            if isinstance(obj, (QDialog, QMessageBox)):
-                obj._faded = True
-                obj.setWindowOpacity(0.0)
-                a = QPropertyAnimation(obj, b"windowOpacity", obj)
-                a.setDuration(180)
-                a.setStartValue(0.0)
-                a.setEndValue(1.0)
-                a.setEasingCurve(QEasingCurve.OutCubic)
-                a.start(QPropertyAnimation.DeleteWhenStopped)
+        # olay süzgeci QWindow gibi QWidget olmayan nesneleri de görür: yalnızca diyaloglarla ilgilen
+        if ev.type() != QEvent.Show or REDUCED:
+            return False
+        from PySide6.QtWidgets import QDialog
+        if isinstance(obj, QDialog) and not getattr(obj, "_faded", False):
+            obj._faded = True
+            obj.setWindowOpacity(0.0)
+            a = QPropertyAnimation(obj, b"windowOpacity", obj)
+            a.setDuration(180)
+            a.setStartValue(0.0)
+            a.setEndValue(1.0)
+            a.setEasingCurve(QEasingCurve.OutCubic)
+            a.start(QPropertyAnimation.DeleteWhenStopped)
         return False
 
 
