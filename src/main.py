@@ -34,7 +34,10 @@ def main(config_path=None):
     qt._fader = motion.DialogFader()                # diyaloglar solarak açılır
     qt.installEventFilter(qt._fader)
     win = MainWindow(settings)          # dil ve tema burada yüklenir
+    win.animated_quit = True            # kapanışta "Have fun with your Minecraft server"
     win.show()
+    from ui.foreground import bring_to_front
+    bring_to_front(win)                 # Windows'ta arkada açılmasın
     from ui import intro
     from ui.home import HomeScreen
     win.intro = intro.play(win, settings, HomeScreen._greeting())   # karşılama, sonra sunucular

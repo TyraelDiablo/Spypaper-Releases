@@ -599,7 +599,8 @@ class PlayerService:
         return d
 
     def stats(self, player):
-        """{'play_time_sec', 'deaths', 'jumps', 'mob_kills', 'player_kills', 'walk_cm'} ya da None."""
+        """{'play_time_sec', 'deaths', 'jumps', 'mob_kills', 'player_kills', 'walk_cm', 'last_seen'} ya da None.
+        last_seen: oyuncu verisinin ya da istatistik dosyasının son yazılma zamanı (sunucu bunları çıkışta kaydeder)."""
         p = self.stats_file(player.uuid)
         if not p:
             return None
@@ -612,6 +613,7 @@ class PlayerService:
             "mob_kills": custom.get("minecraft:mob_kills", 0),
             "player_kills": custom.get("minecraft:player_kills", 0),
             "walk_cm": custom.get("minecraft:walk_one_cm", 0),
+            "last_seen": max([os.path.getmtime(x) for x in (p, player.data_file) if x and os.path.exists(x)] or [0]),
         }
 
 

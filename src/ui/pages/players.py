@@ -288,6 +288,19 @@ class PlayersPage(Page):
         self.heads.request([(player.uuid, player.name)])
         self._head_ready(player.uuid)
 
+    def _last_seen(self, ts):
+        if self.current and self.current.online:
+            return t("Şu an çevrimiçi")
+        if not ts:
+            return "–"
+        import time
+        from datetime import datetime
+        days = int((time.time() - ts) // 86400)
+        when = datetime.fromtimestamp(ts).strftime("%d.%m.%Y %H:%M")
+        if days <= 0:
+            return t("{when} (bugün)", when=when)
+        return t("{when} ({n} gün önce)", when=when, n=days)
+
     def change_skin(self):
         if not self.current:
             return
@@ -419,6 +432,7 @@ class PlayersPage(Page):
                     ("sword", t("Öldürülen Oyuncu"), s["player_kills"]),
                     ("chevrons-up", t("Zıplama"), s["jumps"]),
                     ("footprints", t("Yürünen Mesafe"), f"{s['walk_cm'] / 100000:.1f} km"),
+                    ("clock", t("Son giriş"), self._last_seen(s.get("last_seen"))),
                 ]
                 rows = [("", name, val) for _, name, val in stats]
             fill_table(self.table, rows, align_center=(0, 2))

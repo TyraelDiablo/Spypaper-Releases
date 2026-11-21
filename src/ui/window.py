@@ -710,8 +710,104 @@ class MainWindow(QMainWindow):
             self.drawer.move(self._drawer_x(True), 0)
 
     # ------------------------------------------------------------ çıkış
+    # ------------------------------------------------------------ uyku modu
+    def enter_sleep(self):
+        from core.safemode import hash_pin
+        from .msgbox import get_text
+        from . import sleep
+        if getattr(self, "sleeping", None):
+            return
+        if not self.settings.get("sleep_pin_hash"):
+            p1, ok = get_text(self, t("Uyku Modu"), t("Uyku modundan çıkmak için bir PIN belirle (4-12 rakam)."),
+                              password=True)
+            if not ok:
+                return
+            if not (p1.isdigit() and 4 <= len(p1) <= 12):
+                QMessageBox.warning(self, t("Uyku Modu"), t("PIN 4-12 rakamdan oluşmalı."))
+                return
+            p2, ok = get_text(self, t("Uyku Modu"), t("PIN tekrar"), password=True)
+            if not ok:
+                return
+            if p1 != p2:
+                QMessageBox.warning(self, t("Uyku Modu"), t("PIN'ler eşleşmiyor."))
+                return
+            self.settings.set("sleep_pin_hash", hash_pin(p1))
+        if self.drawer_open:
+            self.toggle_drawer(animate=False)
+        self.sleeping = sleep.SleepOverlay(self, self._sleep_rows)
+        self.sleeping.woke.connect(self.try_wake)
+        self._blocker = sleep.ShortcutBlocker(self)
+        QApplication.instance().installEventFilter(self._blocker)
+
+    def _sleep_rows(self):
+        out = []
+        for prof in self.settings.servers():
+            running = self.is_running(prof.id)
+            detail = t("Kapalı")
+            if running:
+                app = self.apps.get(prof.id)
+                n = 0
+                try:
+                    n = self.remote.server.summary(prof, "localhost").get("online_count", 0)
+                except Exception:
+                    pass
+                detail = t("{n} oyuncu", n=n)
+                last = app.perf.latest() if app is not None and hasattr(app, "perf") else None
+                if last and last[1] is not None:
+                    detail += f" · TPS {last[1]:.1f}"
+            out.append({"name": prof.name, "running": running, "detail": detail})
+        return out
+
+    def _sleep_pin_ok(self, purpose=""):
+        from core.safemode import verify_pin
+        from .msgbox import get_text
+        stored = self.settings.get("sleep_pin_hash")
+        if not stored:
+            return True
+        app = QApplication.instance()
+        app.removeEventFilter(self._blocker)                 # PIN diyaloğunda yazılabilsin
+        try:
+            for attempt in range(3):
+                msg = t("Uyku modundan çıkmak için PIN gir.") + ("\n" + purpose if purpose else "")
+                if attempt:
+                    msg += "\n" + t("Yanlış PIN, tekrar dene ({n} hak kaldı).", n=3 - attempt)
+                pin, ok = get_text(self, t("Uyku Modu"), msg, password=True)
+                if not ok:
+                    return False
+                if verify_pin(pin, stored):
+                    return True
+            QMessageBox.warning(self, t("Uyku Modu"), t("3 kez yanlış PIN girildi."))
+            return False
+        finally:
+            if getattr(self, "sleeping", None):
+                app.installEventFilter(self._blocker)
+
+    def try_wake(self):
+        if not getattr(self, "sleeping", None) or not self._sleep_pin_ok():
+            return
+        QApplication.instance().removeEventFilter(self._blocker)
+        self.sleeping.close_overlay()
+        self.sleeping = None
+
+    def quit_app(self):
+        self.close()
+
+    # ------------------------------------------------------------ çıkış
     def closeEvent(self, e):
-        """Çalışan sunucular her zaman düzgünce durdurulur (dünya kaydı bozulmasın)."""
+        """Çalışan sunucular her zaman düzgünce durdurulur (dünya kaydı bozulmasın).
+        animated_quit açıksa (main.py) kapanış ekranı oynar; sunucular bu sırada durdurulur."""
+        if getattr(self, "_outro_done", False):
+            self.remote.shutdown()
+            e.accept()
+            return
+        if getattr(self, "_outro", None):                    # kapanış zaten sürüyor
+            e.ignore()
+            return
+        if getattr(self, "sleeping", None):
+            if not self._sleep_pin_ok(t("Spypaper kapatılacak.")):
+                e.ignore()
+                return
+            QApplication.instance().removeEventFilter(self._blocker)
         unsaved = [f"{p.app.config.name}: {pg.rel}" for p in self.panels.values() for pg in p.pages
                    if isinstance(pg, ConfigsPage) and pg.dirty]
         if unsaved and not ask(self, t("Kaydedilmemiş yapılandırma değişiklikleri var:\n{files}\n\nYine de çıkılsın mı?",
@@ -726,6 +822,22 @@ class MainWindow(QMainWindow):
                 return
         for a in running:
             a.server.stop()
+        if getattr(self, "animated_quit", False) and not motion.REDUCED:
+            from . import sleep
+            e.ignore()
+            if self.drawer_open:
+                self.toggle_drawer(animate=False)
+            deadline = time.time() + 30
+
+            def ready():
+                return all(not a.server.is_running for a in running) or time.time() > deadline
+
+            def done():
+                self._outro_done = True
+                self.close()
+            self._outro = sleep.OutroOverlay(self, ready)
+            self._outro.finished_all.connect(done)
+            return
         for a in running:
             try:
                 a.server.process.wait(timeout=30)

@@ -1,5 +1,6 @@
 """Ortak bileşenler ve yardımcılar."""
 from PySide6.QtCore import Qt, QObject, Signal
+from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QButtonGroup,
@@ -217,6 +218,10 @@ def segmented(names, on_change):
         b.setObjectName("Segment")
         b.setCheckable(True)
         b.setCursor(Qt.PointingHandCursor)
+        # seçilince yazı kalınlaşır: genişlik kalın yazıya göre ayrılır, yoksa ilk harf kırpılır ("İstatistikler")
+        bf = QFont(b.font())
+        bf.setWeight(QFont.DemiBold)
+        b.setMinimumWidth(QFontMetrics(bf).horizontalAdvance(b.text().replace("&&", "&")) + 30)
         group.addButton(b, i)
         lay.addWidget(b)
         if i == 0:

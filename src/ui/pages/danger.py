@@ -1,6 +1,6 @@
 """Tehlikeli Bölge: PIN ile açılan, geri alınamayan işlemler.
 
-Sunucuda PIN varsa o sorulur; yoksa yalnızca bu bölge için ayrı bir PIN belirlenir (paneli açarken
+Sunucuda PIN varsa o sorulur; yoksa sunucunun adı yazılarak girilir (PIN belirlemek zorunlu değil; paneli açarken
 sorulmaz). Kilit, sayfadan çıkınca ya da 5 dakika sonra yeniden kapanır. Her işlem için sunucu kapalı
 olmalı ve sunucunun adı elle yazılarak onaylanmalı. Telefondan (Remote) bu bölgeye erişilemez.
 """
@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from core import N_, danger
-from core.safemode import hash_pin, verify_pin
+from core.safemode import verify_pin
 from .. import icons
 from ..i18n import t
 from ..msgbox import get_text
@@ -171,26 +171,19 @@ class DangerPage(Page):
             self.btn_unlock.setText(t("Kilidi Aç"))
         else:
             self.lock_text.setText(t("Dünyayı sıfırlama, yedekten geri yükleme ve sunucuyu silme gibi geri alınamayan "
-                                     "işlemler burada. Bu sunucuda PIN yok; Tehlikeli Bölge için bir PIN belirle. "
-                                     "Bu PIN yalnızca burada sorulur."))
-            self.btn_unlock.setText(t("PIN Belirle"))
+                                     "işlemler burada. Bu sunucuda PIN yok; girmek için sunucunun adını yaz."))
+            self.btn_unlock.setText(t("Kilidi Aç"))
 
     def unlock(self):
         stored = self._pin()
         if not stored:
-            p1, ok = get_text(self, t("PIN Belirle"), t("Yeni PIN (4-12 rakam)"), password=True)
+            name = self.app.config.name
+            typed, ok = get_text(self, t("Kilidi Aç"), t("Girmek için sunucunun adını yaz: {name}", name=name))
             if not ok:
                 return
-            if not (p1.isdigit() and 4 <= len(p1) <= 12):
-                self.warn("PIN 4-12 rakamdan oluşmalı.")
+            if typed.strip() != name:
+                self.warn("Sunucu adı eşleşmiyor.")
                 return
-            p2, ok = get_text(self, t("PIN Belirle"), t("PIN tekrar"), password=True)
-            if not ok:
-                return
-            if p1 != p2:
-                self.warn("PIN'ler eşleşmiyor.")
-                return
-            self.app.config.set("danger_pin_hash", hash_pin(p1))
         else:
             for attempt in range(3):
                 msg = t("Tehlikeli Bölge'ye girmek için PIN gerekli.")
