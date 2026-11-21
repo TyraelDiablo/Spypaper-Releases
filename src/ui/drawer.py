@@ -192,6 +192,8 @@ class Drawer(QWidget):
         v.addWidget(item("Güncellemeleri şimdi denetle", self._check_update, "circle-arrow-up"))
         v.addWidget(item("Lisans ve Gizlilik", self._legal, "scale"))
         v.addWidget(item("Hakkında", self._about, "info"))
+        v.addWidget(item("Uyku Modu", self._sleep, "lock"))
+        v.addWidget(item("Spypaper'ı Kapat", self._quit, "x"))
         v.addWidget(item("Spypaper'ı kaldır", self._uninstall, "circle-x"))
         v.addStretch(1)
         v.addWidget(label(f"Spypaper v{VERSION}", "Muted"))
@@ -279,6 +281,12 @@ class Drawer(QWidget):
         """Açılış animasyonu için çekmecedeki öğeler (yukarıdan aşağıya)."""
         lay = self._inner
         return [lay.itemAt(i).widget() for i in range(lay.count()) if lay.itemAt(i).widget()]
+
+    def _sleep(self):
+        self.ctl.enter_sleep()
+
+    def _quit(self):
+        self.ctl.quit_app()
 
     def _uninstall(self):
         from .uninstall_dialog import UninstallDialog

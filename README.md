@@ -167,9 +167,13 @@ The state is stored in `config.json` and in `backups/whitelist_maintenance.json`
 
 ---
 
+## Sleep mode and quitting
+
+**☰ → Sleep Mode** covers Spypaper with a lock screen showing the time and each server's status (running, players, TPS); servers keep running. Returning to the panel, closing the window or keyboard shortcuts ask for a PIN, set on first use. **☰ → Quit Spypaper** stops running servers cleanly and closes the app with a short "Have fun with your Minecraft server" screen. Spypaper also brings its window to the front at startup.
+
 ## Danger Zone
 
-The last tab of each server panel. Entering it requires the server's PIN; if the server has no PIN, you set a separate PIN that is only asked here. It locks again when you leave the page or after 5 minutes.
+The last tab of each server panel. Entering it requires the server's PIN; if the server has no PIN, you type the server's name instead. It locks again when you leave the page or after 5 minutes.
 
 | Action | What happens |
 |---|---|

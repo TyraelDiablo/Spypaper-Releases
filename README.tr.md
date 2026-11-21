@@ -165,9 +165,13 @@ Durum `config.json`'da ve `backups/whitelist_maintenance.json`'da tutulur; Spypa
 
 ---
 
+## Uyku modu ve kapatma
+
+**☰ → Uyku Modu** Spypaper'ın üstüne saati ve sunucuların durumunu (çalışıyor mu, oyuncu sayısı, TPS) gösteren bir kilit ekranı koyar; sunucular çalışmaya devam eder. Panele dönmek, pencereyi kapatmak ya da klavye kısayolları ilk kullanımda belirlenen PIN'i ister. **☰ → Spypaper'ı Kapat** çalışan sunucuları düzgünce durdurur ve kısa bir "Have fun with your Minecraft server" ekranıyla uygulamayı kapatır. Spypaper açılışta penceresini öne getirir.
+
 ## Tehlikeli Bölge
 
-Her sunucu panelinin son sekmesi. Girmek için sunucunun PIN'i gerekir; sunucuda PIN yoksa yalnızca burada sorulan ayrı bir PIN belirlersin. Sayfadan çıkınca ya da 5 dakika sonra yeniden kilitlenir.
+Her sunucu panelinin son sekmesi. Girmek için sunucunun PIN'i gerekir; sunucuda PIN yoksa sunucunun adını yazarak girersin. Sayfadan çıkınca ya da 5 dakika sonra yeniden kilitlenir.
 
 | İşlem | Ne olur |
 |---|---|
