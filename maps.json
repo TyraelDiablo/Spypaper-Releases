@@ -154,6 +154,105 @@
    },
    "sha256": "60e0a05fb78b7c2db2543169d63601997817d8de0b70be98793ebaf353758727",
    "size": 4966896
+  },
+  {
+   "id": "oneblock",
+   "category": "oneblock",
+   "mc": "26.3",
+   "name": {
+    "tr": "OneBlock",
+    "en": "OneBlock"
+   },
+   "desc": {
+    "tr": "Tek bir çimen bloğuyla başla: kırdıkça yerine yenisi çıkar. 7 aşama (Çayır, Mağara, Çöl, Okyanus, Nether, Derinlik, End) ilerledikçe yeni bloklar ve yaratıklar gelir; her 40 blokta bir ödül sandığı. Veri paketiyle çalışır, eklenti gerekmez.",
+    "en": "Start on a single grass block that respawns every time you break it. 7 phases (Plains, Cave, Desert, Ocean, Nether, Deep Dark, End) unlock new blocks and mobs; a reward chest every 40 blocks. Runs on a data pack, no plugins needed."
+   },
+   "zip": "oneblock.zip",
+   "image": "oneblock.jpg",
+   "properties": {
+    "gamemode": "survival",
+    "force-gamemode": "false",
+    "spawn-protection": "0",
+    "allow-nether": "true",
+    "generate-structures": "false"
+   },
+   "sha256": "7ce14160cc352fa72c6e136d7e92e556d546374570d9aa3727ec0102d56a1f4a",
+   "size": 4984778
+  },
+  {
+   "id": "parkour",
+   "category": "parkour",
+   "mc": "26.3",
+   "name": {
+    "tr": "Parkur",
+    "en": "Parkour"
+   },
+   "desc": {
+    "tr": "Renkli beton bloklardan 4 bölümlük, giderek zorlaşan parkur (56 atlayış, çit ve demir parmaklık engelleri). Altın bloklar kontrol noktası: düşen oyuncu son kontrol noktasında doğar. Elmas blokta bitirene tebrik mesajı. Macera modu, düşme hasarı yok.",
+    "en": "A 4-section parkour course of colored concrete that gets harder as you go (56 jumps, fence and iron-bar obstacles). Gold blocks are checkpoints: fall and you respawn at the last one. Reach the diamond block for a finish message. Adventure mode, no fall damage."
+   },
+   "zip": "parkour.zip",
+   "image": "parkour.jpg",
+   "properties": {
+    "gamemode": "adventure",
+    "force-gamemode": "true",
+    "spawn-protection": "0",
+    "allow-nether": "false",
+    "generate-structures": "false",
+    "spawn-monsters": "false"
+   },
+   "sha256": "ef3c9033ee30ab174f091598d0dd0e11b105f90c93813044bd7e2bea6d2a0975",
+   "size": 4983115
+  },
+  {
+   "id": "hide-seek",
+   "category": "hide-seek",
+   "mc": "26.3",
+   "name": {
+    "tr": "Saklambaç",
+    "en": "Hide and Seek"
+   },
+   "desc": {
+    "tr": "61×61 çitle çevrili küçük kasaba: 10 ev (tavan araları, fıçılar, kitaplıklar, saman balyaları), ağaçlar, çalılar ve meydanda ebe kafesi. Macera modu, yaratık yok, hep gündüz.",
+    "en": "A small fenced 61×61 town: 10 houses (attics, barrels, bookshelves, hay bales), trees, bushes and a seeker cage in the square. Adventure mode, no mobs, always day."
+   },
+   "zip": "hide-seek.zip",
+   "image": "hide-seek.jpg",
+   "properties": {
+    "gamemode": "adventure",
+    "force-gamemode": "true",
+    "spawn-protection": "0",
+    "allow-nether": "false",
+    "generate-structures": "false",
+    "spawn-monsters": "false"
+   },
+   "sha256": "c97e6d7367bf1e9478f58d4efc8fc861a4f4b376822ec11c19cc812d53bc6845",
+   "size": 4986270
+  },
+  {
+   "id": "lobby",
+   "category": "lobby",
+   "mc": "26.3",
+   "name": {
+    "tr": "Lobi",
+    "en": "Lobby"
+   },
+   "desc": {
+    "tr": "Cam duvarlı yuvarlak lobi: ortada çeşme, banklar, fenerler ve dört renkli kapı kemeri (Velocity ağındaki sunuculara geçiş noktası olarak kullanılabilir). Macera modu, hasar ve yaratık yok.",
+    "en": "A round glass-walled lobby: a fountain in the middle, benches, lanterns and four colored gate arches (handy as portals to servers in a Velocity network). Adventure mode, no damage or mobs."
+   },
+   "zip": "lobby.zip",
+   "image": "lobby.jpg",
+   "properties": {
+    "gamemode": "adventure",
+    "force-gamemode": "true",
+    "spawn-protection": "0",
+    "allow-nether": "false",
+    "generate-structures": "false",
+    "spawn-monsters": "false"
+   },
+   "sha256": "30128dd67ad0b27f6c1db49f9656042dd4bf36658579105c6244114245959e3e",
+   "size": 4983500
   }
  ]
 }
