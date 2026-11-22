@@ -138,6 +138,7 @@ class ServerCard(QFrame):
         m.addAction(t("Aç"), self.open)
         m.addAction(t("Düzenle…"), lambda: self.home.edit_server(self.p))
         m.addAction(t("Klasörü Aç"), lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(self.p.server_path)))
+        m.addAction(t("Kopyasını Oluştur…"), lambda: self.home.clone_server(self.p))
         m.addSeparator()
         m.addAction(t("Listeden Kaldır"), lambda: self.home.remove_server(self.p))
         m.exec(self.cursor().pos())
@@ -370,6 +371,22 @@ class HomeScreen(QWidget):
             dlg.save()
             self.ctl.forget_server(prof.id)
             self.refresh()
+
+    def clone_server(self, prof):
+        from .clone_dialog import CloneDialog
+        from .window import ask_pin
+        if not prof.exists or not ask_pin(self, prof):
+            return
+        if self.ctl.is_running(prof.id):
+            QMessageBox.warning(self, t("Uyarı"), t("Kopyalamadan önce sunucuyu durdur (dünya yarım kaydedilmiş olabilir)."))
+            return
+        dlg = CloneDialog(self.ctl.settings, prof, self)
+        if dlg.exec() and dlg.profile:
+            self.refresh()
+            port = dlg.ports.get("server-port")
+            if ask(self, t("'{name}' oluşturuldu (port {port}). Şimdi açılsın mı?", name=dlg.profile.name, port=port),
+                   t("Kopyasını Oluştur")):
+                self.ctl.open_server(dlg.profile.id)
 
     def remove_server(self, prof):
         from .window import ask_pin

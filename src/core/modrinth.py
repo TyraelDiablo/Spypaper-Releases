@@ -23,7 +23,7 @@ API = "https://api.modrinth.com/v2"
 CDN = ("https://cdn.modrinth.com/",)
 UA = f"TyraelDiablo/Spypaper/{VERSION} (github.com/TyraelDiablo)"
 
-PLUGIN_LOADERS = ["paper", "purpur", "spigot", "bukkit", "folia"]
+PLUGIN_LOADERS = ["paper", "purpur", "spigot", "bukkit", "folia", "velocity"]
 MOD_LOADERS = ["fabric", "quilt", "forge", "neoforge"]
 SORTS = {"relevance": N_("En uygun"), "downloads": N_("En çok indirilen"), "follows": N_("En çok takip edilen"),
          "updated": N_("Son güncellenen"), "newest": N_("En yeni")}
@@ -57,6 +57,8 @@ def context(software, mc_version, modded):
     s = (software or "").lower()
     if modded or s in MOD_LOADERS:
         return "mod", [s] if s in MOD_LOADERS else ["fabric"]
+    if s == "velocity":
+        return "plugin", ["velocity"]
     if s in ("paper", "purpur", "folia"):
         return "plugin", ["paper", "purpur", "spigot", "bukkit"] if s != "folia" else ["folia"]
     if s in ("spigot", "bukkit"):

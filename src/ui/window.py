@@ -30,6 +30,7 @@ from .pages.files import FilesPage
 from .pages.tasks import TasksPage
 from .pages.discord import DiscordPage
 from .pages.configs import ConfigsPage
+from .pages.velocity import VelocityPage
 
 from core import N_
 
@@ -38,7 +39,7 @@ GROUPS = [
     ("general", N_("Genel"), [DashboardPage, ConsolePage, LogsPage, MapPage, EsploraPage, NotesPage]),
     ("players", N_("Oyuncular"), [PlayersPage, TeamsPage, AdminPage]),
     ("content", N_("İçerik"), [PluginsPage, ModTransPage, ContentPage]),
-    ("server", N_("Sunucu"), [SettingsPage, ConfigsPage, FilesPage]),
+    ("server", N_("Sunucu"), [VelocityPage, SettingsPage, ConfigsPage, FilesPage]),
     ("automation", N_("Otomasyon"), [MaintenancePage, TasksPage, DiscordPage]),
     ("security", N_("Güvenlik"), [GuardPage, DangerPage]),
 ]
@@ -128,8 +129,15 @@ class ServerPanel(QWidget):
         self.pages = []
         self.order, self.hidden = page_order(ctl.settings)
         from core.config import detect_version
-        if detect_version(app.config.server_path)[1] == "Vanilla":     # vanilla eklenti/mod yükleyemez
+        from core.config import is_proxy
+        soft = detect_version(app.config.server_path)[1]
+        if soft == "Vanilla":     # vanilla eklenti/mod yükleyemez
             self.hidden = set(self.hidden) | {PAGES.index(PluginsPage), PAGES.index(ModTransPage)}
+        if is_proxy(app.config.server_path):      # proxy'de dünya, oyuncu verisi ve server.properties yok
+            self.hidden = set(self.hidden) | {PAGES.index(c) for c in (
+                MapPage, PlayersPage, TeamsPage, AdminPage, ModTransPage, ContentPage, SettingsPage, MaintenancePage)}
+        else:
+            self.hidden = set(self.hidden) | {PAGES.index(VelocityPage)}
         for i, cls in enumerate(PAGES):
             page = cls(app, self.bridge)
             self.pages.append(page)
@@ -384,6 +392,9 @@ class ServerPanel(QWidget):
 def eula_ok(parent, server_path):
     """Minecraft EULA'sı kabul edilmemişse sunucu açılmaz. Kullanıcıya sorup eula.txt'yi yazar.
     Panel bunu kendiliğinden kabul etmez."""
+    from core.config import is_proxy
+    if is_proxy(server_path):                  # Velocity proxy'nin EULA'sı yok
+        return True
     path = os.path.join(server_path, "eula.txt")
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
