@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 )
 
 from core import maps
-from . import i18n, motion
+from . import i18n, icons, motion
 from .i18n import t
 from .theme import TOKENS
 from .widgets import button, label, row, segmented
@@ -74,6 +74,8 @@ class WorldPicker(QWidget):
         tv.addWidget(self.list)
         self.desc = label("", wrap=True, raw=True)
         tv.addWidget(self.desc)
+        tv.addLayout(row(button("Zip'ten İçe Aktar…", "ghost", self._import_zip),
+                         button("Klasörden İçe Aktar…", "ghost", self._import_dir), None))
         self.stack.addWidget(tw)
 
         self.loaded.connect(self._on_loaded)
@@ -116,6 +118,7 @@ class WorldPicker(QWidget):
             self.state.setText(t("Harita listesi alınamadı: {e}", e=err))
             self.retry.show()
             return
+        imported = [m for m in (self.maps or []) if m["id"] == "import"]
         self.maps = items or []
         self.list.clear()
         lang = i18n.current()
@@ -129,7 +132,9 @@ class WorldPicker(QWidget):
             threading.Thread(target=lambda m=m: self.image_ready.emit(m["id"], maps.image_path(m, self.contact) or ""),
                              daemon=True).start()
         self.state.setText(t("{n} harita", n=len(self.maps)) if self.maps else t("Henüz harita yok."))
-        if self.maps:
+        if imported:                                       # liste gelmeden içe aktarılan harita korunur
+            self._add_import(imported[0]["_import"])
+        elif self.maps:
             self.list.setCurrentRow(0)
 
     def _on_image(self, mid, path):
@@ -145,6 +150,39 @@ class WorldPicker(QWidget):
             it = self.list.item(i)
             if it.data(Qt.UserRole) == mid:
                 it.setIcon(QIcon(pm))
+
+    # --- kendi haritanı içe aktar ---
+    def _import_zip(self):
+        from PySide6.QtWidgets import QFileDialog
+        path, _ = QFileDialog.getOpenFileName(self, t("Harita zip dosyasını seç"), "", "Zip (*.zip *.mcworld)")
+        if path:
+            self._add_import(path)
+
+    def _import_dir(self):
+        from PySide6.QtWidgets import QFileDialog
+        path = QFileDialog.getExistingDirectory(self, t("Dünya klasörünü seç (içinde level.dat olan)"))
+        if path:
+            self._add_import(path)
+
+    def _add_import(self, path):
+        try:
+            m = maps.local_map(path)
+        except maps.MapError as e:
+            self.state.setText(t(e.template, **e.kw))
+            return
+        m["desc"] = t("İçe aktarılan harita: {path}", path=path)
+        self.maps = [x for x in (self.maps or []) if x["id"] != "import"]
+        self.maps.insert(0, m)
+        for i in range(self.list.count()):
+            if self.list.item(i).data(Qt.UserRole) == "import":
+                self.list.takeItem(i)
+                break
+        it = QListWidgetItem(QIcon(icons.icon("folder-open", None, 64).pixmap(CARD)), m["name"])
+        it.setData(Qt.UserRole, "import")
+        it.setTextAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        self.list.insertItem(0, it)
+        self.list.setCurrentRow(0)
+        self.state.setText(t("{n} harita", n=len(self.maps)))
 
     def template(self):
         it = self.list.currentItem()

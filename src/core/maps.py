@@ -211,7 +211,11 @@ def install(m, server_path, level="world", contact="", progress=None, replace=Fa
     dest = os.path.join(server_path, level)
     if os.path.exists(dest) and not replace:
         raise MapError(N_("Hedef klasör zaten var: {path}"), path=dest)
-    zip_path = download(m, contact, progress)
+    src = m.get("_import")                                 # kullanıcının kendi zip'i ya da klasörü
+    if src:
+        zip_path, is_tmp = (None if os.path.isdir(src) else src), False
+    else:
+        zip_path, is_tmp = download(m, contact, progress), True
     moved = []
     stamp = f"-yedek-{datetime.now():%Y%m%d-%H%M%S}"
     try:
@@ -221,7 +225,10 @@ def install(m, server_path, level="world", contact="", progress=None, replace=Fa
                     os.replace(d, d + stamp)
                     moved.append(d)
         try:
-            extract_world(zip_path, dest)
+            if zip_path is None:
+                _copy_world(src, dest)
+            else:
+                extract_world(zip_path, dest)
         except Exception:
             if os.path.exists(dest + ".part"):
                 shutil.rmtree(dest + ".part", ignore_errors=True)
@@ -231,6 +238,121 @@ def install(m, server_path, level="world", contact="", progress=None, replace=Fa
             moved = []
             raise
     finally:
-        os.remove(zip_path)
+        if is_tmp:
+            os.remove(zip_path)
     applied = apply_properties(os.path.join(server_path, "server.properties"), m.get("properties"))
     return [os.path.basename(d) + stamp for d in moved], applied
+
+
+# ------------------------------------------------------------------ kendi haritanı içe/dışa aktar
+SKIP_EXPORT = {"session.lock", "players", "playerdata", "stats", "advancements", "level.dat_old"}
+
+
+def level_info(world_dir):
+    """level.dat'tan (ad, Minecraft sürümü). Okunamazsa klasör adı ve boş sürüm."""
+    name, ver = os.path.basename(os.path.normpath(world_dir)), ""
+    try:
+        import gzip
+        import nbtlib
+        with gzip.open(os.path.join(world_dir, "level.dat")) as f:
+            d = nbtlib.File.parse(f)
+        d = d.get("Data", d.get("", {}).get("Data", {})) if hasattr(d, "get") else {}
+        name = str(d.get("LevelName") or name)
+        ver = str((d.get("Version") or {}).get("Name") or "")
+    except Exception:
+        pass
+    return name, ver
+
+
+def _find_world_in_dir(folder):
+    if os.path.isfile(os.path.join(folder, "level.dat")):
+        return folder
+    for root, dirs, files in os.walk(folder):
+        if "level.dat" in files:
+            return root
+        if root.count(os.sep) - folder.count(os.sep) >= 2:
+            dirs[:] = []
+    return None
+
+
+def local_map(path):
+    """Kullanıcının seçtiği zip ya da dünya klasörünü taslak kaydına çevirir (install ile kurulur)."""
+    if os.path.isdir(path):
+        world = _find_world_in_dir(path)
+        if not world:
+            raise MapError(N_("Klasörde dünya bulunamadı (level.dat yok)."))
+        name, ver = level_info(world)
+        return {"id": "import", "name": name, "desc": "", "mc": ver, "_import": world}
+    if not zipfile.is_zipfile(path):
+        raise MapError(N_("Zip dosyası ya da dünya klasörü seç."))
+    with zipfile.ZipFile(path) as z:
+        if not any(n == "level.dat" or n.endswith("/level.dat") for n in z.namelist()):
+            raise MapError(N_("Zip içinde dünya bulunamadı (level.dat yok)."))
+        ver, name = "", os.path.splitext(os.path.basename(path))[0]
+        lvl = min((n for n in z.namelist() if n == "level.dat" or n.endswith("/level.dat")), key=len)
+        try:
+            tmpd = tempfile.mkdtemp(prefix="spypaper_lvl_")
+            with open(os.path.join(tmpd, "level.dat"), "wb") as f:
+                f.write(z.read(lvl))
+            name, ver = level_info(tmpd)
+            shutil.rmtree(tmpd, ignore_errors=True)
+        except Exception:
+            pass
+    return {"id": "import", "name": name, "desc": "", "mc": ver, "_import": path}
+
+
+def _copy_world(src, dest):
+    def ignore(folder, names):
+        return [n for n in names if n in SKIP_EXPORT] if os.path.abspath(folder) == os.path.abspath(src) else \
+            [n for n in names if n == "session.lock"]
+    tmp = dest + ".part"
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    shutil.copytree(src, tmp, ignore=ignore)
+    os.replace(tmp, dest)
+
+
+def _sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def export_world(server_path, level, out_zip, progress=None):
+    """Sunucunun dünyasını paylaşılabilir taslak zip'ine çevirir: oyuncu verisi, istatistik ve ilerlemeler
+    çıkarılır; Bukkit/Paper'ın ayrı <level>_nether/_the_end klasörleri tek dünyada DIM-1/DIM1 olarak birleşir.
+    {"zip", "sha256", "size", "mc", "name"} döndürür (maps.json kaydı için)."""
+    world = os.path.join(server_path, level)
+    if not os.path.isfile(os.path.join(world, "level.dat")):
+        raise MapError(N_("Dünya bulunamadı: {path}"), path=world)
+    parts = [(world, "")]
+    for suffix, dim in (("_nether", "DIM-1"), ("_the_end", "DIM1")):
+        extra = os.path.join(server_path, level + suffix, dim)
+        if os.path.isdir(extra) and not os.path.isdir(os.path.join(world, dim)):
+            parts.append((extra, dim + "/"))
+    files = []
+    for base, prefix in parts:
+        for root, dirs, names in os.walk(base):
+            if root == base and not prefix:
+                dirs[:] = [d for d in dirs if d not in SKIP_EXPORT]
+            for n in names:
+                if n in SKIP_EXPORT:
+                    continue
+                p = os.path.join(root, n)
+                files.append((p, prefix + os.path.relpath(p, base).replace(os.sep, "/")))
+    total = max(1, sum(os.path.getsize(p) for p, _ in files))
+    top = re.sub(r"[^A-Za-z0-9 _\-]", "_", level) or "world"
+    tmp = out_zip + ".part"
+    done = 0
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+        for p, arc in files:
+            z.write(p, f"{top}/{arc}")
+            done += os.path.getsize(p)
+            if progress:
+                progress(done, total)
+    os.replace(tmp, out_zip)
+    name, ver = level_info(world)
+    return {"zip": os.path.basename(out_zip), "sha256": _sha256(out_zip), "size": os.path.getsize(out_zip),
+            "mc": ver, "name": name}

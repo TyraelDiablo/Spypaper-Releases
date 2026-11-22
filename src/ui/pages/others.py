@@ -1,5 +1,6 @@
 """Eklentiler, Ayarlar, Whitelist & Ban, Bakım, Harita sayfaları."""
 import os
+import re
 import threading
 
 from PySide6.QtCore import QTime, Qt, QTimer, QUrl, Signal
@@ -498,6 +499,7 @@ class MaintenancePage(Page):
     title = "Bakım & Yedek"
     backup_progress = Signal(int, int)
     backup_done = Signal(str, str)  # yol, hata
+    map_done = Signal(object, str)  # harita dışa aktarma: bilgi, hata
 
     def __init__(self, app, bridge):
         super().__init__(app, bridge)
@@ -557,6 +559,7 @@ class MaintenancePage(Page):
 
         bk = Card("Dünya Yedekleri", "world, world_nether ve world_the_end tek zip'te")
         self.btn_backup = button("Şimdi Yedek Al", "primary", self.backup)
+        bk.header_actions.addWidget(button("Harita Olarak Dışa Aktar", "ghost", self.export_map))
         bk.header_actions.addWidget(button("Klasörü Aç", "ghost", lambda: open_folder(self.app.backups.folder)))
         bk.header_actions.addWidget(self.btn_backup)
         self.progress = QProgressBar()
@@ -569,11 +572,53 @@ class MaintenancePage(Page):
 
         self.backup_progress.connect(self._on_progress)
         self.backup_done.connect(self._on_backup_done)
+        self.map_done.connect(self._on_map_done)
         self.tick = QTimer(self)
         self.tick.timeout.connect(self._tick)       # yalnızca gösterim; bakımı pencerenin zamanlayıcısı yürütür
         self.tick.start(1000)
         self._load_plan()
         self._tick()
+
+    def export_map(self):
+        """Dünyayı paylaşılabilir taslak zip'ine çevirir (oyuncu verisi çıkarılır)."""
+        from core import maps
+        from core.danger import level_name
+        if self.app.server.is_running:
+            self.warn("Dışa aktarmadan önce sunucuyu durdur (dünya yarım kaydedilmiş olabilir).")
+            return
+        level = level_name(self.app.properties)
+        default = os.path.join(os.path.expanduser("~"), "Desktop" if os.path.isdir(os.path.expanduser("~/Desktop")) else "",
+                               f"{self.app.config.name}-harita.zip")
+        path, _ = QFileDialog.getSaveFileName(self, t("Haritayı kaydet"), default, "Zip (*.zip)")
+        if not path:
+            return
+        if not path.lower().endswith(".zip"):
+            path += ".zip"
+        self.progress.setVisible(True)
+        sp = self.app.config.server_path
+
+        def work():
+            try:
+                info = maps.export_world(sp, level, path, lambda a, b: self.backup_progress.emit(a // 1024, max(1, b // 1024)))
+                self.map_done.emit(info, "")
+            except Exception as e:
+                self.map_done.emit(None, t(e.template, **e.kw) if hasattr(e, "template") else str(e))
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_map_done(self, info, err):
+        self.progress.setVisible(False)
+        if err:
+            self.error(err)
+            return
+        import json
+        from PySide6.QtWidgets import QApplication
+        entry = {"id": re.sub(r"[^a-z0-9_-]", "-", info["name"].lower())[:40] or "harita", "category": "custom",
+                 "mc": info["mc"], "name": {"tr": info["name"], "en": info["name"]}, "desc": {"tr": "", "en": ""},
+                 "zip": info["zip"], "sha256": info["sha256"], "size": info["size"]}
+        QApplication.clipboard().setText(json.dumps(entry, ensure_ascii=False, indent=1))
+        self.info(t("Harita dışa aktarıldı: {zip} ({size}). Oyuncu verileri, istatistikler ve ilerlemeler çıkarıldı.",
+                    zip=info["zip"], size=human_size(info["size"])) + "\n" +
+                  t("Taslak listesine (maps.json) eklenecek kayıt panoya kopyalandı."))
 
     def on_show(self):
         fill_table(self.table, [(n, human_size(s), f"{d:%d.%m.%Y %H:%M}") for n, s, d in self.app.backups.list()],
