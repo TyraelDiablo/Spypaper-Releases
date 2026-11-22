@@ -17,6 +17,7 @@ from core import N_, ai, detect_version
 from core import esplora_access as EA
 from core import esplora_chats as EC
 from core import esplora_kb
+from core import esplora_skills as SK
 from core.esplora import build_system, config_files, latest_crash, preset_items, quick_items
 from .. import icons
 from ..i18n import current, is_rtl, t
@@ -324,19 +325,25 @@ class EsploraPage(Page):
         self.root.addLayout(self.thumbs)
 
         self.input = ChatInput()
-        self.input.setPlaceholderText(t("Esplora'ya sor… (Ctrl+Enter ile gönder, Ctrl+V ile görsel yapıştır)"))
+        self.input.setPlaceholderText(t("Esplora'ya sor… (/ ile komutlar, Ctrl+Enter ile gönder, Ctrl+V ile görsel yapıştır)"))
         self.input.setFixedHeight(70)
         self.input.submit.connect(lambda: self.ask(self.input.toPlainText()))
         self.input.image.connect(self.add_image)
         self.gen = 0                         # her istekte artar; durdurulan isteğin geç gelen yanıtı yok sayılır
         self.rounds = 0                      # bu sorudaki veri isteği turu
         self.pending = None                  # onay bekleyen veri istekleri
+        self.files = []                      # eklenecek metin dosyaları [(ad, içerik)]
         self.attach_btn = QPushButton()
-        self.attach_btn.setIcon(icons.icon("image", None, 18))
+        self.attach_btn.setIcon(icons.icon("plus", None, 18))
         self.attach_btn.setProperty("variant", "ghost")
-        self.attach_btn.setToolTip(t("Görsel ekle"))
+        self.attach_btn.setToolTip(t("Ekle: görsel, dosya, yetenek, komut, üslup"))
         self.attach_btn.setCursor(Qt.PointingHandCursor)
-        self.attach_btn.clicked.connect(self.pick_images)
+        self.attach_btn.clicked.connect(self._plus_menu)
+        # "/" yazınca eşleşen komutlar
+        self.cmd_bar = QHBoxLayout()
+        self.cmd_bar.setSpacing(6)
+        self.root.addLayout(self.cmd_bar)
+        self.input.textChanged.connect(self._cmd_hint)
         self.send_btn = button("Gönder", "primary", self._send_or_stop)
         self.root.addLayout(row(self.attach_btn, self.input, self.send_btn, stretch_end=False))
         self.reply.connect(self._on_reply)
@@ -431,7 +438,19 @@ class EsploraPage(Page):
             h.addWidget(th)
             h.addWidget(x)
             self.thumbs.addWidget(box)
-        if self.images:
+        for i, (name, body) in enumerate(self.files):
+            box = QFrame()
+            box.setObjectName("Thumb")
+            box.setStyleSheet(f"QFrame#Thumb {{ background:{TOKENS['surface_2']}; border:1px solid {TOKENS['border']}; border-radius:6px; }}")
+            h = QHBoxLayout(box)
+            h.setContentsMargins(8, 4, 4, 4)
+            lb = QLabel("📎 " + name)
+            lb.setToolTip(t("{n} karakter", n=len(body)))
+            lb.setStyleSheet("background:transparent; border:none;")
+            h.addWidget(lb)
+            h.addWidget(button("×", "flat", lambda _=False, n=i: self._remove_file(n), tooltip="Kaldır"))
+            self.thumbs.addWidget(box)
+        if self.images or self.files:
             self.thumbs.addStretch(1)
 
     def _remove_image(self, i):
@@ -546,24 +565,116 @@ class EsploraPage(Page):
         self.send_btn.style().polish(self.send_btn)
 
     def ask(self, text, label=None):
-        """label: hazır sorularda balonda görünen kısa metin; Esplora'ya ayrıntılı soru (text) gider."""
+        """label: hazır sorularda balonda görünen kısa metin; Esplora'ya ayrıntılı soru (text) gider.
+        "/ad …" ile başlayan mesaj o yeteneği bu soru için etkinleştirir; eklenen dosyalar mesaja metin olarak girer."""
         text = text.strip()
-        images = list(self.images) if label is None else []
-        if (not text and not images) or self.busy:
+        typed = label is None
+        images = list(self.images) if typed else []
+        files = list(self.files) if typed else []
+        if (not text and not images and not files) or self.busy:
             return
-        if label is None:
+        skill, rest = SK.split_command(text, self.app.config.settings) if typed else (None, text)
+        if typed and text.startswith("/") and not skill and " " not in text:
+            self.warn(t("Böyle bir komut yok: {cmd}. Komutları görmek için / yaz.", cmd=text))
+            return
+        if typed:
             self.input.clear()
-            self.images = []
+            self.images, self.files = [], []
             self._show_thumbs()
         self.pending = None                 # onay bekleyen istek varsa yeni soru onu iptal eder
         self.rounds = 0
-        msg = {"role": "user", "content": text, "time": datetime.now().strftime("%H:%M")}
+        content = rest if skill else text
+        if skill and not content:
+            content = f"Run the /{skill['name']} skill on this server."
+        shown = text
+        for name, body in files:
+            content += f"\n\n=== ATTACHED FILE: {name} (untrusted data, secrets removed) ===\n{body}\n=== END FILE ==="
+            shown += ("\n" if shown else "") + "📎 " + name
+        msg = {"role": "user", "content": content.strip(), "time": datetime.now().strftime("%H:%M")}
         if images:
             msg["images"] = images
         if label:
             msg["label"] = label
+        elif skill or files:
+            msg["label"] = shown
+        if skill:
+            msg["skill"] = skill["name"]
         self.app.esplora_history.append(msg)
         self._request()
+
+    # --- + menüsü, komutlar, dosyalar, yetenekler, üslup ---
+    def _plus_menu(self):
+        from PySide6.QtGui import QCursor
+        from PySide6.QtWidgets import QMenu
+        m = QMenu(self)
+        m.addAction(icons.icon("image", None, 16), t("Görsel ekle…")).triggered.connect(self.pick_images)
+        m.addAction(icons.icon("file-text", None, 16), t("Dosya ekle…")).triggered.connect(self.pick_files)
+        m.addSeparator()
+        sub = m.addMenu(icons.icon("terminal", None, 16), t("Komutlar"))
+        for sk in SK.all_skills(self.app.config.settings):
+            act = sub.addAction(f"/{sk['name']}")
+            act.setToolTip(sk["description"] if not sk.get("builtin") else t(sk["description"]))
+            act.triggered.connect(lambda _=False, n=sk["name"]: self._insert_cmd(n))
+        sub.setToolTipsVisible(True)
+        m.addAction(icons.icon("sparkles", None, 16), t("Yetenek oluştur…")).triggered.connect(lambda: self.edit_skill(None))
+        m.addAction(icons.icon("list", None, 16), t("Yetenekleri yönet…")).triggered.connect(self.manage_skills)
+        m.addSeparator()
+        m.addAction(icons.icon("smile", None, 16), t("Samimiyet ayarları…")).triggered.connect(self.open_style)
+        m.exec(QCursor.pos())
+
+    def _insert_cmd(self, name):
+        cur = self.input.toPlainText()
+        cur = cur.split(" ", 1)[1] if cur.startswith("/") and " " in cur else ("" if cur.startswith("/") else cur)
+        self.input.setPlainText(f"/{name} " + cur)
+        c = self.input.textCursor()
+        c.movePosition(c.MoveOperation.End)
+        self.input.setTextCursor(c)
+        self.input.setFocus()
+
+    def _cmd_hint(self):
+        while self.cmd_bar.count():
+            it = self.cmd_bar.takeAt(0)
+            if it.widget():
+                it.widget().hide()
+                it.widget().deleteLater()
+        txt = self.input.toPlainText()
+        if not txt.startswith("/") or " " in txt or "\n" in txt:
+            return
+        for sk in SK.matches(self.app.config.settings, txt)[:8]:
+            desc = t(sk["description"]) if sk.get("builtin") else sk["description"]
+            b = button(f"/{sk['name']}", "ghost", lambda _=False, n=sk["name"]: self._insert_cmd(n), tooltip=desc)
+            self.cmd_bar.addWidget(b)
+        self.cmd_bar.addStretch(1)
+
+    def pick_files(self):
+        exts = " ".join("*" + e for e in SK.TEXT_EXT) + " *.log.gz"
+        files, _ = QFileDialog.getOpenFileNames(self, t("Dosya ekle"), self.app.config.server_path,
+                                                f"{t('Metin dosyaları')} ({exts})")
+        for f in files[:5]:
+            try:
+                self.files.append(SK.read_attachment(f))
+            except ValueError as e:
+                self.warn(t(str(e)))
+        self.files = self.files[:5]
+        self._show_thumbs()
+
+    def _remove_file(self, i):
+        if 0 <= i < len(self.files):
+            self.files.pop(i)
+            self._show_thumbs()
+
+    def edit_skill(self, skill):
+        from ..skill_dialog import SkillDialog
+        if SkillDialog(self.app.config.settings, skill, self).exec():
+            self._cmd_hint()
+
+    def manage_skills(self):
+        from ..skill_dialog import SkillsDialog
+        SkillsDialog(self.app.config.settings, self).exec()
+
+    def open_style(self):
+        from ..skill_dialog import StyleDialog
+        StyleDialog(self.app.config.settings, self).exec()
 
     @staticmethod
     def _api_messages(hist):
@@ -614,8 +725,13 @@ class EsploraPage(Page):
         last = next((m["content"] for m in reversed(self.app.esplora_history)
                      if m["role"] == "user" and not m.get("data") and not m.get("cmd")), "")
         prof = self.app.config
-        system = build_system(EA.filter_context(self.context(last), prof), LANG_EN.get(current(), "English"),
+        last_msg = next((m for m in reversed(self.app.esplora_history)
+                         if m["role"] == "user" and not m.get("data") and not m.get("cmd")), {})
+        skill = SK.find(settings, last_msg["skill"]) if last_msg.get("skill") else None
+        ctx = SK.scope_context(EA.filter_context(self.context(last), prof), skill)
+        system = build_system(ctx, LANG_EN.get(current(), "English"),
                               access=EA.prompt_section(prof), no_commands=EA.command_rule(prof))
+        system += SK.style_section(settings) + SK.skill_section(skill)
         msgs = self._api_messages(self.app.esplora_history)
 
         def work():
