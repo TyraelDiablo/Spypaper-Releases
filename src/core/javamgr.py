@@ -207,7 +207,11 @@ def best_for(required, javas=None):
 
 def check(profile):
     """Sunucu başlamadan önce: (gereken, seçili major, seçili yol). Bilinmeyenler None/''."""
-    req = required_java(mc_version(profile.server_path, profile.get("jar_name")))
+    from .config import is_proxy
+    if is_proxy(profile.server_path) or "velocity" in os.path.basename(profile.get("jar_name") or "").lower():
+        req = 21                                     # Velocity 3.4+
+    else:
+        req = required_java(mc_version(profile.server_path, profile.get("jar_name")))
     exe = resolve(profile.get("java_path"))
     return req, (info(exe)[0] if exe else None), exe
 

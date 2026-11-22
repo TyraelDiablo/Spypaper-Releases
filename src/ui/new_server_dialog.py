@@ -56,9 +56,10 @@ class NewServerDialog(QDialog):
             self.sw.addItem(info["name"], key)
         self.sw.currentIndexChanged.connect(self._load_versions)
         self.ver = QComboBox()
-        self.ver.setMinimumWidth(140)
+        self.ver.setMinimumWidth(180)
         self.ver.currentTextChanged.connect(self._ver_changed)
-        form.addRow(t("Yazılım"), row(self.sw, label("Minecraft sürümü"), self.ver, stretch_end=True))
+        self.ver_lbl = label("Minecraft sürümü")
+        form.addRow(t("Yazılım"), row(self.sw, self.ver_lbl, self.ver, stretch_end=True))
         self.java_lbl = label("", "Muted", wrap=True)
         form.addRow("", self.java_lbl)
 
@@ -83,7 +84,8 @@ class NewServerDialog(QDialog):
         for k, n in zip(creator.DIFFICULTIES, (N_("Barışçıl"), N_("Kolay"), N_("Normal"), N_("Zor"))):
             self.diff.addItem(t(n), k)
         self.diff.setCurrentIndex(2)
-        form.addRow(t("Oyun modu"), row(self.mode, label("Zorluk"), self.diff, stretch_end=True))
+        self.mode_row = row(self.mode, label("Zorluk"), self.diff, stretch_end=True)
+        form.addRow(t("Oyun modu"), self.mode_row)
         self.online = QCheckBox(t("Yalnızca Minecraft hesabı olanlar girebilsin (online-mode)"))
         self.online.setChecked(True)
         self.white = QCheckBox(t("Whitelist açık olsun (yalnızca izin verilen oyuncular)"))
@@ -91,17 +93,24 @@ class NewServerDialog(QDialog):
         form.addRow("", self.white)
         v.addLayout(form)
         from .world_picker import WorldPicker
-        v.addWidget(label("Dünya", "CardTitle"))
+        self.world_title = label("Dünya", "CardTitle")
+        v.addWidget(self.world_title)
         self.world = WorldPicker(settings.get("update_contact") or "")
         v.addWidget(self.world)
+        self.proxy_note = label("Velocity bir proxy'dir: dünyası yoktur, oyuncuları ağdaki Paper sunucularına yönlendirir. "
+                                "Oluşturduktan sonra bir kez başlat, ardından Velocity Ağı sekmesinden sunucularını ekle.",
+                                "Muted", wrap=True)
+        self.proxy_note.hide()
+        v.addWidget(self.proxy_note)
+        self.form = form
 
         self.eula = QCheckBox(t("Minecraft EULA'sını okudum ve kabul ediyorum"))
-        eula_link = label("", "Muted")
-        eula_link.setText("<a href='https://aka.ms/MinecraftEULA' style='color:%s'>https://aka.ms/MinecraftEULA</a>"
+        self.eula_link = label("", "Muted")
+        self.eula_link.setText("<a href='https://aka.ms/MinecraftEULA' style='color:%s'>https://aka.ms/MinecraftEULA</a>"
                           % TOKENS["accent"])
-        eula_link.setOpenExternalLinks(True)
-        eula_link.setTextFormat(Qt.RichText)
-        v.addLayout(row(self.eula, eula_link, stretch_end=True))
+        self.eula_link.setOpenExternalLinks(True)
+        self.eula_link.setTextFormat(Qt.RichText)
+        v.addLayout(row(self.eula, self.eula_link, stretch_end=True))
 
         self.bar = QProgressBar()
         self.bar.hide()
@@ -128,8 +137,26 @@ class NewServerDialog(QDialog):
             self.parent_dir = d
             self._update_path()
 
+    def _proxy_ui(self, proxy):
+        self.ver_lbl.setText(t("Sürüm") if proxy else t("Minecraft sürümü"))
+        for w in (self.world_title, self.world, self.white, self.eula, self.eula_link):
+            w.setVisible(not proxy)
+        lbl = self.form.labelForField(self.mode_row)
+        for i in range(self.mode_row.count()):
+            it = self.mode_row.itemAt(i).widget()
+            if it:
+                it.setVisible(not proxy)
+        if lbl:
+            lbl.setVisible(not proxy)
+        self.proxy_note.setVisible(proxy)
+        if proxy and self.port.value() == 25565:
+            self.port.setValue(25577)
+        elif not proxy and self.port.value() == 25577:
+            self.port.setValue(25565)
+
     def _load_versions(self, *_):
         key = self.sw.currentData()
+        self._proxy_ui(software.is_proxy_key(key))
         self.ver.clear()
         self.btn.setEnabled(False)
         self.status.setText(t("{name} sürümleri alınıyor…", name=software.SOFTWARE[key]["name"]))
@@ -155,7 +182,9 @@ class NewServerDialog(QDialog):
     def _ver_changed(self, v):
         if hasattr(self, "world"):
             self.world.set_server_version(v)
-        if v:
+        if v and software.is_proxy_key(self.sw.currentData()):
+            self.java_lbl.setText(t("Velocity için en az Java {n} gerekir.", n=21))
+        elif v:
             self.java_lbl.setText(t("Bu sürüm için en az Java {n} gerekir.", n=creator.java_hint(v)))
 
     def create(self):
@@ -166,11 +195,12 @@ class NewServerDialog(QDialog):
         if os.path.isdir(path) and os.listdir(path):
             self.status.setText(t("Seçilen klasör boş değil: {path}", path=path))
             return
-        err = self.world.validate()
+        proxy = software.is_proxy_key(self.sw.currentData())
+        err = None if proxy else self.world.validate()
         if err:
             self.status.setText(err)
             return
-        if not self.eula.isChecked():
+        if not proxy and not self.eula.isChecked():
             self.status.setText(t("Sunucuyu çalıştırabilmek için Minecraft EULA'sını kabul etmen gerekiyor."))
             return
         for w in (self.btn, self.sw, self.ver):
@@ -181,7 +211,9 @@ class NewServerDialog(QDialog):
                     difficulty=self.diff.currentData(), online_mode=self.online.isChecked(),
                     whitelist=self.white.isChecked(), accept_eula=True,
                     java="java", contact=self.settings.get("update_contact"))
-        if self.world.is_template():
+        if proxy:
+            pass
+        elif self.world.is_template():
             opts["template"] = self.world.template()
         else:
             opts["world"] = self.world.world_options()

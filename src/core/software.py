@@ -68,6 +68,17 @@ def _folia_latest(version, contact):
     return updater.latest_build(version, contact, project="folia", allow_beta=True)
 
 
+# ---------- Velocity (PaperMC proxy; sürümleri Minecraft sürümü değil, ör. 3.4.0-SNAPSHOT) ----------
+def _velocity_versions(contact):
+    data = updater._get_json(updater._api("velocity"), contact)
+    vers = [v for group in (data.get("versions") or {}).values() for v in group]
+    return sorted(set(vers), key=updater._vkey, reverse=True)
+
+
+def _velocity_latest(version, contact):
+    return updater.latest_build(version, contact, project="velocity", allow_beta=True)
+
+
 # ---------- Purpur ----------
 def _purpur_versions(contact):
     data = _get(PURPUR_API, contact)
@@ -214,7 +225,13 @@ SOFTWARE = {
     "fabric":   {"name": "Fabric",   "versions": _fabric_versions,   "latest": _fabric_latest,   "modded": True},
     "forge":    {"name": "Forge",    "versions": _forge_versions,    "latest": _forge_latest,    "modded": True},
     "neoforge": {"name": "NeoForge", "versions": _neoforge_versions, "latest": _neoforge_latest, "modded": True},
+    "velocity": {"name": "Velocity (proxy)", "versions": _velocity_versions, "latest": _velocity_latest, "modded": False,
+                 "proxy": True},
 }
+
+
+def is_proxy_key(key):
+    return bool(SOFTWARE.get(key, {}).get("proxy"))
 
 
 def key_from_detected(soft):
@@ -247,6 +264,9 @@ def current(server_path, jar_name):
         ("vanilla",  r"^minecraft_server\.(" + _MC_RE + r")\.jar$"),
         ("fabric",   r"^fabric-server-mc\.(" + _MC_RE + r")-loader\.([\w.+\-]+?)-launcher"),
     )
+    m = re.match(r"^velocity-([\w.\-]+?)-(\d+)\.jar$", base, re.I)
+    if m:
+        return "velocity", m.group(1), m.group(2)
     for key, p in pats:
         m = re.match(p, base, re.I)
         if m:     # grup 2: sürümün isteğe bağlı yama kısmı; grup 3: build / loader

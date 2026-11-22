@@ -146,6 +146,8 @@ def detect_version(path):
                         m = re.search(r"This server is running (\w+) version", line)
                         if m:
                             soft = m.group(1)
+                        elif re.search(r"Booting up Velocity", line):
+                            soft = "Velocity"
                         elif re.search(r"launchTarget, neoforgeserver|NeoForge mod loading|neoforge-\d", line, re.I):
                             soft = "NeoForge"
                         elif re.search(r"launchTarget, forgeserver|MinecraftForge v\d|Forge mod loading", line):
@@ -166,7 +168,7 @@ def detect_version(path):
     if not soft:
         for j in detect_jars(path):
             low = j.lower()
-            for name, label in (("paper", "Paper"), ("purpur", "Purpur"), ("spigot", "Spigot"), ("folia", "Folia"),
+            for name, label in (("velocity", "Velocity"), ("paper", "Paper"), ("purpur", "Purpur"), ("spigot", "Spigot"), ("folia", "Folia"),
                                 ("fabric", "Fabric"), ("quilt", "Quilt"), ("neoforge", "NeoForge"), ("forge", "Forge")):
                 if name in low:
                     soft = label
@@ -174,6 +176,15 @@ def detect_version(path):
             if soft:
                 break
     return ver, soft or ("Vanilla" if ver else "")
+
+
+def is_proxy(path):
+    """Velocity proxy klasörü mü? (dünya, server.properties, oyuncu verisi yok)"""
+    if os.path.exists(os.path.join(path, "velocity.toml")) or os.path.exists(os.path.join(path, ".spypaper-velocity.json")):
+        return True
+    if any(j.lower().startswith("velocity") for j in detect_jars(path)):
+        return True
+    return detect_version(path)[1] == "Velocity"
 
 
 def is_modded(path):

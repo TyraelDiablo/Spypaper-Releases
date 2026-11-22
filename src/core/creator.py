@@ -74,6 +74,13 @@ def create(path, software_key, version, *, motd="A Minecraft Server", port=25565
         start = software.install_with_installer(info, path, java, contact, progress=progress, log=log)
     else:
         start = updater.download(info, path, "", contact, progress=progress)
+    if software.is_proxy_key(software_key):
+        # velocity.toml'u Velocity ilk açılışta yazar; istenen ayarlar o zaman Velocity sayfasında uygulanır
+        from . import velocity
+        velocity.set_pending(path, {"bind": f"0.0.0.0:{port}", "motd": motd, "online_mode": bool(online_mode),
+                                    "forwarding": "modern"})
+        velocity.secret(path)
+        return start
     with open(os.path.join(path, "server.properties"), "w", encoding="utf-8") as f:
         f.write(properties_text(motd, port, max_players, gamemode, difficulty, online_mode, whitelist,
                                 None if template else world))
