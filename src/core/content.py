@@ -346,7 +346,12 @@ def build(server_path, level, version, items, extra_rp=None):
             rp_files[f"assets/spypaper/sounds/records/{i}.ogg"] = os.path.join(src, c["sound"])
         if c.get("texture") and c["type"] in ("tool", "food", "disc") and fmt.v1214:
             rp_files[f"assets/spypaper/textures/item/{i}.png"] = os.path.join(src, c["texture"])
-            if c.get("model") == "cube":          # 16×16×16 blok görünümü: aynı doku altı yüzde
+            vpath = os.path.join(src, c.get("voxels") or "")
+            if c.get("model") == "voxel" and c.get("voxels") and os.path.isfile(vpath):
+                from . import voxel                # 16×16×16 voksel model: palet dokusu + kutu elemanları
+                model, colors = voxel.to_model(voxel.load(vpath), f"spypaper:item/{i}")
+                rp_files[f"assets/spypaper/textures/item/{i}.png"] = voxel.palette_png(colors)
+            elif c.get("model") == "cube":          # 16×16×16 blok görünümü: aynı doku altı yüzde
                 model = {"parent": "minecraft:block/cube_all", "textures": {"all": f"spypaper:item/{i}"}}
             else:
                 parent = "minecraft:item/handheld" if c["type"] == "tool" else "minecraft:item/generated"

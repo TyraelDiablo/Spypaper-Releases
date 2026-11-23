@@ -6,7 +6,7 @@ Eşyalarda "Blok (küp)" görünümü seçilirse doku 16×16×16 bir küpün alt
 from PySide6.QtCore import QPointF, QRect, Qt, Signal
 from PySide6.QtGui import QColor, QImage, QKeySequence, QPainter, QPolygonF, QShortcut, QTransform
 from PySide6.QtWidgets import (QButtonGroup, QColorDialog, QComboBox, QDialog, QGridLayout, QHBoxLayout,
-                               QPushButton, QVBoxLayout, QWidget)
+                               QPushButton, QSlider, QVBoxLayout, QWidget)
 
 from core import N_, texture_templates as TT
 from .i18n import t
@@ -38,6 +38,7 @@ class Canvas(QWidget):
         self.setMinimumSize(320, 320)
         self.setMouseTracking(True)
         self.hover = None
+        self.ghost = None          # 3B kipte alttaki katman (soluk gösterilir)
 
     # --- veri ---
     def snapshot(self):
@@ -195,6 +196,10 @@ class Canvas(QWidget):
                 col = self.px[y][x]
                 if col is not None:
                     p.fillRect(r, col)
+                elif self.ghost and self.ghost[y][x] is not None:
+                    g = QColor(self.ghost[y][x])
+                    g.setAlpha(70)
+                    p.fillRect(r, g)
         if self.grid and c >= 8:
             p.setPen(QColor(0, 0, 0, 60))
             for x in range(self.w + 1):
@@ -219,15 +224,49 @@ class Preview(QWidget):
         super().__init__(parent)
         self.img = QImage()
         self.cube = False
-        self.setFixedSize(150, 150)
+        self.vox = None
+        self.rot = 0
+        self.setFixedSize(200, 200)
 
-    def set(self, img, cube):
-        self.img, self.cube = img, cube
+    def set(self, img, cube, vox=None):
+        self.img, self.cube, self.vox = img, cube, vox
         self.update()
+
+    def _paint_vox(self, p):
+        n = 16
+        a = 5.6
+        cx, cy = self.width() / 2, self.height() / 2
+
+        def rot(x, z):
+            for _ in range(self.rot % 4):
+                x, z = n - 1 - z, x
+            return x, z
+        pts = {}
+        for (x, y, z), c in self.vox.items():
+            rx, rz = rot(x, z)
+            pts[(rx, y, rz)] = c
+        def proj(x, y, z):
+            return QPointF(cx + (x - z) * a, cy + (x + z - n) * a / 2 - (y - n / 2) * a)
+        p.setPen(Qt.NoPen)
+        for (x, y, z) in sorted(pts, key=lambda k: (k[0] + k[2], k[1])):
+            base = QColor(pts[(x, y, z)])
+            if (x, y + 1, z) not in pts:
+                p.setBrush(base.lighter(112))
+                p.drawPolygon(QPolygonF([proj(x, y + 1, z), proj(x + 1, y + 1, z), proj(x + 1, y + 1, z + 1), proj(x, y + 1, z + 1)]))
+            if (x, y, z + 1) not in pts:
+                p.setBrush(base.darker(125))
+                p.drawPolygon(QPolygonF([proj(x, y + 1, z + 1), proj(x + 1, y + 1, z + 1), proj(x + 1, y, z + 1), proj(x, y, z + 1)]))
+            if (x + 1, y, z) not in pts:
+                p.setBrush(base.darker(155))
+                p.drawPolygon(QPolygonF([proj(x + 1, y + 1, z), proj(x + 1, y + 1, z + 1), proj(x + 1, y, z + 1), proj(x + 1, y, z)]))
 
     def paintEvent(self, e):
         p = QPainter(self)
         p.fillRect(self.rect(), QColor(TOKENS["surface_2"]))
+        if self.vox is not None:
+            self._paint_vox(p)
+            p.end()
+            return
         if self.img.isNull():
             return
         if not self.cube:
@@ -264,7 +303,7 @@ class Preview(QWidget):
 class TextureDesigner(QDialog):
     """kind: tool | food | disc | painting | hud. allow_cube: eşyalarda blok (küp) görünümü seçeneği."""
 
-    def __init__(self, kind, w=16, h=16, image=None, cube=False, allow_cube=True, parent=None):
+    def __init__(self, kind, w=16, h=16, image=None, cube=False, allow_cube=True, voxels=None, parent=None):
         super().__init__(parent)
         self.kind = kind
         self.setWindowTitle(t("Doku Tasarımı"))
@@ -314,7 +353,29 @@ class TextureDesigner(QDialog):
         self.canvas = Canvas(w, h)
         self.canvas.picked.connect(self._set_color)
         self.canvas.changed.connect(self._refresh_preview)
-        body.addWidget(self.canvas, 1)
+        mid = QVBoxLayout()
+        self.layer_box = QWidget()
+        lb = QHBoxLayout(self.layer_box)
+        lb.setContentsMargins(0, 0, 0, 0)
+        self.layer = QSlider(Qt.Horizontal)
+        self.layer.setRange(0, 15)
+        self.layer.valueChanged.connect(self._layer_changed)
+        self.layer_lbl = label("", "Muted")
+        lb.addWidget(label("Katman (yükseklik)"))
+        lb.addWidget(self.layer, 1)
+        lb.addWidget(self.layer_lbl)
+        lb.addWidget(button("Alttakini Kopyala", "ghost", self._copy_below))
+        lb.addWidget(button("Dokudan Oluştur", "ghost", self._from_texture,
+                            tooltip="Düz dokuyu 2 piksel kalınlığında 3B modele çevirir"))
+        mid.addWidget(self.layer_box)
+        self.layer_hint = label("3B modelde tuval, seçili yükseklikteki katmana yukarıdan bakar. Soluk pikseller alttaki katmandır.",
+                                "Muted", wrap=True)
+        mid.addWidget(self.layer_hint)
+        mid.addWidget(self.canvas, 1)
+        body.addLayout(mid, 1)
+        self.vox = {}
+        self.img2d = None
+        self.cur_layer = 0
         QShortcut(QKeySequence.Undo, self, self.canvas.do_undo)
         QShortcut(QKeySequence.Redo, self, self.canvas.do_redo)
         QShortcut(QKeySequence("Ctrl+Y"), self, self.canvas.do_redo)
@@ -363,19 +424,22 @@ class TextureDesigner(QDialog):
             self.shape = QComboBox()
             self.shape.addItem(t("Eşya (düz)"), "item")
             self.shape.addItem(t("Blok (16×16×16 küp)"), "cube")
-            self.shape.setCurrentIndex(1 if cube else 0)
-            self.shape.currentIndexChanged.connect(self._refresh_preview)
+            self.shape.addItem(t("3B model (16×16×16 voksel)"), "voxel")
+            self.shape.setCurrentIndex({"cube": 1, "voxel": 2}.get(cube, 0) if isinstance(cube, str) else (1 if cube else 0))
+            self.shape.currentIndexChanged.connect(self._shape_changed)
             right.addWidget(self.shape)
         right.addSpacing(8)
         right.addWidget(label("Önizleme", "CardTitle"))
         self.preview = Preview()
         right.addWidget(self.preview, 0, Qt.AlignHCenter)
+        self.rot_btn = button("Döndür ⟳", "ghost", self._rotate)
+        right.addWidget(self.rot_btn)
         self.size_lbl = label(t("Boyut: {w}×{h} piksel", w=w, h=h), "Muted")
         right.addWidget(self.size_lbl)
         right.addStretch(1)
         rw = QWidget()
         rw.setLayout(right)
-        rw.setFixedWidth(220)
+        rw.setFixedWidth(250)
         body.addWidget(rw)
 
         v.addLayout(row(None, button("İptal", "ghost", self.reject), button("Kaydet", "primary", self.accept),
@@ -383,7 +447,95 @@ class TextureDesigner(QDialog):
         self._set_color(QColor("#d9332b"), remember=False)
         if image is not None and not image.isNull():
             self.canvas.set_image(image)
+        if voxels:
+            self.vox = dict(voxels)
+        self.canvas.changed.connect(self._store_slice)
+        self._mode = "2d"
+        self._shape_changed()
+
+    # --- 3B ---
+    def is_voxel(self):
+        return bool(self.allow_cube and self.shape.currentData() == "voxel")
+
+    def _shape_changed(self, *_):
+        want = "3d" if self.is_voxel() else "2d"
+        if want != self._mode:
+            if want == "3d":
+                self.img2d = self.canvas.image()
+                if not self.vox and any(c is not None for r in self.canvas.px for c in r):
+                    from core import voxel
+                    self.vox = voxel.extrude(self._grid_from_px(), 2)
+                self._mode = "3d"
+                self.canvas.undo.clear()
+                self._load_slice(self.layer.value())
+            else:
+                self._mode = "2d"
+                self.canvas.ghost = None
+                self.canvas.undo.clear()
+                if self.img2d is not None:
+                    self.canvas.set_image(self.img2d)
+        for w in (self.layer_box, self.layer_hint, self.rot_btn):
+            w.setVisible(self._mode == "3d")
         self._refresh_preview()
+
+    def _grid_from_px(self):
+        return [[(c.name() if c is not None else None) for c in r] for r in self.canvas.px]
+
+    def _load_slice(self, y):
+        self.cur_layer = y
+        self.canvas.px = [[(QColor(self.vox[(x, y, z)]) if (x, y, z) in self.vox else None) for x in range(16)]
+                          for z in range(16)]
+        self.canvas.ghost = ([[self.vox.get((x, y - 1, z)) for x in range(16)] for z in range(16)] if y > 0 else None)
+        self.layer_lbl.setText(f"{y + 1}/16")
+        self.canvas.update()
+
+    def _store_slice(self):
+        if self._mode != "3d":
+            return
+        y = self.cur_layer
+        for z in range(16):
+            for x in range(16):
+                c = self.canvas.px[z][x]
+                if c is None:
+                    self.vox.pop((x, y, z), None)
+                else:
+                    self.vox[(x, y, z)] = c.name()
+
+    def _layer_changed(self, y):
+        if self._mode == "3d":
+            self.canvas.undo.clear()
+            self._load_slice(y)
+
+    def _copy_below(self):
+        y = self.cur_layer
+        if y == 0:
+            return
+        self.canvas.push_undo()
+        for z in range(16):
+            for x in range(16):
+                c = self.vox.get((x, y - 1, z))
+                if c:
+                    self.canvas.px[z][x] = QColor(c)
+        self.canvas.update()
+        self.canvas.changed.emit()
+
+    def _from_texture(self):
+        from core import voxel
+        src = self.img2d
+        if src is None or src.isNull():
+            return
+        tmp = Canvas(16, 16)
+        tmp.set_image(src)
+        self.vox = voxel.extrude([[(c.name() if c is not None else None) for c in r] for r in tmp.px], 2)
+        self._load_slice(self.cur_layer)
+        self._refresh_preview()
+
+    def _rotate(self):
+        self.preview.rot = (self.preview.rot + 1) % 4
+        self.preview.update()
+
+    def result_voxels(self):
+        return dict(self.vox)
 
     # --- yardımcılar ---
     def _set_tool(self, k):
@@ -430,11 +582,22 @@ class TextureDesigner(QDialog):
         self.canvas.stamp(g, (self.canvas.w - 16) // 2, (self.canvas.h - 16) // 2)
 
     def _refresh_preview(self, *_):
-        self.preview.set(self.canvas.image(), self.is_cube())
+        if getattr(self, "_mode", "2d") == "3d":
+            self._store_slice()
+            self.preview.set(QImage(), False, self.vox)
+        else:
+            self.preview.set(self.canvas.image(), self.is_cube())
 
     # --- sonuç ---
     def is_cube(self):
         return bool(self.allow_cube and self.shape.currentData() == "cube")
 
     def result_image(self):
+        """2B doku (3B kipte de envanter yedeği olarak düz doku: modelin önden görünüşü)."""
+        if self._mode == "3d":
+            img = QImage(16, 16, QImage.Format_ARGB32)
+            img.fill(Qt.transparent)
+            for (x, y, z), c in sorted(self.vox.items(), key=lambda k: -k[0][2]):
+                img.setPixelColor(x, 15 - y, QColor(c))
+            return img
         return self.canvas.image()

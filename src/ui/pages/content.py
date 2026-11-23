@@ -779,14 +779,24 @@ class ContentPage(Page):
         if not cid:
             return
         from ..texture_designer import TextureDesigner
+        from core import voxel
+        vox = None
+        vp = os.path.join(C.content_dir(self.app.config.server_path), self.cur.get("voxels") or "")
+        if self.cur.get("voxels") and os.path.isfile(vp):
+            vox = voxel.load(vp)
         dlg = TextureDesigner(self.cur["type"], 16, 16, self._current_image("texture"),
-                              cube=self.cur.get("model") == "cube", parent=self)
+                              cube=self.cur.get("model") or False, voxels=vox, parent=self)
         if not dlg.exec():
             return
         name = f"{cid}_item.png"
         dlg.result_image().save(self._dest(name), "PNG")
         self.cur["texture"] = name
-        if dlg.is_cube():
+        if dlg.is_voxel():
+            vname = f"{cid}_model.json"
+            voxel.save(self._dest(vname), dlg.result_voxels())
+            self.cur["voxels"] = vname
+            self.cur["model"] = "voxel"
+        elif dlg.is_cube():
             self.cur["model"] = "cube"
         else:
             self.cur.pop("model", None)
@@ -825,6 +835,7 @@ class ContentPage(Page):
         if self.cur:
             self.cur.pop("texture", None)
             self.cur.pop("model", None)
+            self.cur.pop("voxels", None)
             self._tex_preview(self._tex_box())
 
     def _tex_preview(self, box):
