@@ -229,6 +229,8 @@ def style_section(settings):
     length = settings.get("esplora_length") or "normal"
     parts = [_TONE_TXT.get(tone, _TONE_TXT["balanced"]), _LEN_TXT.get(length, "")]
     parts.append("You may use a few fitting emoji." if settings.get("esplora_emoji") else "Do not use emoji.")
+    if settings.get("units") == "imperial":
+        parts.append("When you convert block distances to real lengths, use feet and miles (1 block = 1 m = 3.28 ft).")
     name = (settings.get("esplora_user_name") or "").strip()[:40]
     if name:
         parts.append(f"The user likes to be called '{name}'.")

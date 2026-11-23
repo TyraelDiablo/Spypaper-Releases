@@ -429,6 +429,8 @@ class MainWindow(QMainWindow):
         from . import msgbox
         msgbox.install()                      # Windows mesaj kutuları yerine panele özel kutular
         self.settings = settings
+        from core import units
+        units.set_system(settings.get("units"))
         self.apps = {}        # id -> App   (UI yeniden kurulsa da yaşar; çalışan sunucular durmaz)
         self.panels = {}      # id -> ServerPanel
         self.view = ("home", None, 0)
@@ -665,7 +667,10 @@ class MainWindow(QMainWindow):
         if self.settings.get(key) == value:
             return
         self.settings.set(key, value)
-        if key in ("language", "theme", "high_contrast", "font_scale", "translate_logs"):
+        if key == "units":
+            from core import units
+            units.set_system(value)
+        if key in ("language", "theme", "high_contrast", "font_scale", "translate_logs", "units"):
             p = self.current_panel()
             if p:
                 self.view = ("server", self.view[1], p.current)
