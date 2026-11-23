@@ -31,6 +31,10 @@ ARG = re.compile(r"%(?:(\d+)\$)?s")
 
 # Sık Paper/vanilla sunucu mesajları -> panel dili (t ile)
 SERVER_MSGS = [
+    # Paperclip (Paper/Purpur/Folia ilk açılışı; önek yok)
+    (re.compile(r"^Applying patches\.*$"), N_("Yamalar uygulanıyor")),
+    (re.compile(r"^Downloading (\S+\.jar)$"), N_("İndiriliyor: {0}")),
+    (re.compile(r"^Starting org\.bukkit\.craftbukkit\.Main$"), N_("Sunucu başlatılıyor (org.bukkit.craftbukkit.Main)")),
     (re.compile(r"^Starting minecraft server version (.+)$"), N_("Minecraft sunucusu başlatılıyor, sürüm {0}")),
     (re.compile(r'^Done \(([\d.,]+)s\)! For help, type "help"'), N_("Hazır ({0} sn)! Yardım için \"help\" yazın")),
     (re.compile(r"^Stopping server$"), N_("Sunucu durduruluyor")),

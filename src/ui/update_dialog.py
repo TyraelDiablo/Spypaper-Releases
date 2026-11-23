@@ -4,7 +4,7 @@ import threading
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QCheckBox, QComboBox, QDialog, QProgressBar, QVBoxLayout
 
-from core import software, updater
+from core import software, switch, updater
 from .i18n import t
 from .theme import TOKENS
 from .widgets import ask, button, label, row
@@ -58,6 +58,10 @@ class UpdateDialog(QDialog):
         self.log_lbl = label("", "Muted", wrap=True)
         self.log_lbl.hide()
         v.addWidget(self.log_lbl)
+        self.migrate = QCheckBox(t("Klasörü yeni yazılıma hazırla (uyumsuz eklenti/modları yedeğe taşı, dünyayı dönüştür)"))
+        self.migrate.setChecked(True)
+        self.migrate.hide()
+        v.addWidget(self.migrate)
         self.backup = QCheckBox(t("Önce dünya yedeği al"))
         self.backup.setChecked(True)
         v.addWidget(self.backup)
@@ -74,6 +78,12 @@ class UpdateDialog(QDialog):
         self.install_log.connect(lambda s: self.log_lbl.setText(s[-160:]))
         self.finished_dl.connect(self._on_done)
         self._load_versions()
+
+    def _level(self):
+        try:
+            return self.app.properties.load().get("level-name") or "world"
+        except Exception:
+            return "world"
 
     def _key(self):
         return self.sw.currentData()
@@ -137,14 +147,22 @@ class UpdateDialog(QDialog):
                             else t("İndirilecek: {name} {v}{tag}", name=software.SOFTWARE[key]["name"],
                                    v=info["version"], tag=tag))
         warns = []
+        self.steps = []
+        self.migrate.setVisible(not same_soft)
         if not same_soft:
+            try:
+                self.steps = switch.plan(self.app.config.server_path, self._level(), self.cur_soft, key)
+            except switch.SwitchError as e:
+                self.warn_lbl.setText(_err(e))
+                self.btn.setEnabled(False)
+                return
             old_mod, new_mod = software.SOFTWARE[self.cur_soft]["modded"], software.SOFTWARE[key]["modded"]
             warns.append(t("Yazılım değiştiriliyor ({old} → {new}).",
                            old=software.SOFTWARE[self.cur_soft]["name"], new=software.SOFTWARE[key]["name"]))
-            if old_mod != new_mod:
+            if self.steps:
+                warns += ["• " + t(st["text"], **st["kw"]) for st in self.steps]
+            elif old_mod != new_mod:
                 warns.append(t("Eklenti (plugins) ve mod (mods) sistemleri birbirinin yerine geçmez; mevcut eklentiler ya da modlar çalışmaz."))
-            elif new_mod:
-                warns.append(t("Fabric, Forge ve NeoForge modları birbiriyle uyumlu değildir."))
         if self.cur_ver and info["version"] != self.cur_ver:
             if updater._vkey(info["version"]) > updater._vkey(self.cur_ver):
                 warns.append(t("Minecraft sürümü yükseltiliyor. Dünya yeni sürüme dönüştürülür ve geri alınamaz; eklentilerin uyumlu olduğundan emin ol."))
@@ -172,6 +190,8 @@ class UpdateDialog(QDialog):
         self.bar.show()
         info, do_backup = self.info, self.backup.isChecked()
         cfg = self.app.config
+        do_migrate = self.migrate.isVisible() and self.migrate.isChecked()
+        old_key, level = self.cur_soft, self._level()
 
         def run():
             try:
@@ -184,6 +204,10 @@ class UpdateDialog(QDialog):
                                                            self.contact, progress=prog, log=self.install_log.emit)
                 else:
                     name = updater.download(info, cfg.server_path, cfg.get("jar_name"), self.contact, progress=prog)
+                self.moved_to = ""
+                if do_migrate:
+                    self.install_log.emit(t("Klasör yeni yazılıma hazırlanıyor…"))
+                    self.moved_to = switch.apply(cfg.server_path, level, old_key, info["software"])
                 self.finished_dl.emit(name, "")
             except Exception as e:
                 self.finished_dl.emit("", _err(e))
@@ -209,5 +233,8 @@ class UpdateDialog(QDialog):
             msg += "\n" + t("Eski jar backups/jars klasörüne taşındı.")
         if software.SOFTWARE[self.info["software"]]["modded"]:
             msg += "\n" + t("Modları Eklentiler sayfasından (mods klasörü) yönetebilirsin.")
+        if getattr(self, "moved_to", ""):
+            msg += "\n" + t("Eski eklenti/modlar ve boyut klasörleri şuraya taşındı: {path}", path=self.moved_to)
+        self.cur_soft = self.info["software"]
         self.status.setText(msg)
         self.btn.hide()
