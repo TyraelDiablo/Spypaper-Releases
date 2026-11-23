@@ -145,6 +145,7 @@ class ContentPage(Page):
         h.addWidget(self.p_preview)
         v = QVBoxLayout()
         v.addLayout(f)
+        v.addWidget(button("Tasarla…", "primary", self.design_painting))
         v.addWidget(button("Resim Seç", "ghost", self.pick_image))
         v.addStretch(1)
         h.addLayout(v, 1)
@@ -174,6 +175,7 @@ class ContentPage(Page):
         d.add(self.d_rights)
         d.add(label("Newgrounds'taki parçaların hakları sanatçılarına aittir. Yalnızca kullanma iznin olan "
                     "parçaları ekle; sanatçının adı diskin açıklamasında görünür.", "Muted", wrap=True))
+        self.d_tex = self._texture_row(d)
         self.types.addWidget(d)
 
         # alet / silah
@@ -260,7 +262,7 @@ class ContentPage(Page):
         f = QFormLayout()
         f.addRow(t("Değiştirilecek parça"), self.h_sprite)
         hd.add(f)
-        hd.add(row(self.h_preview, button("Resim Seç", "ghost", self.pick_hud), None))
+        hd.add(row(self.h_preview, button("Tasarla…", "primary", self.design_hud), button("Resim Seç", "ghost", self.pick_hud), None))
         hd.add(self.h_info)
         hd.add(label("Resim parçanın boyutuna ya da tam katına (2×, 4×…) ölçeklenir; piksel sanatı için keskin büyütme "
                      "kullanılır. Yalnızca kaynak paketine girer, veri paketi ve tarif gerekmez. Paketi kabul eden "
@@ -275,6 +277,7 @@ class ContentPage(Page):
         prev.setFixedSize(32, 32)
         prev.setStyleSheet(f"background:{TOKENS['surface_2']}; border-radius:4px;")
         h.addWidget(prev)
+        h.addWidget(button("Tasarla…", "primary", self.design_texture))
         h.addWidget(button("Doku Seç (16×16)", "ghost", self.pick_texture))
         h.addWidget(button("Dokuyu Kaldır", "ghost", self.clear_texture))
         h.addStretch(1)
@@ -496,6 +499,7 @@ class ContentPage(Page):
             self.d_cmp.setValue(int(c.get("comparator", 1)))
             self.d_ng.setText(str(c.get("newgrounds") or ""))
             self._disc_info()
+            self._tex_preview(self.d_tex)
         elif k == "tool":
             self.t_base.setEditText(c["base"])
             self.t_dmg.setValue(float(c["damage"]))
@@ -761,12 +765,67 @@ class ContentPage(Page):
         name = f"{cid}_item.png"
         img.save(self._dest(name), "PNG")
         self.cur["texture"] = name
-        self._tex_preview(self.t_tex if self.cur["type"] == "tool" else self.f_tex)
+        self._tex_preview(self._tex_box())
+
+    def _tex_box(self):
+        return {"tool": self.t_tex, "food": self.f_tex, "disc": self.d_tex}[self.cur["type"]]
+
+    def _current_image(self, key):
+        p = os.path.join(C.content_dir(self.app.config.server_path), self.cur.get(key) or "")
+        return QImage(p) if self.cur.get(key) and os.path.exists(p) else None
+
+    def design_texture(self):
+        cid = self._need_id()
+        if not cid:
+            return
+        from ..texture_designer import TextureDesigner
+        dlg = TextureDesigner(self.cur["type"], 16, 16, self._current_image("texture"),
+                              cube=self.cur.get("model") == "cube", parent=self)
+        if not dlg.exec():
+            return
+        name = f"{cid}_item.png"
+        dlg.result_image().save(self._dest(name), "PNG")
+        self.cur["texture"] = name
+        if dlg.is_cube():
+            self.cur["model"] = "cube"
+        else:
+            self.cur.pop("model", None)
+        self._tex_preview(self._tex_box())
+        self._pack_status(dirty=True)
+
+    def design_painting(self):
+        cid = self._need_id()
+        if not cid:
+            return
+        from ..texture_designer import TextureDesigner
+        w, h = self.p_w.value() * 16, self.p_h.value() * 16
+        dlg = TextureDesigner("painting", w, h, self._current_image("image"), allow_cube=False, parent=self)
+        if dlg.exec():
+            self.cur.pop("_src_image", None)
+            self._save_painting(dlg.result_image())
+
+    def design_hud(self):
+        cid = self._need_id()
+        if not cid or not self.cur:
+            return
+        from ..texture_designer import TextureDesigner
+        key = self.h_sprite.currentData()
+        _name, w, h = C.HUD_SPRITES[key]
+        img = self._current_image("image") if self.cur.get("sprite") == key else None
+        dlg = TextureDesigner("hud", w, h, img, allow_cube=False, parent=self)
+        if not dlg.exec():
+            return
+        name = f"{cid}_hud.png"
+        dlg.result_image().save(self._dest(name), "PNG")
+        self.cur["image"] = name
+        self.cur["sprite"] = key
+        self._hud_preview()
 
     def clear_texture(self):
         if self.cur:
             self.cur.pop("texture", None)
-            self._tex_preview(self.t_tex if self.cur["type"] == "tool" else self.f_tex)
+            self.cur.pop("model", None)
+            self._tex_preview(self._tex_box())
 
     def _tex_preview(self, box):
         c = self.cur

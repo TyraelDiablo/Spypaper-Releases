@@ -199,7 +199,7 @@ def components(c, fmt):
         comps["minecraft:consumable"] = {"consume_seconds": float(c.get("seconds", 1.6)),
                                          **({"on_consume_effects": [{"type": "minecraft:apply_effects",
                                                                      "effects": effects}]} if effects else {})}
-    if c.get("texture") and t in ("tool", "food") and fmt.v1214:
+    if c.get("texture") and t in ("tool", "food", "disc") and fmt.v1214:
         comps["minecraft:item_model"] = f"spypaper:{c['id']}"
     return comps
 
@@ -344,11 +344,14 @@ def build(server_path, level, version, items, extra_rp=None):
                 "comparator_output": max(1, min(15, int(c.get("comparator", 1))))})
             sounds[f"music_disc.{i}"] = {"sounds": [{"name": f"spypaper:records/{i}", "stream": True}]}
             rp_files[f"assets/spypaper/sounds/records/{i}.ogg"] = os.path.join(src, c["sound"])
-        if c.get("texture") and c["type"] in ("tool", "food") and fmt.v1214:
+        if c.get("texture") and c["type"] in ("tool", "food", "disc") and fmt.v1214:
             rp_files[f"assets/spypaper/textures/item/{i}.png"] = os.path.join(src, c["texture"])
-            parent = "minecraft:item/handheld" if c["type"] == "tool" else "minecraft:item/generated"
-            rp_files[f"assets/spypaper/models/item/{i}.json"] = json.dumps(
-                {"parent": parent, "textures": {"layer0": f"spypaper:item/{i}"}})
+            if c.get("model") == "cube":          # 16×16×16 blok görünümü: aynı doku altı yüzde
+                model = {"parent": "minecraft:block/cube_all", "textures": {"all": f"spypaper:item/{i}"}}
+            else:
+                parent = "minecraft:item/handheld" if c["type"] == "tool" else "minecraft:item/generated"
+                model = {"parent": parent, "textures": {"layer0": f"spypaper:item/{i}"}}
+            rp_files[f"assets/spypaper/models/item/{i}.json"] = json.dumps(model)
             rp_files[f"assets/spypaper/items/{i}.json"] = json.dumps(
                 {"model": {"type": "minecraft:model", "model": f"spypaper:item/{i}"}})
     if placeable:
