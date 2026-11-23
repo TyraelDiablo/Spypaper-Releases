@@ -731,6 +731,9 @@ class EsploraPage(Page):
         ctx = SK.scope_context(EA.filter_context(self.context(last), prof), skill)
         system = build_system(ctx, LANG_EN.get(current(), "English"),
                               access=EA.prompt_section(prof), no_commands=EA.command_rule(prof))
+        from core.esplora_guide import guide
+        from .. import window as W
+        system += guide({c.__name__: t(c.title) for c in W.PAGES})
         system += SK.style_section(settings) + SK.skill_section(skill)
         msgs = self._api_messages(self.app.esplora_history)
 
