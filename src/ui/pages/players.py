@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QListWidget, QListWidgetItem, QSpinBox, QStackedWidget, QVBoxLayout, QWidget,
 )
 
+from core import units
 from core.players import (
     PLAYER_COMMANDS, account_type, build_command, give_command, parse_list_output,
     tp_death_command, tp_to_player_command,
@@ -431,7 +432,7 @@ class PlayersPage(Page):
                     ("swords", t("Öldürülen Mob"), s["mob_kills"]),
                     ("sword", t("Öldürülen Oyuncu"), s["player_kills"]),
                     ("chevrons-up", t("Zıplama"), s["jumps"]),
-                    ("footprints", t("Yürünen Mesafe"), f"{s['walk_cm'] / 100000:.1f} km"),
+                    ("footprints", t("Yürünen Mesafe"), units.distance(s['walk_cm'] / 100)),
                     ("clock", t("Son giriş"), self._last_seen(s.get("last_seen"))),
                 ]
                 rows = [("", name, val) for _, name, val in stats]

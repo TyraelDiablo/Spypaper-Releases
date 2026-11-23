@@ -1,6 +1,7 @@
 """Sunucu Ayarları → Dünya Sınırı kartı. Çekirdek: core/worldborder.py."""
 from PySide6.QtWidgets import QComboBox, QGridLayout, QSpinBox, QStackedWidget, QWidget
 
+from core import units
 from core import N_, worldborder as WB
 
 from .i18n import t
@@ -101,8 +102,8 @@ class BorderCard(Card):
             self.saved_lbl.setText(t("Şu an: sınır yok."))
         else:
             x0, z0, x1, z1 = WB.edges(*cur)
-            self.saved_lbl.setText(t("Son kaydedilen sınır (Overworld): merkez {cx}, {cz} · {size} blok · X {x0}…{x1}, Z {z0}…{z1}",
-                                     cx=WB.num(cur[0]), cz=WB.num(cur[1]), size=WB.num(cur[2]),
+            self.saved_lbl.setText(t("Son kaydedilen sınır (Overworld): merkez {cx}, {cz} · {size} blok ({real}) · X {x0}…{x1}, Z {z0}…{z1}",
+                                     cx=WB.num(cur[0]), cz=WB.num(cur[1]), size=WB.num(cur[2]), real=units.length(cur[2]),
                                      x0=WB.num(x0), x1=WB.num(x1), z0=WB.num(z0), z1=WB.num(z1)))
 
     def values(self):
@@ -118,8 +119,8 @@ class BorderCard(Card):
             self.preview.setText(t("Köşeler aynı olamaz."))
             return
         x0, z0, x1, z1 = WB.edges(cx, cz, size)
-        text = t("Merkez {cx}, {cz} · {size}×{size} blok · X {x0}…{x1}, Z {z0}…{z1}",
-                 cx=WB.num(cx), cz=WB.num(cz), size=WB.num(size), x0=WB.num(x0), x1=WB.num(x1), z0=WB.num(z0), z1=WB.num(z1))
+        text = t("Merkez {cx}, {cz} · {size}×{size} blok ({real}) · X {x0}…{x1}, Z {z0}…{z1}",
+                 cx=WB.num(cx), cz=WB.num(cz), size=WB.num(size), real=units.length(size), x0=WB.num(x0), x1=WB.num(x1), z0=WB.num(z0), z1=WB.num(z1))
         if not square:
             text += "\n" + t("Sınır her zaman karedir: alanı kapsamak için uzun kenar kullanıldı.")
         self.preview.setText(text)
@@ -150,8 +151,8 @@ class BorderCard(Card):
         for c in cmds:
             if not self.page.send(c):
                 return
-        self.page.info(t("Sınır uygulandı: {size}×{size} blok, merkez {cx}, {cz}.",
-                         size=WB.num(size), cx=WB.num(cx), cz=WB.num(cz)))
+        self.page.info(t("Sınır uygulandı: {size}×{size} blok ({real}), merkez {cx}, {cz}.",
+                         size=WB.num(size), real=units.length(size), cx=WB.num(cx), cz=WB.num(cz)))
 
     def remove(self):
         if not self._running():

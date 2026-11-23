@@ -123,6 +123,13 @@ class Drawer(QWidget):
             lambda val: None if self.scale.isSliderDown() else ctl.set_setting("font_scale", round(val / 100, 2)))
         self.scale.sliderReleased.connect(lambda: ctl.set_setting("font_scale", round(self.scale.value() / 100, 2)))
         v.addWidget(self.scale)
+        v.addWidget(label("Ölçü birimi", "Muted"))
+        self.units = QComboBox()
+        self.units.addItem(t("Metrik (metre, km)"), "metric")
+        self.units.addItem(t("Feet ve mil (ft, mi)"), "imperial")
+        self.units.setCurrentIndex(max(0, self.units.findData(s.get("units") or "metric")))
+        self.units.currentIndexChanged.connect(lambda i: ctl.set_setting("units", self.units.itemData(i)))
+        v.addWidget(self.units)
         v.addWidget(item("Panel Düzeni (sekmeler ve kartlar)", self._layout, "settings"))
 
         # --- erişilebilirlik ---
