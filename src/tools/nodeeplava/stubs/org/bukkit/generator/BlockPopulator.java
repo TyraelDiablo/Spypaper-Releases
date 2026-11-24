@@ -1,0 +1,1 @@
+package org.bukkit.generator; public abstract class BlockPopulator { public void populate(WorldInfo w, java.util.Random r, int cx, int cz, LimitedRegion l) {} }

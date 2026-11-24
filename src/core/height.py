@@ -171,3 +171,34 @@ def risks(old, new, world_exists):
     if new[1] < old[1]:
         out.append(N_("Üst sınırı düşürmek, sınırın üstündeki yapıları siler."))
     return out
+
+
+# --- derin mağara lavı: oyunun kodunda (Y -54 altı) olduğu için veri paketiyle değil, küçük bir Paper eklentisiyle
+NOLAVA_JAR = "SpypaperNoDeepLava.jar"
+
+
+def _nolava_src():
+    from .config import resource_dir
+    for base in (os.path.join(resource_dir(), "ui", "assets", "plugins"),
+                 os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ui", "assets", "plugins")):
+        p = os.path.join(base, NOLAVA_JAR)
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def nolava_installed(server_path):
+    return os.path.exists(os.path.join(server_path, "plugins", NOLAVA_JAR))
+
+
+def set_nolava(server_path, on):
+    """Eklentiyi plugins/ klasörüne koyar ya da kaldırır. Yalnızca Paper/Purpur/Folia."""
+    dst = os.path.join(server_path, "plugins", NOLAVA_JAR)
+    if on:
+        src = _nolava_src()
+        if not src:
+            raise HeightError(N_("Lav eklentisi Spypaper içinde bulunamadı."))
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copyfile(src, dst)
+    elif os.path.exists(dst):
+        os.remove(dst)
