@@ -1,4 +1,6 @@
 import html
+from PySide6.QtGui import QTextCursor
+import re
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QLabel, QLineEdit, QListWidget, QListWidgetItem, QPlainTextEdit
@@ -95,20 +97,42 @@ class ConsolePage(Page):
         self.root.addLayout(row(
             self.input,
             button("Gönder", "primary", self.submit),
-            button("Temizle", "ghost", self.out.clear),
+            button("Temizle", "ghost", self.clear_console),
             stretch_end=False,
         ))
         for line in list(app.server.history):   # arayüz yeniden kurulduysa geçmişi geri yükle
             self.append(line)
         bridge.line.connect(self.append)
 
+    _STAMP = re.compile(r"^\[[^\]]*\]\s*(?:\[[^\]]*\]\s*)*:?\s*")
+    _NUM = re.compile(r"-?\d+")
+
+    def _repeat_key(self, text):
+        """Aynı mesaj (yalnızca saat ve sayıları farklı) art arda gelirse tek satırda sayılır."""
+        return self._NUM.sub("#", self._STAMP.sub("", text, count=1)).strip()
+
     def append(self, text):
         kind = classify_log_line(text)
         if self.app.config.settings.get("translate_logs"):
             text = self.app.logtrans.line(text)
-        self.out.appendHtml(
-            f'<span style="color:{log_colors()[kind]}; white-space:pre-wrap">{html.escape(text)}</span>'
-        )
+        key = self._repeat_key(text)
+        last = getattr(self, "_last", None)
+        body = f'<span style="color:{log_colors()[kind]}; white-space:pre-wrap">{html.escape(text)}</span>'
+        if last and key and last[0] == key and self.out.document().blockCount() == last[2] and self.out.toPlainText():
+            n = last[1] + 1
+            c = self.out.textCursor()
+            c.movePosition(QTextCursor.End)
+            c.select(QTextCursor.BlockUnderCursor)
+            c.removeSelectedText()
+            self.out.appendHtml(body + f'<span style="color:{TOKENS["text_muted"]}">  (×{n})</span>')
+        else:
+            n = 1
+            self.out.appendHtml(body)
+        self._last = (key, n, self.out.document().blockCount())
+
+    def clear_console(self):
+        self.out.clear()
+        self._last = None
 
     # --- öneriler ---
     def _ctx(self):
