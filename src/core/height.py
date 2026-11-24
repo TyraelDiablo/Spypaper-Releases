@@ -70,9 +70,13 @@ def current(server_path, level):
         return DEFAULT[0], DEFAULT[1], False
 
 
-def _read_from_zip(z, depth=0):
+NOISE = "data/minecraft/worldgen/noise_settings/overworld.json"
+VANILLA_NOISE_TOP = 320
+
+
+def _read_from_zip(z, depth=0, entry=ENTRY):
     try:
-        return z.read(ENTRY)
+        return z.read(entry)
     except KeyError:
         pass
     if depth >= 1:
@@ -81,7 +85,7 @@ def _read_from_zip(z, depth=0):
         if n.endswith(".jar") and ("versions/" in n or "server" in n.lower()):
             try:
                 with zipfile.ZipFile(io.BytesIO(z.read(n))) as inner:
-                    data = _read_from_zip(inner, depth + 1)
+                    data = _read_from_zip(inner, depth + 1, entry)
                     if data:
                         return data
             except (zipfile.BadZipFile, KeyError):
@@ -89,7 +93,7 @@ def _read_from_zip(z, depth=0):
     return None
 
 
-def vanilla_dimension(server_path):
+def vanilla_dimension(server_path, entry=ENTRY):
     """Sunucu klasöründeki jar'lardan oyunun overworld.json'u. Önce önbellekteki asıl oyun jar'ları denenir."""
     cands = []
     for sub in ("cache", "versions", os.path.join("libraries", "net", "minecraft"), ".fabric", ""):
@@ -108,7 +112,7 @@ def vanilla_dimension(server_path):
     for jar in cands:
         try:
             with zipfile.ZipFile(jar) as z:
-                data = _read_from_zip(z)
+                data = _read_from_zip(z, entry=entry)
             if data:
                 return json.loads(data.decode("utf-8"))
         except (OSError, zipfile.BadZipFile, ValueError):
@@ -117,7 +121,14 @@ def vanilla_dimension(server_path):
                          "sonra tekrar dene."))
 
 
-def apply(server_path, level, min_y, max_y, pack_format=None):
+def deep_terrain(server_path, level):
+    """Pakette arazi üretimi (noise_settings) de değiştirilmiş mi?"""
+    return os.path.exists(os.path.join(_pack_dir(server_path, level), *NOISE.split("/")))
+
+
+def apply(server_path, level, min_y, max_y, pack_format=None, deep=True):
+    """deep: alt sınır -64'ün altındaysa arazi üretimini de o derinliğe indirir (yalnızca yeni chunk'lar). Aradaki
+    bölge derin taşla dolar, ana kaya yeni tabana iner; üst kısım vanilla gibi kalır."""
     """Veri paketini yazar (ya da varsayılana dönülürse siler). Değişiklik sunucu yeniden başlayınca geçerli olur."""
     validate(min_y, max_y)
     d = _pack_dir(server_path, level)
@@ -132,6 +143,17 @@ def apply(server_path, level, min_y, max_y, pack_format=None):
     os.makedirs(os.path.join(d, "data", "minecraft", "dimension_type"), exist_ok=True)
     with open(os.path.join(d, *ENTRY.split("/")), "w", encoding="utf-8") as f:
         json.dump(dim, f, indent=2)
+    noise_path = os.path.join(d, *NOISE.split("/"))
+    if deep and min_y < DEFAULT[0]:
+        ns = vanilla_dimension(server_path, NOISE)
+        top = min(VANILLA_NOISE_TOP, max_y)
+        ns.setdefault("noise", {})["min_y"] = min_y
+        ns["noise"]["height"] = top - min_y
+        os.makedirs(os.path.dirname(noise_path), exist_ok=True)
+        with open(noise_path, "w", encoding="utf-8") as f:
+            json.dump(ns, f)
+    elif os.path.exists(noise_path):
+        os.remove(noise_path)
     fmt = pack_format or 48
     with open(os.path.join(d, "pack.mcmeta"), "w", encoding="utf-8") as f:
         json.dump({"pack": {"description": f"Spypaper: build height {min_y}..{max_y - 1}", "pack_format": fmt,
