@@ -2030,6 +2030,7 @@
   "[görsel]": "[afbeelding]",
   "[sunucu bağlantısı] {0} -> {1} ayrıldı": "[serververbinding] {0} -> {1} losgekoppeld",
   "[sunucu bağlantısı] {0} -> {1} bağlandı": "[serververbinding] {0} -> {1} verbonden",
+  "[{0}, {1}] chunk'ının yükseklik haritası boyutu uymuyor (beklenen {2}, bulunan {3}); yok sayılıp yeniden hesaplanacak": "Heightmapgegevens van chunk [{0}, {1}] genegeerd: grootte klopt niet (verwacht {2}, kreeg {3}); worden herberekend",
   "[{0}] Kütüphane yüklendi: {1}": "[{0}] Bibliotheek geladen: {1}",
   "[{0}] Sürüm denetimi başlatılıyor: {1}": "[{0}] Versiecontrole gestart: {1}",
   "[{0}] Sürüm durumu: {1}, kurulu: {2}, güncel: {3}": "[{0}] Versiestatus: {1}, geïnstalleerd: {2}, nieuwste: {3}",

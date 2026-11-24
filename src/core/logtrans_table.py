@@ -475,6 +475,7 @@ _RAW = [
     ('^Unable to authenticate player$', N_('Oyuncu doğrulanamadı'), ()),
     ('^Key for player (.+) could not be verified!$', N_('{0} oyuncusunun anahtarı doğrulanamadı!'), ()),
     ('^(\\S+) -> executed command /(.+)$', N_('{0} -> /{1} komutunu çalıştırdı'), ()),
+    ('^Ignoring heightmap data for chunk \\[(-?\\d+), (-?\\d+)\\], size does not match; expected: (\\d+), got: (\\d+)$', N_("[{0}, {1}] chunk'ının yükseklik haritası boyutu uymuyor (beklenen {2}, bulunan {3}); yok sayılıp yeniden hesaplanacak"), ()),
 ]
 
 PANEL = [(re.compile(rx), tpl, groups) for rx, tpl, groups in _RAW]

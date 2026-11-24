@@ -2030,6 +2030,7 @@
   "[görsel]": "[obraz]",
   "[sunucu bağlantısı] {0} -> {1} ayrıldı": "[połączenie z serwerem] {0} -> {1} rozłączono",
   "[sunucu bağlantısı] {0} -> {1} bağlandı": "[połączenie z serwerem] {0} -> {1} połączono",
+  "[{0}, {1}] chunk'ının yükseklik haritası boyutu uymuyor (beklenen {2}, bulunan {3}); yok sayılıp yeniden hesaplanacak": "Pominięto mapę wysokości chunku [{0}, {1}]: zły rozmiar (oczekiwano {2}, jest {3}); zostanie przeliczona",
   "[{0}] Kütüphane yüklendi: {1}": "[{0}] Załadowano bibliotekę: {1}",
   "[{0}] Sürüm denetimi başlatılıyor: {1}": "[{0}] Rozpoczynanie sprawdzania wersji: {1}",
   "[{0}] Sürüm durumu: {1}, kurulu: {2}, güncel: {3}": "[{0}] Stan wersji: {1}, zainstalowana: {2}, najnowsza: {3}",

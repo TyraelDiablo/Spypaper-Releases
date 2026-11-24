@@ -2030,6 +2030,7 @@
   "[görsel]": "[画像]",
   "[sunucu bağlantısı] {0} -> {1} ayrıldı": "[サーバー接続] {0} -> {1} 切断",
   "[sunucu bağlantısı] {0} -> {1} bağlandı": "[サーバー接続] {0} -> {1} 接続",
+  "[{0}, {1}] chunk'ının yükseklik haritası boyutu uymuyor (beklenen {2}, bulunan {3}); yok sayılıp yeniden hesaplanacak": "チャンク [{0}, {1}] の高さマップのサイズが不一致（予想 {2}、実際 {3}）。無視して再計算します",
   "[{0}] Kütüphane yüklendi: {1}": "[{0}] ライブラリを読み込みました: {1}",
   "[{0}] Sürüm denetimi başlatılıyor: {1}": "[{0}] バージョン確認を開始: {1}",
   "[{0}] Sürüm durumu: {1}, kurulu: {2}, güncel: {3}": "[{0}] バージョン状態: {1}、導入済み: {2}、最新: {3}",
