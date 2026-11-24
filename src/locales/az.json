@@ -2032,6 +2032,7 @@
   "[görsel]": "[şəkil]",
   "[sunucu bağlantısı] {0} -> {1} ayrıldı": "[server bağlantısı] {0} -> {1} ayrıldı",
   "[sunucu bağlantısı] {0} -> {1} bağlandı": "[server bağlantısı] {0} -> {1} qoşuldu",
+  "[{0}, {1}] chunk'ının yükseklik haritası boyutu uymuyor (beklenen {2}, bulunan {3}); yok sayılıp yeniden hesaplanacak": "[{0}, {1}] chunk-ının hündürlük xəritəsinin ölçüsü uyğun gəlmir (gözlənilən {2}, tapılan {3}); nəzərə alınmayıb yenidən hesablanacaq",
   "[{0}] Kütüphane yüklendi: {1}": "[{0}] Kitabxana yükləndi: {1}",
   "[{0}] Sürüm denetimi başlatılıyor: {1}": "[{0}] Versiya yoxlaması başladılır: {1}",
   "[{0}] Sürüm durumu: {1}, kurulu: {2}, güncel: {3}": "[{0}] Versiya vəziyyəti: {1}, quraşdırılmış: {2}, son: {3}",

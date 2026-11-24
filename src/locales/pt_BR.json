@@ -2032,6 +2032,7 @@
   "[görsel]": "[imagem]",
   "[sunucu bağlantısı] {0} -> {1} ayrıldı": "[conexão ao servidor] {0} -> {1} desconectado",
   "[sunucu bağlantısı] {0} -> {1} bağlandı": "[conexão ao servidor] {0} -> {1} conectado",
+  "[{0}, {1}] chunk'ının yükseklik haritası boyutu uymuyor (beklenen {2}, bulunan {3}); yok sayılıp yeniden hesaplanacak": "Dados de heightmap do chunk [{0}, {1}] ignorados: tamanho não confere (esperado {2}, obtido {3}); serão recalculados",
   "[{0}] Kütüphane yüklendi: {1}": "[{0}] Biblioteca carregada: {1}",
   "[{0}] Sürüm denetimi başlatılıyor: {1}": "[{0}] Iniciando verificação de versão: {1}",
   "[{0}] Sürüm durumu: {1}, kurulu: {2}, güncel: {3}": "[{0}] Status da versão: {1}, instalada: {2}, mais recente: {3}",

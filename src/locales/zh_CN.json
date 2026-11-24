@@ -2032,6 +2032,7 @@
   "[görsel]": "[图片]",
   "[sunucu bağlantısı] {0} -> {1} ayrıldı": "[服务器连接] {0} -> {1} 已断开",
   "[sunucu bağlantısı] {0} -> {1} bağlandı": "[服务器连接] {0} -> {1} 已连接",
+  "[{0}, {1}] chunk'ının yükseklik haritası boyutu uymuyor (beklenen {2}, bulunan {3}); yok sayılıp yeniden hesaplanacak": "区块 [{0}, {1}] 的高度图大小不符（应为 {2}，实为 {3}），将忽略并重新计算",
   "[{0}] Kütüphane yüklendi: {1}": "[{0}] 已加载库：{1}",
   "[{0}] Sürüm denetimi başlatılıyor: {1}": "[{0}] 开始版本检查:{1}",
   "[{0}] Sürüm durumu: {1}, kurulu: {2}, güncel: {3}": "[{0}] 版本状态:{1},已安装:{2},最新:{3}",

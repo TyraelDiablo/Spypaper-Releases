@@ -2032,6 +2032,7 @@
   "[görsel]": "[Bild]",
   "[sunucu bağlantısı] {0} -> {1} ayrıldı": "[Serververbindung] {0} -> {1} getrennt",
   "[sunucu bağlantısı] {0} -> {1} bağlandı": "[Serververbindung] {0} -> {1} verbunden",
+  "[{0}, {1}] chunk'ının yükseklik haritası boyutu uymuyor (beklenen {2}, bulunan {3}); yok sayılıp yeniden hesaplanacak": "Heightmap-Daten für Chunk [{0}, {1}] ignoriert: Größe passt nicht (erwartet {2}, erhalten {3}); wird neu berechnet",
   "[{0}] Kütüphane yüklendi: {1}": "[{0}] Bibliothek geladen: {1}",
   "[{0}] Sürüm denetimi başlatılıyor: {1}": "[{0}] Versionsprüfung wird gestartet: {1}",
   "[{0}] Sürüm durumu: {1}, kurulu: {2}, güncel: {3}": "[{0}] Versionsstatus: {1}, installiert: {2}, aktuell: {3}",
