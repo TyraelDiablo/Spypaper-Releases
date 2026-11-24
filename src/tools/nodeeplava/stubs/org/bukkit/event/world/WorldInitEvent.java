@@ -1,0 +1,1 @@
+package org.bukkit.event.world; public class WorldInitEvent { public org.bukkit.World getWorld(){return null;} }

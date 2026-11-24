@@ -1,0 +1,7 @@
+name: SpypaperNoDeepLava
+version: 1.0
+main: dev.spypaper.nodeeplava.NoDeepLava
+api-version: '1.20'
+load: STARTUP
+author: Spypaper
+description: Derin magaralardaki lavi yeni chunk'larda havaya cevirir (tabanin 10 blok ustune kadar).

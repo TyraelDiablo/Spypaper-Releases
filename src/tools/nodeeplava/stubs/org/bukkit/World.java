@@ -1,0 +1,1 @@
+package org.bukkit; public interface World extends org.bukkit.generator.WorldInfo { java.util.List<org.bukkit.generator.BlockPopulator> getPopulators(); }

@@ -36,6 +36,10 @@ class HeightCard(Card):
         self.deep.setToolTip(t("Alt sınır -64'ün altındaysa ana kaya yeni tabana iner, aradaki bölge derin taşla dolar. "
                                "Önceden oluşmuş bölgelerin altı boş kalır."))
         self.add(self.deep)
+        self.nolava = QCheckBox(t("Derin mağaralardaki lavı kaldır (tabanın 10 blok üstüne kadar; Paper eklentisi)"))
+        self.nolava.setToolTip(t("Y -55'in altındaki mağara lavı yeni keşfedilen bölgelerde havaya çevrilir; tabana en yakın "
+                                 "10 blok olduğu gibi kalır. Paper, Purpur ve Folia'da çalışır."))
+        self.add(self.nolava)
         self.info = label("", "Muted", wrap=True)
         self.add(self.info)
         self.ram_warn = label("", "Muted", wrap=True)
@@ -55,6 +59,7 @@ class HeightCard(Card):
         lo, hi, has = H.current(app.config.server_path, level)
         self.saved = (lo, hi)
         self.deep.setChecked(H.deep_terrain(app.config.server_path, level) or not has)
+        self.nolava.setChecked(H.nolava_installed(app.config.server_path))
         self._set(lo, hi)
 
     def _set(self, lo, hi):
@@ -76,6 +81,7 @@ class HeightCard(Card):
         self.preset.setCurrentIndex(i)
         self.preset.blockSignals(False)
         self.deep.setVisible(lo < H.DEFAULT[0])
+        self.nolava.setVisible(lo < H.DEFAULT[0] and self._bukkit())
         rec = H.recommended_ram_gb(lo, hi)
         self.info.setText(t("Yükseklik {h} blok (Y {lo} … {top}). Önerilen en az RAM: {rec} GB.",
                             h=hi - lo, lo=lo, top=hi - 1, rec=rec))
@@ -86,6 +92,10 @@ class HeightCard(Card):
                               if low else "")
         self.ram_warn.setVisible(low)
         self.ram_btn.setVisible(low)
+
+    def _bukkit(self):
+        from core.config import detect_version
+        return detect_version(self.page.app.config.server_path)[1] in ("Paper", "Purpur", "Folia")
 
     def raise_ram(self):
         rec = H.recommended_ram_gb(self.lo.value(), self.hi.value())
@@ -126,6 +136,8 @@ class HeightCard(Card):
             ver = detect_version(app.config.server_path)[0] or ""
             fmt = data_format(Fmt(ver)) if ver else None
             H.apply(app.config.server_path, level, lo, hi, fmt, deep=self.deep.isChecked())
+            if self._bukkit():
+                H.set_nolava(app.config.server_path, self.nolava.isChecked() and lo < H.DEFAULT[0])
         except H.HeightError as e:
             self.page.warn(t(e.template, **e.kw))
             return
