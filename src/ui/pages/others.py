@@ -291,6 +291,9 @@ class SettingsPage(Page):
         from ..borderbox import BorderCard
         self.border = BorderCard(self)
         self.col.addWidget(self.border)
+        from ..heightbox import HeightCard
+        self.height_card = HeightCard(self)
+        self.col.addWidget(self.height_card)
 
         # server.properties
         props = Card("server.properties", "Değişikliklerin çoğu sunucu yeniden başlatılınca geçerli olur")
@@ -321,6 +324,7 @@ class SettingsPage(Page):
         self.keep.setValue(int(c.get("backup_keep") or 0))
         self.auto_restart.setChecked(bool(c.get("auto_restart")))
         self.border.load()
+        self.height_card.load()
 
         ip = self.app.properties.icon_path
         if ip:
