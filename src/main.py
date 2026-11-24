@@ -1,4 +1,13 @@
+import os
 import sys
+
+if getattr(sys, "frozen", False):
+    # Tek dosyalı exe, açıldığı geçici klasörü (_MEI…) ortam değişkenleriyle alt süreçlere de bildirir. Spypaper'ın
+    # başlattığı bir program (ör. yeniden başlatılan Gezgin) bunları miras alırsa, oradan açılan yeni Spypaper silinmiş
+    # bir _MEI klasörünü kullanmaya çalışıp çöker. Alt süreçlere temiz ortam bırak.
+    for _k in [k for k in os.environ if k.startswith("_PYI_") or k == "_MEIPASS2"]:
+        os.environ.pop(_k, None)
+    os.environ["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
 
 from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtWidgets import QApplication
