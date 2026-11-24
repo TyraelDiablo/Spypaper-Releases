@@ -111,7 +111,7 @@ class HeightCard(Card):
         risks = H.risks(self.saved, (lo, hi), world_exists)
         if risks:
             msg = "\n".join("• " + t(r) for r in risks) + "\n\n" + t("Önce dünya yedeği alman önerilir. Devam edilsin mi?")
-            if QMessageBox.warning(self, t("Yapı Yüksekliği"), msg, QMessageBox.Yes | QMessageBox.No) != QMessageBox.Yes:
+            if QMessageBox.question(self, t("Yapı Yüksekliği"), msg) != QMessageBox.Yes:
                 return
         try:
             from core.content import Fmt, data_format
