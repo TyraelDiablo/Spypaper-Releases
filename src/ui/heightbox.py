@@ -1,7 +1,7 @@
 """Sunucu Ayarları → Yapı Yüksekliği kartı. Çekirdek: core/height.py."""
 import os
 
-from PySide6.QtWidgets import QComboBox, QMessageBox, QSpinBox
+from PySide6.QtWidgets import QCheckBox, QComboBox, QMessageBox, QSpinBox
 
 from core import height as H
 from .i18n import t
@@ -31,6 +31,11 @@ class HeightCard(Card):
         self.add(row(label("Hazır", "Muted"), self.preset, label("En alt Y", "Muted"), self.lo,
                      label("En üst Y", "Muted"), self.hi, None, button("Uygula", "primary", self.apply_height),
                      stretch_end=False))
+        self.deep = QCheckBox(t("Derinlerde de arazi üret (yalnızca yeni keşfedilen bölgeler)"))
+        self.deep.setChecked(True)
+        self.deep.setToolTip(t("Alt sınır -64'ün altındaysa ana kaya yeni tabana iner, aradaki bölge derin taşla dolar. "
+                               "Önceden oluşmuş bölgelerin altı boş kalır."))
+        self.add(self.deep)
         self.info = label("", "Muted", wrap=True)
         self.add(self.info)
         self.ram_warn = label("", "Muted", wrap=True)
@@ -47,8 +52,9 @@ class HeightCard(Card):
 
     def load(self):
         app, level = self._ctx()
-        lo, hi, _ = H.current(app.config.server_path, level)
+        lo, hi, has = H.current(app.config.server_path, level)
         self.saved = (lo, hi)
+        self.deep.setChecked(H.deep_terrain(app.config.server_path, level) or not has)
         self._set(lo, hi)
 
     def _set(self, lo, hi):
@@ -69,6 +75,7 @@ class HeightCard(Card):
         self.preset.blockSignals(True)
         self.preset.setCurrentIndex(i)
         self.preset.blockSignals(False)
+        self.deep.setVisible(lo < H.DEFAULT[0])
         rec = H.recommended_ram_gb(lo, hi)
         self.info.setText(t("Yükseklik {h} blok (Y {lo} … {top}). Önerilen en az RAM: {rec} GB.",
                             h=hi - lo, lo=lo, top=hi - 1, rec=rec))
@@ -111,14 +118,14 @@ class HeightCard(Card):
         risks = H.risks(self.saved, (lo, hi), world_exists)
         if risks:
             msg = "\n".join("• " + t(r) for r in risks) + "\n\n" + t("Önce dünya yedeği alman önerilir. Devam edilsin mi?")
-            if QMessageBox.warning(self, t("Yapı Yüksekliği"), msg, QMessageBox.Yes | QMessageBox.No) != QMessageBox.Yes:
+            if QMessageBox.question(self, t("Yapı Yüksekliği"), msg) != QMessageBox.Yes:
                 return
         try:
             from core.content import Fmt, data_format
             from core.config import detect_version
             ver = detect_version(app.config.server_path)[0] or ""
             fmt = data_format(Fmt(ver)) if ver else None
-            H.apply(app.config.server_path, level, lo, hi, fmt)
+            H.apply(app.config.server_path, level, lo, hi, fmt, deep=self.deep.isChecked())
         except H.HeightError as e:
             self.page.warn(t(e.template, **e.kw))
             return

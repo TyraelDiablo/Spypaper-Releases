@@ -211,6 +211,9 @@ def _looks_rich(text):
 
 def _std(kind):
     def f(parent, title, text, *args, **kw):
+        buttons = args[0] if args else kw.get("buttons")
+        if buttons is not None and (buttons & QMessageBox.Yes):     # Evet/Hayır istenmiş: soru gibi davran
+            return QMessageBox.Yes if ask(parent, text, title) else QMessageBox.No
         choose(parent, kind, title, text, [(t("Tamam"), "primary")], rich=_looks_rich(text))
         return QMessageBox.Ok
     return staticmethod(f)
