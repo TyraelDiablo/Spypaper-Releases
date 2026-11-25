@@ -58,6 +58,10 @@ class App:
         self.scheduler.reporter = self._report
         self.scheduler.on_report = lambda title, lines: self.discord.event("report", name=title, text="\n".join(lines))
 
+    def attach(self):
+        """Spypaper açılınca hâlâ çalışan sunucuya yeniden bağlanır (core.attach)."""
+        return self.server.attach()
+
     def _locale_line(self, line):
         from .playermsg import parse_locale
         got = parse_locale(line)

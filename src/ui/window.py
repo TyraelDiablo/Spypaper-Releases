@@ -450,6 +450,7 @@ class MainWindow(QMainWindow):
         self.remote.autostart()
         self._handled_run, self._crashes = {}, {}
         restore_sharing(self.settings.servers())          # içerik editörünün kaynak paketi paylaşımı
+        self.reattach()                                   # Spypaper kapalıyken açık kalan sunuculara bağlan
         # otomatik bakım: tüm sunucular için (paneli açık olmasa da) saniyede bir
         self.maint_timer = QTimer(self)
         self.maint_timer.timeout.connect(self.maintenance_tick)
@@ -667,6 +668,30 @@ class MainWindow(QMainWindow):
         self.server_state_changed()
 
     def server_state_changed(self):
+        if self.view[0] == "home":
+            self.home.refresh_status()
+
+    def reattach(self):
+        """Klasöründe java süreci çalışan sunucular "açık" görünür; konsol log'dan izlenir, komutlar RCON'la gider."""
+        try:
+            import psutil
+        except ImportError:
+            return
+        cwds = set()
+        for p in psutil.process_iter(["name"]):
+            try:
+                if "java" in (p.info["name"] or "").lower():
+                    cwds.add(os.path.normcase(p.cwd()))
+            except psutil.Error:
+                continue
+        for prof in self.settings.servers():
+            sp = prof.server_path or ""
+            if sp and os.path.normcase(os.path.abspath(sp)) in cwds:
+                try:
+                    if self.app_for(prof.id).attach():
+                        print(f"[attach] {prof.name}")
+                except Exception as e:
+                    print(f"[attach] {prof.name}: {e}")
         if self.view[0] == "home":
             self.home.refresh_status()
 

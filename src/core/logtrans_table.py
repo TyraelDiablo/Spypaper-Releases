@@ -476,6 +476,17 @@ _RAW = [
     ('^Key for player (.+) could not be verified!$', N_('{0} oyuncusunun anahtarı doğrulanamadı!'), ()),
     ('^(\\S+) -> executed command /(.+)$', N_('{0} -> /{1} komutunu çalıştırdı'), ()),
     ('^Ignoring heightmap data for chunk \\[(-?\\d+), (-?\\d+)\\], size does not match; expected: (\\d+), got: (\\d+)$', N_("[{0}, {1}] chunk'ının yükseklik haritası boyutu uymuyor (beklenen {2}, bulunan {3}); yok sayılıp yeniden hesaplanacak"), ()),
+    ('^Failed to start the minecraft server$', N_('Minecraft sunucusu başlatılamadı'), ()),
+    ('^Trying to save removed ender pearl, skipping$', N_('Kaldırılmış bir ender incisi kaydedilmeye çalışıldı, atlanıyor'), ()),
+    ('^java\\.lang\\.IllegalStateException: Failed to parse (\\S+) from pack (\\S+)$', N_('{1} paketindeki {0} okunamadı (IllegalStateException)'), ()),
+    ('^java\\.util\\.concurrent\\.ExecutionException: net\\.minecraft\\.ReportedException: Registry Loading$', N_('Oyun kayıtları (registry) yüklenirken hata oluştu'), ()),
+    # BlueMap (Spypaper'ın Canlı Harita sayfası kurar)
+    ('^\\[BlueMap\\] This seems to be a PAPER-based server, but you are using the SPIGOT version of BlueMap\\.$', N_("[BlueMap] Sunucu Paper tabanlı ama BlueMap'in Spigot sürümü kullanılıyor."), ()),
+    ('^\\[BlueMap\\] Failed to detect the minecraft version of this server! Using latest version\\.$', N_('[BlueMap] Sunucunun Minecraft sürümü algılanamadı! En yeni sürüm kullanılıyor.'), ()),
+    ('^\\[BlueMap\\] BlueMap is missing important resources!$', N_("[BlueMap] BlueMap'in gerekli kaynak dosyaları eksik!"), ()),
+    ('^\\[BlueMap\\] You must accept the required file download in order for BlueMap to work!$', N_("[BlueMap] BlueMap'in çalışması için gerekli dosya indirmesini onaylamalısın!"), ()),
+    ('^\\[BlueMap\\] Please check: (.+)$', N_('[BlueMap] Şu dosyayı kontrol et: {0}'), ()),
+
 ]
 
 PANEL = [(re.compile(rx), tpl, groups) for rx, tpl, groups in _RAW]
