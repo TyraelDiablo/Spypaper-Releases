@@ -47,6 +47,7 @@ Written in Python + PySide6 and built as a single `.exe` for Windows. The interf
 | **Spypaper Remote** | Watch your servers from your phone; with the permissions you grant on the computer, start/stop them, run maintenance and change settings. Pair with a QR code; no app store, no account, no database. See [Spypaper Remote](#spypaper-remote-phone). |
 | **Updates** | Checks GitHub Releases for a new Spypaper version at startup (can be turned off) and updates the exe in one click. |
 | **Security** | 4-level safe mode (confirm, block or read-only for dangerous commands) and an optional per-server PIN. |
+| **Language Wizard** | ☰ → **Language Wizard**: translate Spypaper into any language. The English source text is on top, your translation below; filter missing/all, search, placeholder check, Ctrl+Enter for the next text. Saved as `Languages/<language>_<COUNTRY>.json` next to the exe (e.g. `de_AT.json`), so you can also edit it in VS Code (**Open in VS Code**); the language then shows up in the language list. **Translate with AI** (one text or all missing) uses the Esplora AI settings and API key. **Extract Minecraft Language File** gets the game's own language file for that language (Game Files → *Selected language only*). |
 | **Appearance** | A short welcome screen at startup (large Spypaper title and a greeting for the time of day; click to skip, can be turned off in the menu), soft fades on page and tab changes; 7 themes, font size, units (metric or feet/miles; walked distance and world border size), high contrast, reduced motion, right-to-left languages, [Lucide](https://lucide.dev) icons, themed in-app dialogs instead of Windows message boxes. The server panel's sidebar is split into groups (General, Players, Content, Server, Automation, Security); click a group heading to collapse or expand it, and the state is remembered. **Panel Layout:** reorder (within a group) or hide the panel's tabs and the Dashboard cards. Animated page transitions and a sliding indicator for the selected tab (off with *Reduce motion*). Scrolling over settings no longer changes dropdowns or number fields by accident. Colored buttons use a subtle tonal style (solid in high contrast). Optional start with Windows. |
 
 ---
@@ -129,6 +130,8 @@ src\mc_dilleri_cikar.bat                  :: the panel's 16 languages, newest ve
 src\mc_dilleri_cikar.bat --surum 26.3     :: a specific version
 src\mc_dilleri_cikar.bat --hepsi          :: every language in Minecraft
 ```
+
+In the Game Files window, *Selected language only* extracts just one language (e.g. `de_at`) plus English.
 
 ---
 

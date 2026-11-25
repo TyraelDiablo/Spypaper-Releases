@@ -6,7 +6,7 @@ Mojang'ın resmî sunucularından indirir. Dosyalar exe'nin yanındaki Translati
 import threading
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QCheckBox, QComboBox, QDialog, QProgressBar, QRadioButton, QVBoxLayout
+from PySide6.QtWidgets import QCheckBox, QComboBox, QDialog, QLineEdit, QProgressBar, QRadioButton, QVBoxLayout
 
 from core import gamefiles
 from .i18n import t
@@ -19,7 +19,7 @@ class GameFilesDialog(QDialog):
     logged = Signal(str)
     finished_job = Signal(object, str)
 
-    def __init__(self, parent=None, mc_version=""):
+    def __init__(self, parent=None, mc_version="", only_lang=""):
         super().__init__(parent)
         self.mc_version = mc_version
         self.setWindowTitle(t("Oyun Dosyaları"))
@@ -57,9 +57,18 @@ class GameFilesDialog(QDialog):
         self.langs = QComboBox()
         self.langs.addItem(t("Panelin 16 dili"), "panel")
         self.langs.addItem(t("Minecraft'taki tüm diller"), "all")
+        self.langs.addItem(t("Yalnızca seçilen dil"), "one")
+        self.one_lang = QLineEdit(only_lang)
+        self.one_lang.setPlaceholderText("de_at")
+        self.one_lang.setMaximumWidth(90)
+        self.one_lang.setToolTip(t("Minecraft dil kodu, ör. de_at, pt_pt, sv_se"))
+        self.langs.currentIndexChanged.connect(lambda _: self.one_lang.setVisible(self.langs.currentData() == "one"))
+        if only_lang:
+            self.langs.setCurrentIndex(2)
+        self.one_lang.setVisible(bool(only_lang))
         self.icons = QCheckBox(t("Eşya ve blok ikonlarını da al"))
         self.icons.setChecked(True)
-        v.addLayout(row(label("Diller"), self.langs, None, self.icons, stretch_end=False))
+        v.addLayout(row(label("Diller"), self.langs, self.one_lang, None, self.icons, stretch_end=False))
         self.bar = QProgressBar()
         self.bar.hide()
         v.addWidget(self.bar)
@@ -87,7 +96,13 @@ class GameFilesDialog(QDialog):
                                       "dosyaları ve ikonlar ayrılıp jar silinecek. Bu dosyalar Mojang'a aittir ve Minecraft "
                                       "EULA'sına tabidir; yalnızca kendi kullanımın içindir.\n\nDevam edilsin mi?"), t("Onay")):
             return
-        langs = None if self.langs.currentData() == "all" else gamefiles.PANEL_LANGS
+        mode = self.langs.currentData()
+        langs = None if mode == "all" else gamefiles.PANEL_LANGS
+        if mode == "one":
+            code = self.one_lang.text().strip().lower()
+            if not code:
+                return
+            langs = sorted({code, "en_us"})
         icons = self.icons.isChecked()
         ver_local = self.ver_local.currentText()
         contact = ""

@@ -131,6 +131,7 @@ class Drawer(QWidget):
         self.units.currentIndexChanged.connect(lambda i: ctl.set_setting("units", self.units.itemData(i)))
         v.addWidget(self.units)
         v.addWidget(item("Panel Düzeni (sekmeler ve kartlar)", self._layout, "settings"))
+        v.addWidget(item("Language Wizard (Spypaper'ı çevir)", self._langwizard, "languages"))
 
         # --- erişilebilirlik ---
         v.addWidget(section("Erişilebilirlik"))
@@ -279,6 +280,10 @@ class Drawer(QWidget):
     def _remote(self):
         from .remote_dialog import RemoteDialog
         RemoteDialog(self.ctl, self).exec()
+
+    def _langwizard(self):
+        from .langwizard_dialog import LanguageWizard
+        LanguageWizard(self.ctl.settings, self).exec()
 
     def _gamefiles(self):
         from .gamefiles_dialog import GameFilesDialog
