@@ -37,10 +37,24 @@ class App:
         self.scheduler = Scheduler(profile, self.server, self.backups)
         from .perf import PerfMonitor
         self.perf = PerfMonitor(profile, self.server)
+        from .pregen import Pregen
+        self.pregen = Pregen(self.server, self.online_players)
+        from .sanctions import Sanctions
+        self.sanctions = Sanctions(profile, self.server)
+        from .perfhist import PerfHistory
+        self.perfhist = PerfHistory(self)
         from .discord import Discord
         self.discord = Discord(profile, self.server)
         self.maintenance.notify = lambda started: self.discord.event("maintenance", started=started)
         self.scheduler.notify = lambda name, status: self.discord.event("task", name=name, status=status)
+        self.scheduler.reporter = self._report
+        self.scheduler.on_report = lambda title, lines: self.discord.event("report", name=title, text="\n".join(lines))
+
+    def _report(self, hours):
+        from . import report
+        title, lines = report.build(self, hours, tr=self.scheduler.tr)
+        report.save(self.config.server_path, title, lines)
+        return title, lines
 
     def online_players(self):
         """Log'daki giriş/çıkışlara göre şu an içerideki oyuncular (log'u panel okur, burada okunmaz:

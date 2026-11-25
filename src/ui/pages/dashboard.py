@@ -144,9 +144,11 @@ class DashboardPage(Page):
         rc.add(self.res_lbl)
         bot.addWidget(rc, 2)
 
-        pc = Card("Performans", "Son 1 saat")
-        pc.setToolTip(t("Son 1 saat · 20 TPS ve 50 ms altı MSPT sağlıklıdır"))
-        self.perf_mode = segmented(["TPS", "MSPT"], lambda _i: self.update_perf())
+        pc = Card("Performans", "Dakikada bir · 8 gün")
+        pc.setToolTip(t("20 TPS ve 50 ms altı MSPT sağlıklıdır. Geçmiş panel kapalıyken de kaydedilir."))
+        self.perf_mode = segmented(["TPS", "MSPT", "RAM", "CPU", "Oyuncu"], lambda _i: self.update_perf())
+        self.perf_range = segmented(["1 sa", "24 sa", "7 gün"], lambda _i: self.update_perf())
+        pc.header_actions.addWidget(self.perf_range)
         pc.header_actions.addWidget(self.perf_mode)
         self.perf_chart = LineChart(TOKENS["accent"])
         self.perf_chart.integer = False
@@ -281,18 +283,40 @@ class DashboardPage(Page):
         self.app.perf.set_enabled(on)
         self.update_perf()
 
+    PERF_KEYS = ("tps", "mspt", "ram", "cpu", "players")
+
     def update_perf(self):
+        from core.perfhist import summary
         perf = self.app.perf
-        mspt_mode = self.perf_mode.group.checkedId() == 1
+        mode = max(0, self.perf_mode.group.checkedId())
+        rng = max(0, self.perf_range.group.checkedId())
+        hours = (1, 24, 168)[rng]
+        key = self.PERF_KEYS[mode]
         now = datetime.now()
-        hour_ago = now - timedelta(hours=1)
-        key = 2 if mspt_mode else 1
-        pts = [((tm - hour_ago).total_seconds() / 60, s[key]) for s in perf.samples
-               for tm in (s[0],) if tm >= hour_ago and s[key] is not None]
-        self.perf_chart.color = QColor(TOKENS["info"] if mspt_mode else TOKENS["accent"])
-        self.perf_chart.y_min_max = 50 if mspt_mode else 20
-        self.perf_chart.y_fmt = (lambda v: f"{v:g}ms") if mspt_mode else (lambda v: f"{v:g}")
-        self.perf_chart.set_data(pts, (0, 60), lambda x: (hour_ago + timedelta(minutes=x)).strftime("%H:%M"))
+        start = now - timedelta(hours=hours)
+        if rng == 0 and mode < 2:                      # son 1 saat TPS/MSPT: 15 saniyelik canlı ölçüm
+            raw = [(s[0], s[mode + 1]) for s in perf.samples if s[0] >= start and s[mode + 1] is not None]
+        else:
+            raw = [(tm, v[key]) for tm, v in self.app.perfhist.load(hours, now) if v.get(key) is not None]
+        if key == "ram":
+            raw = [(tm, v / 1024) for tm, v in raw]
+        bucket = max(1, len(raw) // 360)               # uzun aralıkta ortalama alınarak seyreltilir
+        pts = []
+        for i in range(0, len(raw), bucket):
+            part = raw[i:i + bucket]
+            tm = part[len(part) // 2][0]
+            pts.append(((tm - start).total_seconds() / 60, sum(v for _, v in part) / len(part)))
+        colors = (TOKENS["accent"], TOKENS["info"], TOKENS["warn"], TOKENS["purple"], TOKENS["accent"])
+        self.perf_chart.color = QColor(colors[mode])
+        self.perf_chart.y_min_max = (20, 50, 1, 100, 1)[mode]
+        self.perf_chart.integer = mode == 4
+        self.perf_chart.step = mode == 4
+        self.perf_chart.y_fmt = ((lambda v: f"{v:g}"), (lambda v: f"{v:g}ms"), (lambda v: f"{v:g}G"),
+                                 (lambda v: f"%{v:g}"), (lambda v: f"{v:g}"))[mode]
+        fmt = "%H:%M" if hours <= 24 else "%d.%m %H:%M"
+        self.perf_chart.set_data(pts, (0, hours * 60), lambda x: (start + timedelta(minutes=x)).strftime(fmt))
+        sm = summary([(tm, {key: v}) for tm, v in raw], key) if raw else None
+        self._perf_summary = sm
         last = perf.latest()
         if perf.status == "ok" and last and (last[1] is not None or last[2] is not None):
             tps, ms = last[1], last[2]
@@ -301,8 +325,9 @@ class DashboardPage(Page):
                 parts.append(f'<b style="color:{tps_color(tps)}">TPS {tps:.1f}</b>')
             if ms is not None:
                 parts.append(f'<b style="color:{mspt_color(ms)}">MSPT {ms:.1f} ms</b>')
-            vals = [s[1] for s in perf.samples if s[0] >= hour_ago and s[1] is not None]
-            self.perf_lbl.setToolTip(t("en düşük TPS (1 sa): {v}", v=f"{min(vals):.1f}") if vals else "")
+            sm = self._perf_summary
+            self.perf_lbl.setToolTip(t("Seçili aralıkta en düşük / ortalama / en yüksek: {a} / {b} / {c}",
+                                       a=f"{sm[0]:.1f}", b=f"{sm[1]:.1f}", c=f"{sm[2]:.1f}") if sm else "")
             self.perf_lbl.setText("  ·  ".join(parts))
         else:
             from core.perf import STATUS

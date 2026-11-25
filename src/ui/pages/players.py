@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (
     QListWidget, QListWidgetItem, QSpinBox, QStackedWidget, QVBoxLayout, QWidget,
 )
 
+from datetime import datetime
+
 from core import units
 from core.players import (
     PLAYER_COMMANDS, account_type, build_command, give_command, parse_list_output,
@@ -409,6 +411,33 @@ class PlayersPage(Page):
         from .. import motion
         motion.soft(self.homes_box if i == self.HOMES_VIEW else self.table)
 
+    @staticmethod
+    def _dur(sec):
+        h, m = divmod(int(sec) // 60, 60)
+        return t("{h} sa {m} dk", h=h, m=m) if h else t("{m} dk", m=m)
+
+    def _history_rows(self):
+        """Oturum geçmişi (log arşivlerinden, son 30 gün)."""
+        try:
+            hdata = self.app.logs.player_history(self.current, 30)
+        except Exception:
+            return []
+        ses = hdata["sessions"]
+        if not ses:
+            return []
+        hrs = hdata["hours"]
+        top = sorted(range(24), key=lambda h: -hrs[h])[:3]
+        top = [h for h in top if hrs[h] > 0]
+        rows = [("", t("Son 7 gün"), self._dur(hdata["week"])),
+                ("", t("Son 30 gün"), t("{d} · {n} oturum", d=self._dur(hdata["month"]), n=len(ses)))]
+        if top:
+            rows.append(("", t("En aktif saatler"), ", ".join(f"{h:02d}:00–{(h + 1) % 24:02d}:00" for h in sorted(top))))
+        for a, b in ses[:15]:
+            end = t("şu an çevrimiçi") if b is None else f"{b:%H:%M}"
+            dur = self._dur(((b or datetime.now()) - a).total_seconds())
+            rows.append(("", f"{a:%d.%m.%Y}", f"{a:%H:%M} – {end}  ({dur})"))
+        return rows
+
     def show_view(self):
         d = self.details
         homes_view = self.view == self.HOMES_VIEW
@@ -436,7 +465,8 @@ class PlayersPage(Page):
                     ("clock", t("Son giriş"), self._last_seen(s.get("last_seen"))),
                 ]
                 rows = [("", name, val) for _, name, val in stats]
-            fill_table(self.table, rows, align_center=(0, 2))
+            hist = self._history_rows()
+            fill_table(self.table, rows + hist, align_center=(0, 2))
             if s:
                 for r, (ic, *_) in enumerate(stats):
                     self.table.item(r, 0).setIcon(icons.icon(ic, color("text_muted"), 16))

@@ -196,6 +196,8 @@ class TaskDialog(QDialog):
             "backup": N_("Sunucu açıksa önce dünya kaydedilir (save-all). Yedek sayısı sınırı burada da geçerlidir."),
             "command": N_("Komutlar güvenli moddan geçer: engellenen komut gönderilmez. Sunucu kapalıysa görev atlanır."),
             "announce": N_("Mesaj oyunculara /say ile gider. Sunucu kapalıysa görev atlanır."),
+            "report": N_("Son çalışmadan bu yana performans, oyuncular, sicil, yedek ve disk özetlenir; Esplora "
+                         "sayfasında görünür, Discord açıksa oraya da gönderilir. Sunucu kapalıyken de çalışır."),
         }
         self.hint.setText(t(hints[act]) + " " + t("Görevler yalnızca Spypaper açıkken çalışır."))
         self.adjustSize()

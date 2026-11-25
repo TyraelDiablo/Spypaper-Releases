@@ -29,6 +29,7 @@ ACTIONS = {
     "backup": N_("Yedek al"),
     "command": N_("Komut çalıştır"),
     "announce": N_("Duyuru yap"),
+    "report": N_("Esplora raporu"),
 }
 WARN_AT = (600, 300, 60, 10)
 WARN_TEXT = {
@@ -58,6 +59,7 @@ PRESETS = [
     (N_("Her 30 dakikada bir duyuru"), {"action": "announce", "mode": "interval", "every": 30,
                                        "message": N_("Sunucumuza hoş geldin! Kurallar için /rules yaz.")}),
     (N_("Her gece 03:55'te yedek al"), {"action": "backup", "mode": "weekly", "time": "03:55"}),
+    (N_("Her sabah 09:00'da Esplora raporu"), {"action": "report", "mode": "weekly", "time": "09:00"}),
 ]
 
 
@@ -143,6 +145,8 @@ class Scheduler:
         self.notify = None         # fn(görev adı, durum) — Discord bildirimi (core.discord)
         self._last = None
         self._busy = set()         # sürmekte olan yeniden başlatma/yedek
+        self.reporter = None       # fn(saat) -> (başlık, satırlar) — core.report
+        self.on_report = None      # fn(başlık, satırlar) — Discord
 
     # ------------------------------------------------------------ görevler
     @property
@@ -236,7 +240,7 @@ class Scheduler:
         except Exception as e:
             status = self.tr("Hata: {error}", error=str(e))
         self._mark(task, when)
-        self._result(task, status, notify=task["action"] != "backup")   # yedeğin sonucu bitince bildirilir
+        self._result(task, status, notify=task["action"] not in ("backup", "report"))   # yedeğin sonucu bitince bildirilir
         self._log(self.tr("Zamanlanmış görev '{name}': {status}", name=self.title(task), status=status))
         if self.on_change:
             self.on_change()
@@ -337,3 +341,22 @@ class Scheduler:
             return self.tr("Atlandı: mesaj yok.")
         err = self._send_checked("say " + msg)
         return err or self.tr("Duyuru gönderildi.")
+
+    def _do_report(self, task):
+        """Rapor dönemi: son çalışmadan bu yana (en az 1 saat, en fazla 7 gün); ilk çalışmada 24 saat."""
+        if not self.reporter:
+            return self.tr("Atlandı: rapor hazır değil.")
+        hours = 24
+        if task.get("last_run"):
+            try:
+                hours = (datetime.now() - datetime.fromisoformat(task["last_run"])).total_seconds() / 3600
+            except ValueError:
+                pass
+        hours = max(1, min(24 * 7, round(hours)))
+        title, lines = self.reporter(hours)
+        if self.on_report:
+            try:
+                self.on_report(title, lines)
+            except Exception as e:
+                print(f"[görev] rapor: {e}")
+        return self.tr("Rapor hazırlandı ({n} saat).", n=hours)

@@ -215,7 +215,7 @@ class ServerPanel(QWidget):
         self.btn_start = button("Başlat", "primary", self.start)
         self.btn_stop = button("Durdur", "danger", self.stop)
         self.btn_update = button("Güncelle", "ghost", self.update_paper,
-                                 tooltip="Sunucu yazılımını kur ya da güncelle (Paper, Purpur, Vanilla, Fabric, Forge, NeoForge)")
+                                 tooltip="Sunucu yazılımını güncelle ya da başka bir yazılıma geç (Paper, Purpur, Folia, Vanilla, Fabric, Forge, NeoForge)")
         tl.addWidget(self.btn_update)
         tl.addWidget(self.btn_start)
         tl.addWidget(self.btn_stop)
@@ -582,6 +582,18 @@ class MainWindow(QMainWindow):
                 app.perf.tick()                     # TPS/MSPT sorgusu (yalnızca çalışan sunucularda)
             except Exception as e:
                 print(f"[tps] {app.config.name}: {e}")
+            try:
+                app.pregen.tick()                   # ön yükleme: oyuncu girince duraklat
+            except Exception as e:
+                print(f"[ön yükleme] {app.config.name}: {e}")
+            try:
+                app.sanctions.tick()                # süresi dolan süreli banlar
+            except Exception as e:
+                print(f"[sicil] {app.config.name}: {e}")
+            try:
+                app.perfhist.tick()                 # dakikada bir performans geçmişi
+            except Exception as e:
+                print(f"[performans geçmişi] {app.config.name}: {e}")
         for prof in self.settings.servers():
             if not prof.exists:
                 continue
