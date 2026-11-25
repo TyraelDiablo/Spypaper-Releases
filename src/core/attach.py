@@ -11,6 +11,7 @@ ExternalProcess, subprocess.Popen'ın ServerProcess'in kullandığı kısmını 
 """
 import os
 import queue
+import re
 import secrets as pysecrets
 import socket
 import struct
@@ -134,6 +135,21 @@ def find_process(server_path):
     return None
 
 
+# ------------------------------------------------------------ log satırı
+_LOGFMT = re.compile(r"^\[(\d\d:\d\d:\d\d)\] \[[^\]]*/(INFO|WARN|ERROR|FATAL|DEBUG)\]: ?(.*)$")
+_NOISE = re.compile(r"(Thread RCON Client .* (started|shutting down)|RCON Client .* shutting down)")
+
+
+def normalize(line):
+    """latest.log biçimi "[12:00:00] [Server thread/INFO]: x" -> konsol biçimi "[12:00:00 INFO]: x".
+    RCON bağlantı gürültüsü için None."""
+    line = line.rstrip("\r\n")
+    m = _LOGFMT.match(line)
+    if m:
+        line = f"[{m.group(1)} {m.group(2)}]: {m.group(3)}"
+    return None if _NOISE.search(line) else line
+
+
 # ------------------------------------------------------------ Popen taklidi
 class _Stdin:
     def __init__(self, owner):
@@ -190,7 +206,10 @@ class _Stdout:
             if self.f:
                 line = self.f.readline()
                 if line:
-                    return line
+                    line = normalize(line)
+                    if line is None:
+                        continue
+                    return line + "\n"
                 try:                                         # log döndü (yeni gün / yeniden başlatma)
                     if os.stat(self.path).st_size < self.f.tell():
                         self._open(at_end=False)

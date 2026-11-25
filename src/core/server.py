@@ -124,8 +124,12 @@ class ServerProcess:
         try:                                    # bağlamı göstermek için log'un son satırları
             with open(os.path.join(self.config.server_path, "logs", "latest.log"), encoding="utf-8",
                       errors="replace") as f:
+                from .attach import normalize
+                from .perf import HIDE, _msg
                 for ln in f.readlines()[-300:]:
-                    self.history.append(ln.rstrip())
+                    ln = normalize(ln)
+                    if ln and not HIDE.match(_msg(ln)) and not self._filtered(ln):   # TPS sorguları gizli
+                        self.history.append(ln)
         except OSError:
             pass
         self.process = proc
