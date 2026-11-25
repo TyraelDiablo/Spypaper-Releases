@@ -544,6 +544,8 @@ class MainWindow(QMainWindow):
             if not srv.ended_run or self._handled_run.get(sid) == srv.ended_run or srv.is_running:
                 continue
             self._handled_run[sid] = srv.ended_run          # her kapanış bir kez işlenir
+            if srv.crashed:
+                self._blame(app)
             if not (srv.crashed and app.config.get("auto_restart")):
                 continue
             hist = [x for x in self._crashes.get(sid, []) if now - x < CRASH_WINDOW] + [now]
@@ -562,6 +564,26 @@ class MainWindow(QMainWindow):
             if srv.on_line:
                 srv.on_line(line)
             QTimer.singleShot(RESTART_DELAY * 1000, lambda a=app: self._auto_restart(a))
+
+    def _blame(self, app):
+        """Çökmede yığın izinden olası suçlu eklenti/modu konsola yazar (core.blame)."""
+        try:
+            from core import blame
+            srv = app.server
+            text = blame.crash_text(app.config.server_path, list(srv.history)[-400:])
+            sus = blame.suspects(text, app.config.server_path)
+        except Exception as e:
+            print(f"[blame] {e}")
+            return
+        if not sus:
+            return
+        names = ", ".join(f"{jar} ({t('hatada adı geçiyor') if why == 'named' else t('yığın izinde {n} kez', n=n)})"
+                          for jar, n, why in sus)
+        line = "[Spypaper] " + t("Çökmenin olası sebebi: {names}. Bu eklentiyi/modu güncellemeyi ya da geçici olarak "
+                                 "kaldırmayı dene.", names=names)
+        srv.history.append(line)
+        if srv.on_line:
+            srv.on_line(line)
 
     def _auto_restart(self, app):
         if app.server.is_running or app.maintenance.active:
