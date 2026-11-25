@@ -426,9 +426,11 @@ class PlayersPage(Page):
         if not ses:
             return []
         hrs = hdata["hours"]
+        loc = (getattr(self.app, "player_locales", {}) or {}).get(self.current.lower())
         top = sorted(range(24), key=lambda h: -hrs[h])[:3]
         top = [h for h in top if hrs[h] > 0]
-        rows = [("", t("Son 7 gün"), self._dur(hdata["week"])),
+        rows = [("", t("Oyun dili"), loc)] if loc else []
+        rows += [("", t("Son 7 gün"), self._dur(hdata["week"])),
                 ("", t("Son 30 gün"), t("{d} · {n} oturum", d=self._dur(hdata["month"]), n=len(ses)))]
         if top:
             rows.append(("", t("En aktif saatler"), ", ".join(f"{h:02d}:00–{(h + 1) % 24:02d}:00" for h in sorted(top))))

@@ -1016,8 +1016,11 @@ def rebuild_packs(app):
         except Exception:
             skipped.append(x.get("name") or x["id"])
     app.last_skipped_content = skipped
-    _, rp = C.build(sp, level_name(app.properties), version, items,
-                    SM.rp_files(app.config.get("spymods_rp") or []))
+    from core import playermsg
+    extra = SM.rp_files(app.config.get("spymods_rp") or [])
+    if items or extra or (app.config.get("content_share") or {}).get("enabled"):
+        extra.update(playermsg.lang_files())         # Spypaper'ın oyuncu mesajları oyuncunun kendi dilinde
+    _, rp = C.build(sp, level_name(app.properties), version, items, extra)
     cfg = app.config.get("content_share") or {}
     if not (rp and cfg.get("enabled") and cfg.get("address")):
         if not rp:

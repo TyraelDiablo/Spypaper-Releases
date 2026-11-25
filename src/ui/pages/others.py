@@ -295,6 +295,9 @@ class SettingsPage(Page):
         from ..heightbox import HeightCard
         self.height_card = HeightCard(self)
         self.col.addWidget(self.height_card)
+        from ..playermsgbox import PlayerMsgCard
+        self.pm_card = PlayerMsgCard(self)
+        self.col.addWidget(self.pm_card)
 
         # server.properties
         props = Card("server.properties", "Değişikliklerin çoğu sunucu yeniden başlatılınca geçerli olur")
@@ -326,6 +329,7 @@ class SettingsPage(Page):
         self.auto_restart.setChecked(bool(c.get("auto_restart")))
         self.border.load()
         self.height_card.load()
+        self.pm_card.load()
 
         ip = self.app.properties.icon_path
         if ip:

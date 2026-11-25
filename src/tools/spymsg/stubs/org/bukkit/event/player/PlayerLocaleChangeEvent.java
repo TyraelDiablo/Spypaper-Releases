@@ -1,0 +1,1 @@
+package org.bukkit.event.player; public class PlayerLocaleChangeEvent { public org.bukkit.entity.Player getPlayer(){return null;} public String getLocale(){return null;} }

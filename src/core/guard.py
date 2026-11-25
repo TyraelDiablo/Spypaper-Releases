@@ -29,6 +29,7 @@ import time
 import zipfile
 from collections import deque
 
+from . import playermsg
 from .config import N_
 
 GUARD_DIR = "spypaper_guard"
@@ -339,7 +340,7 @@ class Guard:
                 if name.lower() in allowed or not NAME_RE.match(name):
                     continue
                 self.server.try_send(f"deop {name}")
-                self.server.try_send(f"kick {name} " + self.tr(N_("İzinsiz yönetici yetkisi algılandı.")))
+                playermsg.kick(self.server, name, N_("İzinsiz yönetici yetkisi algılandı."), self.tr)
                 self.log("op", N_("İzinsiz OP geri alındı ve oyuncu atıldı: {name}"), name=name)
 
     # --- Bot Doğrulaması ---
@@ -408,5 +409,5 @@ class Guard:
             self.mark_verified(name)
             self.log("captcha", N_("Doğrulandı: {name}"), name=name)
             return
-        self.server.try_send(f"kick {name} " + self.tr(N_("Doğrulama başarısız: sunucunun kaynak paketi indirilmedi. Paketi kabul edip tekrar bağlan.")))
+        playermsg.kick(self.server, name, N_("Doğrulama başarısız: sunucunun kaynak paketi indirilmedi. Paketi kabul edip tekrar bağlan."), self.tr)
         self.log("captcha", N_("Kaynak paketini indirmediği için atıldı: {name}"), name=name)

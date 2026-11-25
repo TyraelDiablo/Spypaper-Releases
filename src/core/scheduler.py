@@ -20,6 +20,7 @@ import time
 import uuid
 from datetime import datetime, timedelta
 
+from . import playermsg
 from .config import N_
 
 ACTIONS = {
@@ -201,7 +202,7 @@ class Scheduler:
                 for sec in WARN_AT:
                     for t in occurrences(task, prev + timedelta(seconds=sec), now + timedelta(seconds=sec)):
                         if self.server.is_running:
-                            self.server.try_send("say §c§l[!] §e" + self.tr(WARN_TEXT[task["action"]][sec]))
+                            playermsg.announce(self.server, WARN_TEXT[task["action"]][sec], self.tr)
             for t in occurrences(task, prev, now):
                 self.run(task, when=t)
                 ran = True

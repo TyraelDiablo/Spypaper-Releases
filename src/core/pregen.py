@@ -79,7 +79,11 @@ class Pregen:
             return True
         m = RE_STOP.search(line)
         if m:
-            self.state = "paused" if m.group(1).lower() == "paused" else "idle"
+            kind = m.group(1).lower()
+            if kind == "paused":
+                self.state = "paused"
+            elif not (kind == "stopped" and self.state == "paused"):   # duraklatınca Chunky ardından "stopped" da yazar
+                self.state = "idle"
             return True
         return False
 
