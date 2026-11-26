@@ -72,6 +72,14 @@ public final class SpypaperMessages extends JavaPlugin implements Listener {
                     bots.remove(a[1]);
                     getLogger().info("bot removed " + a[1]);
                     return true;
+                case "come": {       // come <bot> <oyuncu>: oyuncunun yanına (ve bakışına) taşınır
+                    Player to = getServer().getPlayerExact(a[2]);
+                    if (to == null || !bots.moveTo(a[1], to.getLocation()))
+                        getLogger().info("bot error notfound " + a[1]);
+                    else
+                        getLogger().info("bot moved " + a[1]);
+                    return true;
+                }
                 case "removeall":
                     bots.removeAll();
                     return true;

@@ -105,6 +105,15 @@ final class BotEngine {
         Bukkit.getLogger().info(shown + " left the game");   // panel/log izleyicileri çıkışı görsün
     }
 
+    /** Botu yeni yerine taşır; ölünce artık orada doğar. */
+    boolean moveTo(String name, Location to) {
+        Bot b = bots.get(name.toLowerCase());
+        if (b == null) return false;
+        b.home = to.clone();
+        b.handle.getBukkitEntity().teleport(to);
+        return true;
+    }
+
     private void respawn(Bot b) {
         String name = b.handle.getGameProfile().name();
         String action = b.action;

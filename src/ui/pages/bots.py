@@ -75,6 +75,8 @@ class BotsPage(Page):
                      button("Kaydet ve Getir", "primary", self.save_spawn), stretch_end=False))
         self.root.addWidget(form)
 
+        self.root.addWidget(self._ai_card())
+
         lst = Card("Bot Listesi", "Seçili botla işlem yap")
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels([t("Ad"), t("Konum"), t("İş"), t("Otomatik"), t("Durum")])
@@ -91,6 +93,60 @@ class BotsPage(Page):
                     button("Listeden Sil", "danger", self.delete_sel), stretch_end=False))
         self.root.addWidget(lst, 1)
         self.install_done.connect(self._installed)
+
+    # ------------------------------------------------------------ oyun içi yapay zeka
+    def _ai_card(self):
+        from core import ingame_ai as IA
+        s = IA.settings_of(self.app.config)
+        c = Card("Oyun İçi Yapay Zeka", "Oyuncular sohbetten Esplora'ya soru sorar, botlarla konuşur")
+        c.add(label("Esplora'nın yapay zeka ayarlarını (☰ → Yapay Zeka Ayarları) kullanır. Her soru bir API çağrısıdır "
+                    "ve ücretli olabilir; aşağıdaki sınırlar maliyeti tutar. Yapay zeka sunucuya komut gönderemez, "
+                    "botlar yalnızca gel, dur, vur, sağ tıkla ve eğil işlerini yapabilir.", "Muted", wrap=True))
+        self.ai_on = QCheckBox(t("Asistan: oyuncular sohbete şunu yazarak soru sorar:"))
+        self.ai_on.setChecked(s["enabled"])
+        self.ai_trig = QLineEdit(s["trigger"])
+        self.ai_trig.setFixedWidth(140)
+        c.add(row(self.ai_on, self.ai_trig, label("<soru>"), None))
+        self.ai_bots = QCheckBox(t("Konuşan botlar: '@BotAdı mesaj' ya da 'BotAdı, mesaj' yazılınca bot cevap verir"))
+        self.ai_bots.setChecked(s["bots"])
+        self.ai_acts = QCheckBox(t("Botlar sohbetle iş değiştirebilsin (gel, dur, vur, sağ tıkla, eğil)"))
+        self.ai_acts.setChecked(s["bot_actions"])
+        c.add(self.ai_bots)
+        c.add(self.ai_acts)
+        self.ai_cool, self.ai_daily, self.ai_min = QSpinBox(), QSpinBox(), QSpinBox()
+        self.ai_cool.setRange(0, 3600)
+        self.ai_cool.setValue(int(s["cooldown"]))
+        self.ai_cool.setSuffix(" " + t("sn"))
+        self.ai_daily.setRange(1, 1000)
+        self.ai_daily.setValue(int(s["daily"]))
+        self.ai_min.setRange(1, 120)
+        self.ai_min.setValue(int(s["per_minute"]))
+        c.add(row(label("Oyuncu başına bekleme"), self.ai_cool, label("Oyuncu başına günlük"), self.ai_daily,
+                  label("Sunucu geneli dakikada en çok"), self.ai_min, None))
+        self.ai_warn = label("", "Muted", wrap=True)
+        c.add(self.ai_warn)
+        for w in (self.ai_on, self.ai_bots, self.ai_acts):
+            w.toggled.connect(self._ai_save)
+        for w in (self.ai_cool, self.ai_daily, self.ai_min):
+            w.valueChanged.connect(self._ai_save)
+        self.ai_trig.editingFinished.connect(self._ai_save)
+        return c
+
+    def _ai_save(self, *_):
+        from core import ingame_ai as IA
+        trig = self.ai_trig.text().strip().split()[0] if self.ai_trig.text().strip() else "@esplora"
+        IA.save(self.app.config, enabled=self.ai_on.isChecked(), bots=self.ai_bots.isChecked(),
+                bot_actions=self.ai_acts.isChecked(), trigger=trig[:24], cooldown=self.ai_cool.value(),
+                daily=self.ai_daily.value(), per_minute=self.ai_min.value())
+        self._ai_check()
+
+    def _ai_check(self):
+        from core import ai
+        st = self.app.ingame_ai.settings
+        need = (self.ai_on.isChecked() or self.ai_bots.isChecked()) and st is not None
+        cfg = ai.get_cfg(st) if st is not None else None
+        missing = need and cfg["provider"] in ("anthropic", "gemini") and not ai.api_key(cfg)
+        self.ai_warn.setText(t("API anahtarı ayarlanmamış. ☰ menüsünden Yapay Zeka Ayarları'nı aç.") if missing else "")
 
     # ------------------------------------------------------------ yardımcılar
     def _soft(self):
@@ -122,6 +178,7 @@ class BotsPage(Page):
         if cur in names:
             self.from_player.setCurrentText(cur)
         self._fill()
+        self._ai_check()
 
     def _fill(self):
         online = {p.lower() for p in self.app.online_players()} if self.app.server.is_running else set()

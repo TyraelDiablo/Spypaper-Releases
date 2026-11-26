@@ -103,6 +103,7 @@ class ServerPanel(QWidget):
     def __init__(self, ctl, app):
         super().__init__()
         self.ctl, self.app = ctl, app
+        app.ingame_ai.settings = ctl.settings          # oyun içi yapay zeka, Esplora ile aynı sağlayıcıyı kullanır
         self.bridge = ServerBridge(app.server)
         app.players.set_language(i18n.current())   # eşya adları panel dilinde
         app.logtrans.ui_t = t                       # sunucu mesajları sözlüğü panel dilinde

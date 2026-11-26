@@ -38,6 +38,8 @@ class App:
         self.guard.is_bot = self.bots.is_bot
         from .scheduler import Scheduler
         self.scheduler = Scheduler(profile, self.server, self.backups)
+        from .ingame_ai import IngameAI
+        self.ingame_ai = IngameAI(profile, self.server, self.bots, tr=lambda *a, **k: self.scheduler.tr(*a, **k))
         from .perf import PerfMonitor
         self.perf = PerfMonitor(profile, self.server)
         from .pregen import Pregen
