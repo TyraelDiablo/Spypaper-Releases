@@ -31,13 +31,14 @@ from .pages.tasks import TasksPage
 from .pages.discord import DiscordPage
 from .pages.configs import ConfigsPage
 from .pages.velocity import VelocityPage
+from .pages.bots import BotsPage
 
 from core import N_
 
 # Kenar çubuğu grupları (anahtar, başlık, sayfalar). Sekmeler yalnızca kendi grupları içinde sıralanır.
 GROUPS = [
     ("general", N_("Genel"), [DashboardPage, ConsolePage, LogsPage, MapPage, EsploraPage, NotesPage]),
-    ("players", N_("Oyuncular"), [PlayersPage, TeamsPage, AdminPage]),
+    ("players", N_("Oyuncular"), [PlayersPage, TeamsPage, AdminPage, BotsPage]),
     ("content", N_("İçerik"), [PluginsPage, ModTransPage, ContentPage]),
     ("server", N_("Sunucu"), [VelocityPage, SettingsPage, ConfigsPage, FilesPage]),
     ("automation", N_("Otomasyon"), [MaintenancePage, TasksPage, DiscordPage]),
@@ -135,7 +136,8 @@ class ServerPanel(QWidget):
             self.hidden = set(self.hidden) | {PAGES.index(PluginsPage), PAGES.index(ModTransPage)}
         if is_proxy(app.config.server_path):      # proxy'de dünya, oyuncu verisi ve server.properties yok
             self.hidden = set(self.hidden) | {PAGES.index(c) for c in (
-                MapPage, PlayersPage, TeamsPage, AdminPage, ModTransPage, ContentPage, SettingsPage, MaintenancePage)}
+                MapPage, PlayersPage, TeamsPage, AdminPage, BotsPage, ModTransPage, ContentPage, SettingsPage,
+                MaintenancePage)}
         else:
             self.hidden = set(self.hidden) | {PAGES.index(VelocityPage)}
         for i, cls in enumerate(PAGES):

@@ -1,5 +1,5 @@
 name: SpypaperMessages
-version: 1.1
+version: 1.2
 main: dev.spypaper.messages.SpypaperMessages
 api-version: '1.20'
 author: Spypaper
@@ -13,6 +13,9 @@ commands:
     permission: spypaper.messages
   spypaper-locales:
     description: Cevrimici oyuncularin oyun dillerini yazar.
+    permission: spypaper.messages
+  spypaper-bot:
+    description: Spypaper bot oyunculari (spawn, action, remove, list).
     permission: spypaper.messages
   spypaper-reload:
     description: messages.tsv dosyasini yeniden okur.

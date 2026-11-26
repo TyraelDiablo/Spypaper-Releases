@@ -1,11 +1,15 @@
 #!/bin/sh
 # SpypaperMessages.jar.ı derler.
-# jar'a taslaklar girmez, çalışırken gerçek Paper sınıfları kullanılır.
+# Bot motoru (BotEngine) Paper'ın iç sınıflarıyla derlenir: PAPER_CP, Paper sunucusunun jar'larını
+# (versions/<sürüm>/paper-<sürüm>.jar, libraries/... ) içeren sınıf yolu olmalı. Bu jar'lar depoya girmez.
+# Paper 26+ sınıfları Java 25 sürümündedir; JDK 21 ile derlerken önce sürüm baytlarını 65'e çeken kopyalar
+# kullanılabilir (yalnızca derleme için; jar'a girmez).
 set -e
 cd "$(dirname "$0")"
-rm -rf out stubout && mkdir out stubout
-javac --release 17 -d stubout $(find stubs -name '*.java')
-javac --release 17 -cp stubout -d out src/dev/spypaper/messages/SpypaperMessages.java
+[ -n "$PAPER_CP" ] || { echo "PAPER_CP gerekli"; exit 1; }
+rm -rf out && mkdir out
+javac --release 21 -proc:none -cp "$PAPER_CP" -d out $(find src -name '*.java')
 cp plugin.yml out/
-(cd out && jar cf ../../../ui/assets/plugins/SpypaperMessages.jar plugin.yml dev)
-rm -rf out stubout
+printf 'Manifest-Version: 1.0\npaperweight-mappings-namespace: mojang\n' > out/MANIFEST.MF
+(cd out && jar cfm ../../../ui/assets/plugins/SpypaperMessages.jar MANIFEST.MF plugin.yml dev)
+rm -rf out

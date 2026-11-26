@@ -64,7 +64,7 @@ def build(app, hours=24, now=None, tr=None):
             evs.extend(e for e in app.logs._archive_events(path) if e.time >= since)
     joins = [e for e in evs if e.kind == "join"]
     deaths = sum(1 for e in evs if e.kind == "death")
-    players = {e.player for e in joins}
+    players = {e.player for e in joins if not app.bots.is_bot(e.player)}
     peak = perfhist.summary(samples, "players")
     lines.append("👥 " + tr("{n} farklı oyuncu, {j} giriş, {d} ölüm", n=len(players), j=len(joins), d=deaths))
     if peak:

@@ -51,6 +51,7 @@ NAME_RE = re.compile(r"^[A-Za-z0-9_.]{1,17}$")
 
 class GuardError(Exception):
     def __init__(self, template, **kw):
+        self.is_bot = lambda name: False      # core.bots: bot oyuncular doğrulanmaz ve atılmaz
         self.template, self.kw = template, kw
         super().__init__(template.format(**kw) if kw else template)
 
@@ -337,7 +338,7 @@ class Guard:
         allowed = {n.lower() for n in settings(self.profile)["op_allowed"]}
         with self._lock:
             for name in self.ops():
-                if name.lower() in allowed or not NAME_RE.match(name):
+                if name.lower() in allowed or not NAME_RE.match(name) or self.is_bot(name):
                     continue
                 self.server.try_send(f"deop {name}")
                 playermsg.kick(self.server, name, N_("İzinsiz yönetici yetkisi algılandı."), self.tr)
@@ -403,7 +404,7 @@ class Guard:
 
     def _recheck(self, name, ip, since):
         self._pending.pop(name.lower(), None)
-        if not active(self.profile, "captcha") or name.lower() in self.verified():
+        if not active(self.profile, "captcha") or name.lower() in self.verified() or self.is_bot(name):
             return
         if self.downloaded(ip, since):
             self.mark_verified(name)

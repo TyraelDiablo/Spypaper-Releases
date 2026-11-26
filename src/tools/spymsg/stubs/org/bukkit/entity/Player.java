@@ -1,1 +1,0 @@
-package org.bukkit.entity; public interface Player extends org.bukkit.command.CommandSender { String getName(); String getLocale(); void kickPlayer(String m); }

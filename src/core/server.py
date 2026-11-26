@@ -32,6 +32,7 @@ class ServerProcess:
         self.hooks = []       # fn(str): her satırda, arayüzden bağımsız (ör. core.guard)
         self.send_hooks = []  # fn(str): gönderilen her komutta
         self.state_hooks = [] # fn(state): her durum değişiminde, arayüzden bağımsız (ör. core.discord)
+        self.prestart_hooks = []  # fn(server_path): java başlamadan hemen önce
         self.line_filters = []  # fn(str) -> True: satır panelin kendi sorgusunun yanıtı, gösterilmez (core.perf)
         self.history = deque(maxlen=5000)   # arayüz yeniden kurulunca konsol buradan dolar
         self.stop_requested = False
@@ -65,6 +66,11 @@ class ServerProcess:
         if not os.path.exists(os.path.join(path, jar)):
             raise ServerError("Klasörde '{jar}' bulunamadı:\n{path}", jar=jar, path=path)
 
+        for hook in list(self.prestart_hooks):     # ör. paketle gelen eklentiyi güncelle (core.playermsg)
+            try:
+                hook(path)
+            except Exception as e:
+                print(f"[prestart] {e}")
         cmd = [
             self.config.get("java_path"),
             f"-Xmx{self.config.get('ram_max')}",

@@ -56,6 +56,7 @@ class PlayerDetails:
     ender: list = field(default_factory=list)
     last_death: tuple = None                        # (dim, x, y, z)
     pos: tuple = None                               # (dim, x, y, z) son kaydedilen konum
+    rot: tuple = (0.0, 0.0)                         # (yaw, pitch)
 
 
 def hyphenate(u):
@@ -588,6 +589,8 @@ class PlayerService:
                 dim = {-1: "minecraft:the_nether", 1: "minecraft:the_end"}.get(int(dim), "minecraft:overworld")
             if len(p) == 3:
                 d.pos = (str(dim), *(round(c, 1) for c in p))
+            r = [float(_val(v)) for v in list(root.get("Rotation", []))]
+            d.rot = (round(r[0], 1), round(r[1], 1)) if len(r) == 2 else (0.0, 0.0)
         except Exception:
             pass
         ld = root.get("LastDeathLocation")

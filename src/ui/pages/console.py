@@ -118,6 +118,8 @@ class ConsolePage(Page):
         if self.app.config.settings.get("translate_logs"):
             text = self.app.logtrans.line(text)
         key = self._repeat_key(text)
+        sb = self.out.verticalScrollBar()
+        at_end = sb.value() >= sb.maximum() - 4          # kullanıcı yukarı kaydırmadıysa sona yapışık kalır
         last = getattr(self, "_last", None)
         body = f'<span style="color:{log_colors()[kind]}; white-space:pre-wrap">{html.escape(text)}</span>'
         if last and key and last[0] == key and self.out.document().blockCount() == last[2] and self.out.toPlainText():
@@ -131,6 +133,8 @@ class ConsolePage(Page):
             n = 1
             self.out.appendHtml(body)
         self._last = (key, n, self.out.document().blockCount())
+        if at_end:
+            sb.setValue(sb.maximum())
 
     def _menu(self, pos):
         from PySide6.QtWidgets import QMenu

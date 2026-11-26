@@ -99,6 +99,19 @@ def _src_plugin():
     return None
 
 
+def refresh_plugin(server_path):
+    """Kurulu eklenti Spypaper'la gelen sürümden farklıysa günceller (sunucu kapalıyken çağrılmalı)."""
+    dst = os.path.join(server_path, "plugins", JAR)
+    src = _src_plugin()
+    if not src or not os.path.exists(dst):
+        return False
+    with open(src, "rb") as a, open(dst, "rb") as b:
+        if a.read() == b.read():
+            return False
+    shutil.copyfile(src, dst)
+    return True
+
+
 def set_plugin(server_path, on):
     dst = os.path.join(server_path, "plugins", JAR)
     if on:
