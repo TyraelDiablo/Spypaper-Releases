@@ -44,6 +44,8 @@ final class BotEngine {
         String action = "none";
         int interval = 0;          // 0: her tick (vurmada saldırı gücü dolunca)
         int timer = 0;
+        Location home;             // ölünce burada yeniden doğar
+        int deadTicks = 0;
     }
 
     /** Paketleri yutan bağlantı. */
@@ -88,6 +90,7 @@ final class BotEngine {
         server.getPlayerList().placeNewPlayer(conn, p, CommonListenerCookie.createInitial(profile, false));
         Bot b = new Bot();
         b.handle = p;
+        b.home = new Location(world, x, y, z, yaw, pitch);
         bots.put(name.toLowerCase(), b);
         p.getBukkitEntity().teleport(new Location(world, x, y, z, yaw, pitch));
         return "ok";
@@ -100,6 +103,18 @@ final class BotEngine {
         String shown = b.handle.getGameProfile().name();
         server.getPlayerList().remove(b.handle);
         Bukkit.getLogger().info(shown + " left the game");   // panel/log izleyicileri çıkışı görsün
+    }
+
+    private void respawn(Bot b) {
+        String name = b.handle.getGameProfile().name();
+        String action = b.action;
+        int interval = b.interval;
+        Location h = b.home;
+        remove(name);
+        if ("ok".equals(spawn(name, h.getWorld(), h.getX(), h.getY(), h.getZ(), h.getYaw(), h.getPitch()))) {
+            setAction(name, action, interval);
+            plugin.getLogger().info("bot respawned " + name);
+        }
     }
 
     void removeAll() {
@@ -127,7 +142,10 @@ final class BotEngine {
                 p.doTick();                      // gerçek oyuncuda bunu bağlantı çağırır: fizik, yer çekimi
             } catch (Throwable ignored) {
             }
-            if (!p.isAlive()) continue;
+            if (!p.isAlive()) {
+                if (++b.deadTicks >= 20) respawn(b);   // 1 sn sonra aynı yerde, aynı işle geri gelir
+                continue;
+            }
             if ("attack".equals(b.action)) {
                 boolean ready = b.interval > 0 ? ++b.timer >= b.interval : p.getAttackStrengthScale(0.5f) >= 1.0f;
                 if (ready) {
