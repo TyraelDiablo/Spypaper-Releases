@@ -139,7 +139,7 @@ def read_name_list(server_path, file_name):
 
 # --- yedekler ---
 class BackupManager:
-    WORLD_DIRS = ("world", "world_nether", "world_the_end")
+    WORLD_DIRS = ("world", "world_nether", "world_the_end", "worlds")   # worlds: Bedrock
 
     def __init__(self, server_path, keep=None):
         self.set_server_path(server_path)

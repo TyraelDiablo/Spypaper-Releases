@@ -131,6 +131,9 @@ def detect_jars(path):
 
 def detect_version(path):
     """latest.log'dan Minecraft sürümü ve yazılım (Paper/Purpur/Fabric/Forge/NeoForge/Vanilla...)."""
+    from . import bedrock
+    if bedrock.is_bedrock(path):
+        return bedrock.installed_version(path), "Bedrock"
     log = os.path.join(path, "logs", "latest.log")
     ver, soft = "", ""
     if os.path.exists(log):

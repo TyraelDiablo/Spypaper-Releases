@@ -70,6 +70,16 @@ def create(path, software_key, version, *, motd="A Minecraft Server", port=25565
     os.makedirs(path, exist_ok=True)
     log(f"{software.SOFTWARE[software_key]['name']} {version}")
     info = software.latest_build(software_key, version, contact)
+    if software.is_bedrock_key(software_key):
+        from . import bedrock
+        start = bedrock.install(info, path, contact, progress=progress)
+        bedrock.set_properties(path, {
+            "server-name": motd, "server-port": port, "server-portv6": int(port) + 1,
+            "max-players": max_players, "gamemode": gamemode, "difficulty": difficulty,
+            "online-mode": str(bool(online_mode)).lower(), "allow-list": str(bool(whitelist)).lower(),
+            **({"level-seed": world.get("seed") or ""} if world else {}),
+        })
+        return start
     if info.get("installer"):
         start = software.install_with_installer(info, path, java, contact, progress=progress, log=log)
     else:

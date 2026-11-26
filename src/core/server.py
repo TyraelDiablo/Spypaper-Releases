@@ -71,6 +71,10 @@ class ServerProcess:
                 hook(path)
             except Exception as e:
                 print(f"[prestart] {e}")
+        from . import bedrock
+        self.bedrock = bedrock.is_bedrock(path)
+        if self.bedrock:
+            return self._start_bedrock(path)
         cmd = [
             self.config.get("java_path"),
             f"-Xmx{self.config.get('ram_max')}",
@@ -110,6 +114,38 @@ class ServerProcess:
         self.crashed = False
         self.exit_code = None
         self.run_id += 1
+        self._set_state(STARTING)
+        threading.Thread(target=self._read_output, daemon=True).start()
+
+    def _start_bedrock(self, path):
+        """Bedrock Dedicated Server: Java yok, kendi exe'si; konsolu stdin/stdout."""
+        from . import bedrock
+        exe = os.path.join(path, bedrock.exe_name())
+        if not os.path.isfile(exe):
+            raise ServerError("Klasörde '{jar}' bulunamadı:\n{path}", jar=bedrock.exe_name(), path=path)
+        kwargs = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
+        env = dict(os.environ)
+        if os.name != "nt":
+            env["LD_LIBRARY_PATH"] = path
+        try:
+            self.process = subprocess.Popen(
+                [exe], cwd=path, env=env,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, encoding="utf-8", errors="replace", bufsize=1, **kwargs,
+            )
+        except Exception as e:
+            raise ServerError("Sunucu başlatılamadı:\n{e}", e=e)
+        self.history.clear()
+        self.external = False
+        self.stop_requested = False
+        self.crashed = False
+        self.exit_code = None
+        self.run_id += 1
+        try:                     # BDS log dosyası yazmaz: panelin log izleyicisi için konsolu logs/latest.log'a yazar
+            os.makedirs(os.path.join(path, "logs"), exist_ok=True)
+            self._blog = open(os.path.join(path, "logs", "latest.log"), "w", encoding="utf-8")
+        except OSError:
+            self._blog = None
         self._set_state(STARTING)
         threading.Thread(target=self._read_output, daemon=True).start()
 
@@ -165,6 +201,12 @@ class ServerProcess:
         command = command.strip().lstrip("/")
         if not command:
             return
+        if getattr(self, "bedrock", False) and command.split()[0].lower() == "save-all":
+            # Bedrock'ta save-all yok: yedek için yazmayı durdurur, bir dakika sonra sürdürür
+            command = "save hold"
+            t = threading.Timer(60, lambda: self.try_send("save resume"))
+            t.daemon = True
+            t.start()
         if self.external and not self.process.writable:
             raise ServerError("Bu sunucu Spypaper kapalıyken açık kaldı ve RCON kapalı; konsol yalnızca okunabilir. "
                               "Komut gönderebilmek için sunucuyu bir kez Spypaper'dan yeniden başlat.")
@@ -205,9 +247,16 @@ class ServerProcess:
             if not line:
                 break
             clean = line.rstrip()
-            if "Done (" in clean or "For help, type" in clean:
+            blog = getattr(self, "_blog", None)
+            if blog:
+                try:
+                    blog.write(clean + "\n")
+                    blog.flush()
+                except (OSError, ValueError):
+                    pass
+            if "Done (" in clean or "For help, type" in clean or "Server started." in clean:
                 self._set_state(RUNNING)
-            elif "Stopping server" in clean or "Stopping the server" in clean:
+            elif "Stopping server" in clean or "Stopping the server" in clean or "Server stop requested" in clean:
                 self.stop_requested = True          # konsoldan /stop da isteyerek durdurmadır
                 self._set_state(STOPPING)
             if self._filtered(clean):
@@ -220,6 +269,12 @@ class ServerProcess:
                     print(f"[hook] {e}")
             if self.on_line:
                 self.on_line(clean)
+        blog, self._blog = getattr(self, "_blog", None), None
+        if blog:
+            try:
+                blog.close()
+            except OSError:
+                pass
         try:
             self.exit_code = proc.wait(timeout=10)
         except Exception:

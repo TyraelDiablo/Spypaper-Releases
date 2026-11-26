@@ -72,6 +72,8 @@ def _ver_tuple(v):
 
 def probes_for(software, version):
     """Yazılım ve sürüme göre gönderilecek komutlar (boş liste: desteklenmiyor)."""
+    if software == "Bedrock":            # BDS'de TPS komutu yok
+        return []
     if software in PAPER_FAMILY:
         return ["tps", "mspt"]
     if software in SPIGOT:

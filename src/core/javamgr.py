@@ -208,6 +208,9 @@ def best_for(required, javas=None):
 def check(profile):
     """Sunucu başlamadan önce: (gereken, seçili major, seçili yol). Bilinmeyenler None/''."""
     from .config import is_proxy
+    from .bedrock import is_bedrock
+    if is_bedrock(profile.server_path):
+        return None, None, ""                        # Bedrock Java kullanmaz
     if is_proxy(profile.server_path) or "velocity" in os.path.basename(profile.get("jar_name") or "").lower():
         req = 21                                     # Velocity 3.4+
     else:

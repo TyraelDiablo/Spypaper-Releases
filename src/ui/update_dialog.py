@@ -40,8 +40,10 @@ class UpdateDialog(QDialog):
         v.addWidget(label(t("Şu anki: {jar}  ({cur})", jar=jar, cur=cur or t("bilinmiyor")), "Muted", wrap=True))
 
         self.sw = QComboBox()
+        be = software.is_bedrock_key(self.cur_soft)
         for key, info in software.SOFTWARE.items():
-            self.sw.addItem(info["name"], key)
+            if software.is_bedrock_key(key) == be:     # Java <-> Bedrock arasında geçiş olmaz
+                self.sw.addItem(info["name"], key)
         self.sw.setCurrentIndex(max(0, self.sw.findData(self.cur_soft)))
         self.sw.currentIndexChanged.connect(self._load_versions)
         self.sw.setMinimumWidth(150)
@@ -178,6 +180,7 @@ class UpdateDialog(QDialog):
             warns.append(t("Bu Minecraft sürümü için yalnızca beta sürüm var."))
         self.warn_lbl.setText("\n".join(warns))
         self.trial.setChecked(not same_soft or bool(self.cur_ver and info["version"] != self.cur_ver))
+        self.trial.setVisible(not info.get("bedrock"))
         self.adjustSize()
         self.btn.setText(t("Yeniden indir") if same else t("Kur") if not same_soft else t("Güncelle"))
         self.btn.setEnabled(True)
@@ -197,7 +200,7 @@ class UpdateDialog(QDialog):
         cfg = self.app.config
         do_migrate = self.migrate.isVisible() and self.migrate.isChecked()
         old_key, level = self.cur_soft, self._level()
-        do_trial = self.trial.isChecked()
+        do_trial = self.trial.isChecked() and not info.get("bedrock")   # deneme kopyası Java ile çalışır
 
         def run():
             try:
@@ -232,7 +235,11 @@ class UpdateDialog(QDialog):
                 if do_backup:
                     self.app.backups.create(progress=lambda a, b: self.progress.emit(a, b))
                 prog = lambda a, b: self.progress.emit(a, b)
-                if info.get("installer"):
+                if info.get("bedrock"):
+                    from core import bedrock
+                    self.install_log.emit(t("İndiriliyor…"))
+                    name = bedrock.install(info, cfg.server_path, self.contact, progress=prog)
+                elif info.get("installer"):
                     self.install_log.emit(t("İndiriliyor…"))
                     name = software.install_with_installer(info, cfg.server_path, cfg.get("java_path"),
                                                            self.contact, progress=prog, log=self.install_log.emit)

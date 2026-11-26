@@ -68,6 +68,9 @@ def tellraw(text, tr, prefix=True):
 def announce(server, text, tr):
     """Tüm oyunculara uyarı (geri sayım vb.). Eklenti varsa her oyuncuya kendi dilinde, yoksa çeviri anahtarıyla."""
     k = key(text)
+    if getattr(server, "bedrock", False):     # Bedrock: rawtext biçimi, eklenti yok
+        return server.try_send("tellraw @a " + json.dumps({"rawtext": [{"text": "§c§l[!] §r§e" + tr(text)}]},
+                                                          ensure_ascii=False))
     if k and plugin_installed(server.config.server_path):
         return server.try_send(f"spypaper-say {k} {tr(text)}")
     return server.try_send("tellraw @a " + tellraw(text, tr))

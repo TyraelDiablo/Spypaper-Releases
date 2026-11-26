@@ -135,7 +135,12 @@ class ServerPanel(QWidget):
         soft = detect_version(app.config.server_path)[1]
         if soft == "Vanilla":     # vanilla eklenti/mod yükleyemez
             self.hidden = set(self.hidden) | {PAGES.index(PluginsPage), PAGES.index(ModTransPage)}
-        if is_proxy(app.config.server_path):      # proxy'de dünya, oyuncu verisi ve server.properties yok
+        from core.bedrock import is_bedrock
+        if is_bedrock(app.config.server_path):    # Bedrock (vanilla): Java dünyasına, eklentiye ve NBT'ye bağlı sayfalar yok
+            self.hidden = set(self.hidden) | {PAGES.index(c) for c in (
+                MapPage, PlayersPage, TeamsPage, AdminPage, BotsPage, ModTransPage, ContentPage, SettingsPage,
+                MaintenancePage, PluginsPage, VelocityPage, ConfigsPage, GuardPage, DangerPage) if c in PAGES}
+        elif is_proxy(app.config.server_path):      # proxy'de dünya, oyuncu verisi ve server.properties yok
             self.hidden = set(self.hidden) | {PAGES.index(c) for c in (
                 MapPage, PlayersPage, TeamsPage, AdminPage, BotsPage, ModTransPage, ContentPage, SettingsPage,
                 MaintenancePage)}
@@ -340,6 +345,9 @@ class ServerPanel(QWidget):
     def _java_ok(self):
         """Seçili Java sunucunun Minecraft sürümü için yetersizse ya da bulunamıyorsa sorar."""
         from core import javamgr
+        from core.bedrock import is_bedrock
+        if is_bedrock(self.app.config.server_path):
+            return True
         try:
             req, major, exe = javamgr.check(self.app.config)
         except Exception as e:
@@ -396,6 +404,9 @@ def eula_ok(parent, server_path):
     """Minecraft EULA'sı kabul edilmemişse sunucu açılmaz. Kullanıcıya sorup eula.txt'yi yazar.
     Panel bunu kendiliğinden kabul etmez."""
     from core.config import is_proxy
+    from core.bedrock import is_bedrock
+    if is_bedrock(server_path):                # BDS: EULA indirirken kabul edilir, eula.txt yok
+        return True
     if is_proxy(server_path):                  # Velocity proxy'nin EULA'sı yok
         return True
     path = os.path.join(server_path, "eula.txt")

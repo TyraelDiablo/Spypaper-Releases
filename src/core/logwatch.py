@@ -18,10 +18,14 @@ LINE_RES = (
     re.compile(r"^\[(?:\d{1,2}[A-Za-z]{3}\d{4} )?(\d{2}):(\d{2}):(\d{2})(?:[.,]\d+)?\]\s*\[[^\]]*?/(\w+)\]"
                r"(?:\s*\[[^\]]*\])*:\s?(.*)$"),
     re.compile(r"^\[(\d{2}):(\d{2}):(\d{2})\s+(\w+)\]:\s?(.*)$"),
+    # Bedrock Dedicated Server: [2026-11-26 22:00:00:123 INFO] mesaj
+    re.compile(r"^\[\d{4}-\d{2}-\d{2} (\d{2}):(\d{2}):(\d{2})(?:[:.,]\d+)?\s+(\w+)\]\s?(.*)$"),
 )
 NAME = r"([A-Za-z0-9_.*~-]{2,32})"
 RE_JOIN = re.compile(rf"^{NAME} joined the game")
 RE_LEAVE = re.compile(rf"^{NAME} left the game")
+RE_BE_JOIN = re.compile(r"^Player connected:\s*([^,]{1,32}),\s*xuid")      # Bedrock (adlarda boşluk olabilir)
+RE_BE_LEAVE = re.compile(r"^Player disconnected:\s*([^,]{1,32}),\s*xuid")
 RE_CHAT = re.compile(r"^(?:\[Not Secure\]\s*)?<([^>]+)>\s?(.*)$")
 RE_CMD = re.compile(rf"^{NAME} issued server command:\s*(.*)$")
 RE_ADV = re.compile(rf"^{NAME} has (?:made the advancement|completed the challenge|reached the goal) \[(.+)\]")
@@ -71,11 +75,11 @@ def _parse_line(line):
 def classify(level, msg, known_players):
     """(tür, oyuncu, metin)"""
     msg = RE_SYS_PREFIX.sub("", msg, count=1)
-    m = RE_JOIN.match(msg)
+    m = RE_JOIN.match(msg) or RE_BE_JOIN.match(msg)
     if m:
         known_players.add(m.group(1))
         return "join", m.group(1), msg
-    m = RE_LEAVE.match(msg)
+    m = RE_LEAVE.match(msg) or RE_BE_LEAVE.match(msg)
     if m:
         return "leave", m.group(1), msg
     m = RE_CHAT.match(msg)
