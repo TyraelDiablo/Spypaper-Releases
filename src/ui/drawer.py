@@ -200,6 +200,7 @@ class Drawer(QWidget):
         v.addWidget(item("Güncellemeleri şimdi denetle", self._check_update, "circle-arrow-up"))
         v.addWidget(item("Lisans ve Gizlilik", self._legal, "scale"))
         v.addWidget(item("Hakkında", self._about, "info"))
+        v.addWidget(item("Panel Doğrulaması", self._auth, "lock"))
         v.addWidget(item("Uyku Modu", self._sleep, "lock"))
         v.addWidget(item("Spypaper'ı Kapat", self._quit, "x"))
         v.addWidget(item("Spypaper'ı kaldır", self._uninstall, "circle-x"))
@@ -228,6 +229,10 @@ class Drawer(QWidget):
         for p in recent:
             dot = icons.dot(TOKENS["accent"] if self.ctl.is_running(p.id) else TOKENS["text_muted"])
             self.servers_box.addWidget(item(p.name, lambda _=False, sid=p.id: self.ctl.open_server(sid), dot, raw=True))
+
+    def _auth(self):
+        from .auth_dialog import AuthDialog
+        AuthDialog(self.ctl.settings, self).exec()
 
     def _ai(self):
         from .ai_dialog import AIDialog

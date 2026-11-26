@@ -58,6 +58,11 @@ def main(config_path=None):
         sys.exit(0)
     if splash.run(settings):                          # güncelleme kuruldu: yeni exe başladı
         sys.exit(0)
+    from core import auth
+    if auth.enabled(settings) and auth.cfg(settings)["on_start"]:
+        from ui.auth_dialog import verify
+        if not verify(None, settings):              # doğrulanmadan panel açılmaz
+            sys.exit(0)
     from ui import motion
     qt._fader = motion.DialogFader()                # diyaloglar solarak açılır
     qt.installEventFilter(qt._fader)

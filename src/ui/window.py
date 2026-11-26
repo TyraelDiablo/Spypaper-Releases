@@ -806,7 +806,9 @@ class MainWindow(QMainWindow):
         from . import sleep
         if getattr(self, "sleeping", None):
             return
-        if not self.settings.get("sleep_pin_hash"):
+        from core import auth
+        use_auth = auth.enabled(self.settings) and auth.cfg(self.settings)["on_sleep"]
+        if not use_auth and not self.settings.get("sleep_pin_hash"):
             p1, ok = get_text(self, t("Uyku Modu"), t("Uyku modundan çıkmak için bir PIN belirle (4-12 rakam)."),
                               password=True)
             if not ok:
@@ -849,11 +851,21 @@ class MainWindow(QMainWindow):
 
     def _sleep_pin_ok(self, purpose=""):
         from core.safemode import verify_pin
+        from core import auth
         from .msgbox import get_text
         stored = self.settings.get("sleep_pin_hash")
-        if not stored:
+        use_auth = auth.enabled(self.settings) and auth.cfg(self.settings)["on_sleep"]
+        if not stored and not use_auth:
             return True
         app = QApplication.instance()
+        if use_auth:                                         # panel doğrulaması uyku PIN'inin yerine geçer
+            app.removeEventFilter(self._blocker)
+            try:
+                from .auth_dialog import verify
+                return verify(self, self.settings, purpose)
+            finally:
+                if getattr(self, "sleeping", None):
+                    app.installEventFilter(self._blocker)
         app.removeEventFilter(self._blocker)                 # PIN diyaloğunda yazılabilsin
         try:
             for attempt in range(3):
