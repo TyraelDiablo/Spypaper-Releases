@@ -149,6 +149,19 @@ public final class SpypaperMessages extends JavaPlugin implements Listener {
                 if (p != null) p.kickPlayer(text(p, args[1], join(args, 2)));
                 return true;
             }
+            case "spypaper-rp": {          // spypaper-rp <url> <sha1> <true|false>: oyunculara paketi şimdi gönder
+                if (args.length < 2 || !args[1].matches("[0-9a-fA-F]{40}")) return true;
+                byte[] hash = new byte[20];
+                for (int i = 0; i < 20; i++) hash[i] = (byte) Integer.parseInt(args[1].substring(i * 2, i * 2 + 2), 16);
+                boolean force = args.length > 2 && args[2].equalsIgnoreCase("true");
+                int n = 0;
+                for (org.bukkit.entity.Player p : getServer().getOnlinePlayers()) {
+                    p.setResourcePack(args[0], hash, force);
+                    n++;
+                }
+                getLogger().info("resource pack sent to " + n + " players");
+                return true;
+            }
             case "spypaper-say": {
                 if (args.length < 1) return false;
                 String fb = join(args, 1);

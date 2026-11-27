@@ -463,16 +463,19 @@ class EsploraPage(Page):
     def show_report(self):
         from core import report
         from ..msgbox import ask
+        from ..icons import img_tag
+        from ..msgbox import choose
         path = report.latest(self.app.config.server_path)
         if not path:                                    # henüz zamanlanmış rapor yok: şimdi hazırla
             title, lines = self.app._report(24)
-            text = title + "\n\n" + "\n".join(lines)
         else:
-            with open(path, encoding="utf-8") as f:
-                text = f.read()
-        if ask(self, text + "\n\n" + t("Esplora bu raporu yorumlasın mı?"), t("Esplora raporu")):
+            title, lines = report.load(path)
+        text = title + "\n\n" + "\n".join(report.plain(lines))
+        rich = report.html(title, lines, lambda n: img_tag(n, size=14)) + "<br><br>" + t("Esplora bu raporu yorumlasın mı?")
+        if choose(self, "question", t("Esplora raporu"), rich, [(t("Hayır"), "ghost"), (t("Evet"), "primary")],
+                  default=1, cancel=0, rich=True) == 1:
             self.ask(t("Bu sunucu raporunu yorumla; sorun varsa nedenini ve ne yapmam gerektiğini söyle.") +
-                     "\n\n" + text, label="📋 " + t("Son raporu yorumla"))
+                     "\n\n" + text, label=t("Son raporu yorumla"))
 
     def open_access(self):
         from ..access_dialog import AccessDialog

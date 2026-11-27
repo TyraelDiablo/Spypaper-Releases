@@ -70,7 +70,7 @@ class App:
         self.server.state_hooks.append(self._bots_on_start)
         self.server.prestart_hooks.append(lambda path: __import__("core.playermsg", fromlist=["x"]).refresh_plugin(path))
         self.scheduler.reporter = self._report
-        self.scheduler.on_report = lambda title, lines: self.discord.event("report", name=title, text="\n".join(lines))
+        self.scheduler.on_report = lambda title, lines: self.discord.event("report", name=title, text="\n".join(__import__("core.report", fromlist=["x"]).plain(lines)))
 
     def attach(self):
         """Spypaper açılınca hâlâ çalışan sunucuya yeniden bağlanır (core.attach)."""

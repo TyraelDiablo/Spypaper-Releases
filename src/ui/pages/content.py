@@ -945,14 +945,20 @@ class ContentPage(Page):
             self.error((f"{e.item}: " if getattr(e, "item", None) else "") + text)
             return
         msg = [t("Veri paketi oluşturuldu: {path}", path=os.path.relpath(dp, self.app.config.server_path))]
+        live_rp = False
         if rp:
             msg.append(t("Kaynak paketi: {file}", file=os.path.basename(rp)))
             if (self.app.config.get("content_share") or {}).get("enabled"):
-                self.apply_share(quiet=True)
-        if self.app.server.is_running:
-            self.app.server.try_send("reload")
+                live_rp = bool(self.apply_share(quiet=True))
+        if self.app.server.is_running:                       # canlı ekleme: veri paketi hemen yeniden yüklenir
+            self.app.server.try_send("minecraft:reload")
             self.app.server.try_send('datapack enable "file/spypaper_content"')
-        msg.append(t("Tablo ve müzik diskleri sunucu yeniden başlatılınca görünür; aletler ve yiyecekler /reload ile gelir."))
+            msg.append(t("Canlı eklendi: aletler, yiyecekler, tarifler ve HUD sunucu kapanmadan geldi."))
+            if live_rp:
+                msg.append(t("Yeni kaynak paketi çevrimiçi oyunculara gönderildi; ekranlarında kabul etmeleri yeterli."))
+        has_registry = any(x.get("type") in ("painting", "disc") for x in items)
+        if has_registry:
+            msg.append(t("Tablolar ve müzik diskleri oyunun kayıt listesine eklendiği için yalnızca sunucu yeniden başlayınca görünür."))
         self.info("\n".join(msg))
         self._pack_status()
 
@@ -984,10 +990,21 @@ class ContentPage(Page):
         from core import modrinth as M
         from core import guard as G
         required = cfg["required"] or G.active(self.app.config, "captcha")   # Bot Doğrulaması paketi zorunlu kılar
-        M.set_resource_pack(self.app.properties, HOST.url(cfg["address"], self.app.id, sha), sha, required)
+        url = HOST.url(cfg["address"], self.app.id, sha)
+        M.set_resource_pack(self.app.properties, url, sha, required)
+        live = self._push_pack(url, sha, required)
         if not quiet:
-            self.info(t("Kaynak paketi paylaşılıyor: {url}", url=HOST.url(cfg["address"], self.app.id, sha)) + "\n" +
-                      t("Değişiklik sunucu yeniden başlatılınca geçerli olur."))
+            self.info(t("Kaynak paketi paylaşılıyor: {url}", url=url) + "\n" +
+                      (t("Çevrimiçi oyunculara paket hemen gönderildi.") if live else
+                       t("Değişiklik sunucu yeniden başlatılınca geçerli olur.")))
+        return live
+
+    def _push_pack(self, url, sha, required):
+        """Canlı ekleme: Paper'da SpypaperMessages ile çevrimiçi oyunculara kaynak paketini yeniden başlatmadan gönderir."""
+        from core import playermsg
+        if not (self.app.server.is_running and playermsg.plugin_installed(self.app.config.server_path)):
+            return False
+        return bool(self.app.server.try_send(f"spypaper-rp {url} {sha} {'true' if required else 'false'}"))
 
     def give(self):
         who = self.who.currentText().strip()

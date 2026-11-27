@@ -5,6 +5,7 @@ Yapay zekâ kullanmaz: sayılar Spypaper'ın kendi kayıtlarından (performans g
 Metin `tr` ile panel diline çevrilir.
 """
 import os
+import re
 from datetime import datetime, timedelta
 
 from . import perfhist
@@ -41,7 +42,7 @@ def build(app, hours=24, now=None, tr=None):
     tps = perfhist.summary(samples, "tps")
     ram = perfhist.summary(samples, "ram")
     if tps:
-        lines.append("📈 " + tr("TPS: ortalama {avg}, en düşük {min}", avg=f"{tps[1]:.1f}", min=f"{tps[0]:.1f}"))
+        lines.append("[[trending-up]] " + tr("TPS: ortalama {avg}, en düşük {min}", avg=f"{tps[1]:.1f}", min=f"{tps[0]:.1f}"))
         if tps[1] < 18:
             warn.append(tr("Ortalama TPS düşük; sunucu zorlanıyor."))
         bad = [w for w in perfhist.worst_moments(samples, 3) if w[1] < 15]
@@ -49,9 +50,9 @@ def build(app, hours=24, now=None, tr=None):
             lines.append("   • " + tr("{time}: TPS {tps} ({n} oyuncu)", time=f"{tm:%d.%m %H:%M}", tps=f"{v:.1f}",
                                        n=pl if pl is not None else "?"))
     else:
-        lines.append("📈 " + tr("Bu dönemde performans kaydı yok (sunucu kapalıydı)."))
+        lines.append("[[trending-up]] " + tr("Bu dönemde performans kaydı yok (sunucu kapalıydı)."))
     if ram:
-        lines.append("🧠 " + tr("RAM: ortalama {avg}, en yüksek {max}", avg=_mb(ram[1] * 1048576),
+        lines.append("[[cpu]] " + tr("RAM: ortalama {avg}, en yüksek {max}", avg=_mb(ram[1] * 1048576),
                                 max=_mb(ram[2] * 1048576)))
         limit = _ram_mb(app.config.get("ram_max"))
         if limit and ram[2] > limit * 0.9:
@@ -66,7 +67,7 @@ def build(app, hours=24, now=None, tr=None):
     deaths = sum(1 for e in evs if e.kind == "death")
     players = {e.player for e in joins if not app.bots.is_bot(e.player)}
     peak = perfhist.summary(samples, "players")
-    lines.append("👥 " + tr("{n} farklı oyuncu, {j} giriş, {d} ölüm", n=len(players), j=len(joins), d=deaths))
+    lines.append("[[users]] " + tr("{n} farklı oyuncu, {j} giriş, {d} ölüm", n=len(players), j=len(joins), d=deaths))
     if peak:
         lines.append("   • " + tr("En kalabalık an: {n} oyuncu", n=int(peak[2])))
     crashes = 0
@@ -81,7 +82,7 @@ def build(app, hours=24, now=None, tr=None):
     try:
         recs = [r for r in app.sanctions.entries() if r.get("at", "") >= since.isoformat()]
         if recs:
-            lines.append("⚖️ " + tr("Sicil: {n} yeni kayıt", n=len(recs)))
+            lines.append("[[scale]] " + tr("Sicil: {n} yeni kayıt", n=len(recs)))
     except Exception:
         pass
 
@@ -90,7 +91,7 @@ def build(app, hours=24, now=None, tr=None):
         bks = app.backups.list()
         if bks:
             last = max(b[2] for b in bks)
-            lines.append("💾 " + tr("Son yedek: {time}", time=f"{last:%d.%m %H:%M}"))
+            lines.append("[[save]] " + tr("Son yedek: {time}", time=f"{last:%d.%m %H:%M}"))
             if now - last > timedelta(days=2):
                 warn.append(tr("İki günden uzun süredir yedek alınmadı."))
         else:
@@ -100,7 +101,7 @@ def build(app, hours=24, now=None, tr=None):
     try:
         import shutil
         free = shutil.disk_usage(app.config.server_path).free
-        lines.append("🗄️ " + tr("Boş disk: {size}", size=_mb(free)))
+        lines.append("[[hard-drive]] " + tr("Boş disk: {size}", size=_mb(free)))
         if free < 5 << 30:
             warn.append(tr("Diskte 5 GB'tan az yer kaldı."))
     except Exception:
@@ -108,14 +109,33 @@ def build(app, hours=24, now=None, tr=None):
 
     if warn:
         lines.append("")
-        lines.append("⚠️ " + tr("Dikkat:"))
+        lines.append("[[triangle-alert]] " + tr("Dikkat:"))
         lines += ["   • " + w for w in warn]
     else:
         lines.append("")
-        lines.append("✅ " + tr("Her şey yolunda görünüyor."))
+        lines.append("[[circle-check]] " + tr("Her şey yolunda görünüyor."))
     title = tr("Esplora raporu · {name} · {start} – {end}", name=app.config.name,
                start=f"{since:%d.%m %H:%M}", end=f"{now:%d.%m %H:%M}")
     return title, lines
+
+
+ICON = re.compile(r"\[\[([a-z0-9-]+)\]\] ")
+
+
+def plain(lines):
+    """Dosya ve Discord için: ikon işaretleri ([[ad]]) kaldırılır."""
+    return [ICON.sub("", ln) for ln in lines]
+
+
+def html(title, lines, img):
+    """Panel için zengin metin: [[ad]] -> Lucide ikonu (img(ad) bir <img> etiketi döndürür)."""
+    from html import escape
+    out = [f"<b>{escape(title)}</b><br>"]
+    for ln in lines:
+        m = ICON.match(ln)
+        body = escape(ICON.sub("", ln)).replace("   •", "&nbsp;&nbsp;&nbsp;•")
+        out.append((img(m.group(1)) + "&nbsp;" if m else "") + body)
+    return "<br>".join(out)
 
 
 def save(server_path, title, lines, now=None):
@@ -124,14 +144,31 @@ def save(server_path, title, lines, now=None):
     os.makedirs(d, exist_ok=True)
     path = os.path.join(d, f"{now:%Y%m%d_%H%M}.txt")
     with open(path, "w", encoding="utf-8") as f:
-        f.write(title + "\n\n" + "\n".join(lines) + "\n")
+        f.write(title + "\n\n" + "\n".join(plain(lines)) + "\n")
+    import json
+    with open(path[:-4] + ".json", "w", encoding="utf-8") as f:      # panel ikonlu gösterim için
+        json.dump({"title": title, "lines": lines}, f, ensure_ascii=False)
     files = sorted(x for x in os.listdir(d) if x.endswith(".txt"))
     for old in files[:-KEEP]:
-        try:
-            os.remove(os.path.join(d, old))
-        except OSError:
-            pass
+        for ext in (".txt", ".json"):
+            try:
+                os.remove(os.path.join(d, old[:-4] + ext))
+            except OSError:
+                pass
     return path
+
+
+def load(path):
+    """(başlık, satırlar): yanındaki .json varsa ikon işaretleriyle, yoksa düz metinden."""
+    import json
+    try:
+        with open(path[:-4] + ".json", encoding="utf-8") as f:
+            d = json.load(f)
+        return d["title"], d["lines"]
+    except (OSError, ValueError, KeyError):
+        with open(path, encoding="utf-8") as f:
+            text = f.read().rstrip("\n").split("\n")
+        return text[0], text[2:]
 
 
 def latest(server_path):

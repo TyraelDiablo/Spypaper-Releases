@@ -188,7 +188,12 @@ class ConsolePage(Page):
                 items = ["minecraft:" + iid for iid, _ in self.app.players.translations.search_items("", limit=3000)]
             except Exception:
                 items = []
-            self._ctx_cache = {"players": players, "items": items}
+            from core.bedrock import is_bedrock
+            edition = "bedrock" if is_bedrock(self.app.config.server_path) else "java"
+            if edition == "bedrock":
+                from core import bedrock_players
+                players = sorted(set(bedrock_players.names(self.app.config.server_path).values()), key=str.lower)
+            self._ctx_cache = {"players": players, "items": items, "edition": edition}
         return self._ctx_cache
 
     def on_show(self):

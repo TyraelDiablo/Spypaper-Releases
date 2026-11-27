@@ -30,6 +30,14 @@ NAMED = {
     "biome": N_("biyom"), "sound": N_("ses"), "particle": N_("parçacık"), "range": N_("aralık"),
     "slot": N_("yuva"), "option": N_("seçenek"), "displayName": N_("görünen ad"), "fadeIn": N_("giriş"),
     "stay": N_("kalış"), "fadeOut": N_("çıkış"), "attribute": N_("özellik"), "x": "x", "z": "z",
+    # Bedrock
+    "xpamount": N_("miktar (seviye için 10L)"), "event": N_("olay"), "ability": N_("yetenek"), "npc": N_("NPC"),
+    "scene": N_("sahne"), "animation": N_("animasyon"), "intensity": N_("şiddet"), "shake": N_("sallanma türü"),
+    "volume": N_("ses düzeyi"), "fade": N_("geçiş süresi"), "repeat": N_("tekrar"), "preload": N_("önceden yükle"),
+    "radius": N_("yarıçap"), "data": N_("veri değeri"), "cause": N_("hasar türü"), "spread": N_("aralık"),
+    "mode": N_("kip"), "perm": N_("izin"), "state": N_("durum"), "element": N_("öğe"), "preset": N_("ön ayar"),
+    "fog": N_("sis"), "table": N_("ganimet tablosu"), "function": N_("fonksiyon"), "pitch": N_("perde"),
+    "dest": N_("hedef x y z"), "next": N_("sonraki durum"), "blend": N_("geçiş"), "all": N_("tümü"),
 }
 
 # komut: (açıklama, [biçimler])
@@ -235,24 +243,26 @@ def suggest(text, ctx, tr=lambda s, **k: s):
     'eklenecek_metin' girdinin tamamının yeni hali.
     """
     text = text.lstrip("/")
+    bedrock = ctx.get("edition") == "bedrock"
+    specs = SPECS_BEDROCK if bedrock else SPECS
     done, cur = _tokens(text)
     base = text[: len(text) - len(cur)]
     res = {"items": [], "hint": None}
     if not done:                                         # komut adı yazılıyor
         q = cur.lower()
-        names = sorted(n for n in SPECS if n.startswith(q))
+        names = sorted(n for n in specs if n.startswith(q))
         for n in names[:MAX]:
-            desc, variants = SPECS[n]
+            desc, variants = specs[n]
             first = usage(variants[0], tr)[0]
             res["items"].append((n + " ", f"{n} {first}".strip(), tr(desc)))
-        if len(names) == 1 or cur.lower() in SPECS:
-            n = cur.lower() if cur.lower() in SPECS else names[0]
-            res["hint"] = (n + " " + usage(SPECS[n][1][0], tr)[0], [])
+        if len(names) == 1 or cur.lower() in specs:
+            n = cur.lower() if cur.lower() in specs else names[0]
+            res["hint"] = (n + " " + usage(specs[n][1][0], tr)[0], [])
         return res
     cmd = done[0].lower()
-    if cmd not in SPECS:
+    if cmd not in specs:
         return res
-    desc, variants = SPECS[cmd]
+    desc, variants = specs[cmd]
     rest = done[1:]
     cands, hint, hint_open = [], None, False
     for v in variants:
@@ -279,7 +289,7 @@ def suggest(text, ctx, tr=lambda s, **k: s):
         if low in seen or not (low.startswith(q) or (":" not in q and low.split(":")[-1].startswith(q))):
             continue
         seen.add(low)
-        res["items"].append((base + val + " ", val, label))
+        res["items"].append((base + val + ("" if val.endswith(("=", "{")) else " "), val, label))
         if len(res["items"]) >= MAX:
             break
     return res
@@ -287,6 +297,17 @@ def suggest(text, ctx, tr=lambda s, **k: s):
 
 def _values(part, ctx):
     typ = part["type"]
+    if ctx.get("edition") == "bedrock":
+        if typ == "player":
+            return list(ctx.get("players") or []) + SELECTORS_BEDROCK
+        if typ == "gamerule":
+            return GAMERULES_BEDROCK
+        if part["name"] == "event":
+            return MOB_EVENTS
+        if part["name"] == "ability":
+            return ABILITIES
+        if typ in LITERAL_SETS_BEDROCK:
+            return LITERAL_SETS_BEDROCK[typ]
     if typ == "player" or part["name"] == "target" and typ == "player":
         return list(ctx.get("players") or []) + ["@a", "@p", "@r", "@s"]
     if typ == "item":
@@ -300,3 +321,137 @@ def _values(part, ctx):
     if typ == "entity":
         return ENTITIES
     return LITERAL_SETS.get(typ, [])
+
+
+# ---------------------------------------------------------------- Bedrock Dedicated Server
+# Bedrock'un sözdizimi Java'dan farklıdır: effect'te "give" yok, xp miktarı önce gelir ("10L"), locate kısa yazılabilir,
+# oyun kuralları küçük harflidir; seçicilerde hasitem, family, has_property, haspermission gibi filtreler vardır.
+COMMANDS_BEDROCK = {
+    "say": (N_("Herkese sunucu adına mesaj gönderir"), ["<text>"]),
+    "tell": (N_("Bir oyuncuya özel mesaj gönderir"), ["<player> <text>"]),
+    "msg": (N_("Bir oyuncuya özel mesaj gönderir"), ["<player> <text>"]),
+    "w": (N_("Bir oyuncuya özel mesaj gönderir"), ["<player> <text>"]),
+    "me": (N_("Eylem mesajı gönderir"), ["<text>"]),
+    "tellraw": (N_("Biçimli mesaj gönderir (rawtext JSON)"), ["<player> <text>"]),
+    "title": (N_("Ekranda başlık gösterir"), ["<player> title <text>", "<player> subtitle <text>",
+                                              "<player> actionbar <text>", "<player> clear", "<player> reset",
+                                              "<player> times <fadeIn:int> <stay:int> <fadeOut:int>"]),
+    "titleraw": (N_("Biçimli başlık gösterir (rawtext JSON)"), ["<player> title <text>", "<player> subtitle <text>",
+                                                                "<player> actionbar <text>"]),
+    "list": (N_("Çevrimiçi oyuncuları listeler"), [""]),
+    "kick": (N_("Oyuncuyu sunucudan atar"), ["<player> [reason:text]"]),
+    "op": (N_("Oyuncuyu operatör yapar"), ["<player>"]),
+    "deop": (N_("Operatörlüğü kaldırır"), ["<player>"]),
+    "allowlist": (N_("İzin listesini yönetir"), ["add <player>", "remove <player>", "list", "on", "off", "reload"]),
+    "permission": (N_("permissions.json'u yönetir"), ["list", "reload"]),
+    "setmaxplayers": (N_("En fazla oyuncu sayısını değiştirir"), ["<int>"]),
+    "changesetting": (N_("Sunucu ayarını değiştirir"), ["allow-cheats <bool>", "difficulty <difficulty>"]),
+    "gamemode": (N_("Oyun modunu değiştirir"), ["<gamemode> [player]"]),
+    "defaultgamemode": (N_("Yeni oyuncuların oyun modunu ayarlar"), ["<gamemode>"]),
+    "difficulty": (N_("Zorluğu değiştirir"), ["<difficulty>"]),
+    "time": (N_("Saati ayarlar"), ["set <time>", "add <int>", "query daytime", "query gametime", "query day"]),
+    "daylock": (N_("Gün döngüsünü durdurur"), ["[bool]"]),
+    "alwaysday": (N_("Gün döngüsünü durdurur"), ["[bool]"]),
+    "weather": (N_("Havayı değiştirir"), ["clear [duration:int]", "rain [duration:int]", "thunder [duration:int]",
+                                         "query"]),
+    "toggledownfall": (N_("Yağmuru açar ya da kapatır"), [""]),
+    "give": (N_("Oyuncuya eşya verir"), ["<player> <item> [count:int] [data:int]"]),
+    "clear": (N_("Envanteri temizler"), ["[player] [item] [data:int] [count:int]"]),
+    "effect": (N_("Efekt verir ya da kaldırır (Bedrock'ta 'give' yazılmaz)"),
+               ["<player> <effect> [seconds:int] [amplifier:int] [hideParticles:bool]", "<player> clear"]),
+    "enchant": (N_("Elindeki eşyayı büyüler"), ["<player> <enchant> [level:int]"]),
+    "xp": (N_("Deneyim verir (seviye için sayının sonuna L: 10L)"), ["<xpamount:word> [player]"]),
+    "tp": (N_("Işınlar"), ["<player> <target:player>", "<player> <pos>", "<pos>"]),
+    "teleport": (N_("Işınlar"), ["<player> <target:player>", "<player> <pos>", "<pos>"]),
+    "spawnpoint": (N_("Oyuncunun doğma noktasını ayarlar"), ["[player] [pos]"]),
+    "clearspawnpoint": (N_("Oyuncunun doğma noktasını siler"), ["[player]"]),
+    "setworldspawn": (N_("Dünyanın doğma noktasını ayarlar"), ["[pos]"]),
+    "spreadplayers": (N_("Oyuncuları alana dağıtır"), ["<x:num> <z:num> <spread:num> <range:num> <player>"]),
+    "kill": (N_("Varlıkları öldürür"), ["[player]"]),
+    "damage": (N_("Hasar verir"), ["<player> <int> [cause:word]"]),
+    "summon": (N_("Varlık çağırır"), ["<entity> [pos]", "<entity> <name:word> [pos]"]),
+    "ride": (N_("Bindirir ya da indirir"), ["<player> start_riding <target:player>", "<player> stop_riding",
+                                           "<player> evict_riders", "<player> summon_rider <entity>"]),
+    "gamerule": (N_("Oyun kuralını görür ya da değiştirir"), ["<gamerule> [value]"]),
+    "locate": (N_("En yakın yapıyı ya da biyomu bulur (Bedrock'ta kısa yazılabilir: locate village)"),
+               ["structure <structure>", "biome <biome:word>", "<structure>"]),
+    "fill": (N_("Bir alanı blokla doldurur"), ["<from:pos> <to:pos> <block:item> [mode:word]"]),
+    "setblock": (N_("Blok koyar"), ["<pos> <block:item> [mode:word]"]),
+    "clone": (N_("Bir alanı kopyalar"), ["<from:pos> <to:pos> <dest:pos>"]),
+    "structure": (N_("Yapı kaydeder ya da yükler"), ["save <name:word> <from:pos> <to:pos>", "load <name:word> <pos>",
+                                                    "delete <name:word>"]),
+    "execute": (N_("Komutu başka bir bağlamda çalıştırır"), ["as <player> run <command:text>",
+                                                            "at <player> run <command:text>",
+                                                            "in <dim> run <command:text>",
+                                                            "if entity <player> run <command:text>"]),
+    "testfor": (N_("Seçiciye uyan varlık var mı bakar"), ["<player>"]),
+    "testforblock": (N_("Bir konumdaki bloğu denetler"), ["<pos> <block:item>"]),
+    "scoreboard": (N_("Skor tablosunu yönetir"), ["objectives list", "objectives add <name:word> dummy [displayName:text]",
+                                                  "objectives setdisplay sidebar [objective:word]",
+                                                  "players list [player]", "players set <player> <objective:word> <int>",
+                                                  "players add <player> <objective:word> <int>"]),
+    "tag": (N_("Varlık etiketlerini yönetir"), ["<player> add <name:word>", "<player> remove <name:word>", "<player> list"]),
+    "function": (N_("Fonksiyon çalıştırır"), ["<name:word>"]),
+    "reload": (N_("Fonksiyonları ve betikleri yeniden yükler"), ["", "all"]),
+    "playsound": (N_("Ses çalar"), ["<sound:word> [player] [pos] [volume:num] [pitch:num]"]),
+    "stopsound": (N_("Sesi durdurur"), ["<player> [sound:word]"]),
+    "music": (N_("Müzik çalar ya da durdurur"), ["play <sound:word> [volume:num] [fade:num] [repeat:word]",
+                                                "queue <sound:word> [volume:num] [fade:num] [repeat:word]",
+                                                "stop [fade:num]", "volume <volume:num>"]),
+    "particle": (N_("Parçacık çıkarır"), ["<particle:word> [pos]"]),
+    "camerashake": (N_("Kamerayı sallar"), ["add <player> [intensity:num] [seconds:num] [shake:word]", "stop [player]"]),
+    "camera": (N_("Oyuncunun kamerasını yönetir"), ["<player> clear", "<player> fade", "<player> set <preset:word>"]),
+    "fog": (N_("Sis ayarlarını yönetir"), ["<player> push <fog:word> <name:word>", "<player> pop <name:word>",
+                                           "<player> remove <name:word>"]),
+    "hud": (N_("Oyuncunun ekran öğelerini gizler ya da gösterir"), ["<player> hide [element:word]",
+                                                                    "<player> reset [element:word]"]),
+    "inputpermission": (N_("Oyuncunun kamera/hareket iznini ayarlar"),
+                        ["query <player> <perm:word>", "set <player> <perm:word> <state:word>"]),
+    "ability": (N_("Oyuncu yeteneğini ayarlar (uçma, sessiz, dünya kurucu; Education özelliği gerekebilir)"),
+                ["<player> <ability:word> [bool]"]),
+    "dialogue": (N_("NPC diyalog penceresi açar"), ["open <npc:player> <player> [scene:word]",
+                                                   "change <npc:player> <scene:word> [player]"]),
+    "playanimation": (N_("Varlığa animasyon oynatır"), ["<player> <animation:word> [next:word] [blend:num]"]),
+    "mobevent": (N_("Dünya olaylarını açar ya da kapatır"), ["<event:word> [bool]"]),
+    "event": (N_("Varlığa olay tetikler"), ["entity <player> <event:word>"]),
+    "tickingarea": (N_("Bir alanın sürekli yüklü (aktif) kalmasını sağlar"),
+                    ["add <from:pos> <to:pos> [name:word] [preload:bool]",
+                     "add circle <pos> <radius:int> [name:word] [preload:bool]",
+                     "remove <name:word>", "remove_all", "list [all:word]", "preload <name:word> [preload:bool]"]),
+    "schedule": (N_("Fonksiyonu ileri bir zamana planlar"), ["on_area_loaded add <from:pos> <to:pos> <function:word>",
+                                                           "delay add <function:word> <time:word> [mode:word]"]),
+    "loot": (N_("Ganimet tablosu düşürür ya da verir"), ["spawn <pos> loot <table:word>",
+                                                         "give <player> loot <table:word>"]),
+    "replaceitem": (N_("Yuvadaki eşyayı değiştirir"), ["entity <player> <slot:word> <int> <item> [count:int]"]),
+    "recipe": (N_("Tarif verir ya da alır"), ["give <player> *", "take <player> *"]),
+    "scriptevent": (N_("Betik olayı gönderir"), ["<name:word> <text>"]),
+    "transfer": (N_("Oyuncuyu başka sunucuya aktarır"), ["<player> <host:word> <port:int>"]),
+    "save": (N_("Yedek için kaydetmeyi yönetir"), ["hold", "query", "resume"]),
+    "stop": (N_("Sunucuyu kaydedip kapatır"), [""]),
+    "help": (N_("Komutları listeler"), ["[command:word]"]),
+}
+
+SPECS_BEDROCK = {n: (d, [_parse_variant(v) for v in vs]) for n, (d, vs) in COMMANDS_BEDROCK.items()}
+
+GAMERULES_BEDROCK = ["commandblockoutput", "commandblocksenabled", "dodaylightcycle", "doentitydrops", "dofiretick",
+                     "doimmediaterespawn", "doinsomnia", "dolimitedcrafting", "domobloot", "domobspawning",
+                     "dotiledrops", "doweathercycle", "drowningdamage", "falldamage", "firedamage", "freezedamage",
+                     "functioncommandlimit", "keepinventory", "maxcommandchainlength", "mobgriefing",
+                     "naturalregeneration", "playerssleepingpercentage", "projectilescanbreakblocks", "pvp",
+                     "randomtickspeed", "recipesunlock", "respawnblocksexplode", "sendcommandfeedback",
+                     "showbordereffect", "showcoordinates", "showdaysplayed", "showdeathmessages",
+                     "showrecipemessages", "showtags", "spawnradius", "tntexplodes", "tntexplosiondropdecay"]
+LITERAL_SETS_BEDROCK = {
+    "gamemode": ["survival", "creative", "adventure", "spectator", "default", "s", "c", "a", "d"],
+    "difficulty": ["peaceful", "easy", "normal", "hard", "p", "e", "n", "h"],
+    "dim": ["overworld", "nether", "the_end"],
+    "structure": ["village", "ancient_city", "bastion_remnant", "buried_treasure", "end_city", "fortress",
+                  "mansion", "mineshaft", "monument", "pillager_outpost", "ruined_portal", "shipwreck",
+                  "stronghold", "temple", "trail_ruins", "trial_chambers"],
+}
+# Bedrock seçici filtreleri: ortak @a @p @r @e @s yanında @initiator ve sürüme özel filtreler
+SELECTORS_BEDROCK = ["@a", "@p", "@r", "@e", "@s", "@initiator", "@a[tag=", "@e[type=", "@e[family=monster]",
+                     "@a[hasitem={item=", "@a[haspermission={movement=enabled}]", "@e[has_property={",
+                     "@a[m=survival]", "@a[l=", "@a[lm=", "@a[scores={", "@a[r=", "@e[c=1]"]
+MOB_EVENTS = ["minecraft:pillager_patrols_event", "minecraft:wandering_trader_event", "events_enabled"]
+ABILITIES = ["mayfly", "mute", "worldbuilder"]
