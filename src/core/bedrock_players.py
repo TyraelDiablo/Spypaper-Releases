@@ -144,7 +144,8 @@ def _item(it):
     if not isinstance(it, dict) or not it.get("Name") or not it.get("Count"):
         return None
     name = str(it["Name"]).replace("minecraft:", "")
-    out = {"id": name, "count": int(it.get("Count", 0)), "slot": int(it.get("Slot", -1))}
+    out = {"id": name, "count": int(it.get("Count", 0)), "slot": int(it.get("Slot", -1)),
+           "damage": int(it.get("Damage", 0) or 0)}
     tag = it.get("tag") or {}
     if isinstance(tag, dict):
         disp = tag.get("display") or {}
@@ -170,6 +171,8 @@ def parse_player(nbt):
         "dim": int(nbt.get("DimensionId", 0)),
         "gamemode": int(nbt.get("PlayerGameMode", 5)),
         "level": int(nbt.get("PlayerLevel", 0)),
+        "progress": float(nbt.get("PlayerLevelProgress", 0.0) or 0.0),
+        "absorption": _attr(attrs, "minecraft:absorption") or 0.0,
         "health": _attr(attrs, "minecraft:health"),
         "hunger": _attr(attrs, "minecraft:player.hunger"),
         "inventory": [x for x in map(_item, nbt.get("Inventory") or []) if x],

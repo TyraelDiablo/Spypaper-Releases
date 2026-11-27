@@ -171,7 +171,11 @@ class LogTranslator:
             m = rx.match(msg)
             if m:
                 args = [self.message(g, depth + 1) if i in again else g for i, g in enumerate(m.groups())]
-                return self.ui_t(tpl).format(*args)
+                out = self.ui_t(tpl).format(*args)
+                if len(msg) > 2 and msg[0] == "#" and msg[-1] == "#":      # çerçeveli başlık: aynı genişlikte ortala
+                    inner = out.strip("#").strip()
+                    out = "#" + inner.center(len(msg) - 2) + "#"
+                return out
         return msg
 
     def line(self, raw):

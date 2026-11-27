@@ -74,6 +74,59 @@ class ContentError(Exception):
         super().__init__(template.format(**kw) if kw else template)
 
 
+
+def _face_png(strip_path, n):
+    """96×16 yüz şeridinden n. yüzün 16×16 PNG baytları (Pillow gerekmeden, saf Python)."""
+    import struct, zlib
+    with open(strip_path, "rb") as f:
+        data = f.read()
+    w, h, rows = _png_rgba(data)
+    out = [row[n * 16 * 4:(n + 1) * 16 * 4] for row in rows[:16]]
+    raw = b"".join(b"\x00" + r for r in out)
+
+    def chunk(t, d):
+        return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 16, 16, 8, 6, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
+
+
+def _png_rgba(data):
+    """Basit PNG çözücü: 8 bit RGBA/RGB, filtreli satırlar -> (w, h, [satır baytları RGBA])."""
+    import struct, zlib
+    pos, idat, w = 8, b"", 0
+    while pos < len(data):
+        ln, typ = struct.unpack(">I4s", data[pos:pos + 8])
+        body = data[pos + 8:pos + 8 + ln]
+        if typ == b"IHDR":
+            w, h, depth, ctype = struct.unpack(">IIBB", body[:10])
+        elif typ == b"IDAT":
+            idat += body
+        pos += 12 + ln
+    bpp = 4 if ctype == 6 else 3
+    raw = zlib.decompress(idat)
+    stride = w * bpp
+    rows, prev, p = [], bytearray(stride), 0
+    for _ in range(h):
+        f = raw[p]
+        line = bytearray(raw[p + 1:p + 1 + stride])
+        p += 1 + stride
+        for x in range(stride):
+            a = line[x - bpp] if x >= bpp else 0
+            b = prev[x]
+            c = prev[x - bpp] if x >= bpp else 0
+            if f == 1:
+                line[x] = (line[x] + a) & 255
+            elif f == 2:
+                line[x] = (line[x] + b) & 255
+            elif f == 3:
+                line[x] = (line[x] + (a + b) // 2) & 255
+            elif f == 4:
+                pa, pb, pc = abs(b - c), abs(a - c), abs(a + b - 2 * c)
+                line[x] = (line[x] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        prev = line
+        rows.append(bytes(line) if bpp == 4 else b"".join(bytes(line[i:i + 3]) + b"\xff" for i in range(0, stride, 3)))
+    return w, h, rows
+
 def vtuple(v):
     parts = [int(x) for x in re.findall(r"\d+", str(v or ""))[:3]]
     return tuple(parts) or (0,)
@@ -351,6 +404,14 @@ def build(server_path, level, version, items, extra_rp=None):
                 from . import voxel                # 16×16×16 voksel model: palet dokusu + kutu elemanları
                 model, colors = voxel.to_model(voxel.load(vpath), f"spypaper:item/{i}")
                 rp_files[f"assets/spypaper/textures/item/{i}.png"] = voxel.palette_png(colors)
+            elif c.get("model") == "cube" and c.get("faces") and os.path.isfile(os.path.join(src, c["faces"])):
+                # 16×16×16 blok: her yüzün kendi dokusu (3B düzenleyiciden)
+                tex = {}
+                for n, face in enumerate(("up", "down", "north", "south", "east", "west")):
+                    rp_files[f"assets/spypaper/textures/item/{i}_{face}.png"] = _face_png(os.path.join(src, c["faces"]), n)
+                    tex[face] = f"spypaper:item/{i}_{face}"
+                tex["particle"] = tex["north"]
+                model = {"parent": "minecraft:block/cube", "textures": tex}
             elif c.get("model") == "cube":          # 16×16×16 blok görünümü: aynı doku altı yüzde
                 model = {"parent": "minecraft:block/cube_all", "textures": {"all": f"spypaper:item/{i}"}}
             else:

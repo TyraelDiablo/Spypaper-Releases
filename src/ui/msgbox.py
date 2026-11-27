@@ -223,7 +223,21 @@ def _question(parent, title, text, *args, **kw):
     return QMessageBox.Yes if ask(parent, text, title) else QMessageBox.No
 
 
+def _get_text(parent, title, label, echo=None, text="", *a, **kw):
+    from PySide6.QtWidgets import QLineEdit as _LE
+    echo = kw.get("echo", echo)
+    value = kw.get("text", text) or ""
+    return get_text(parent, title, label, password=(echo == _LE.Password), value=value)
+
+
+def _get_item(parent, title, label, items, current=0, editable=True, *a, **kw):
+    return get_item(parent, title, label, list(items), kw.get("current", current), kw.get("editable", editable))
+
+
 def install():
+    from PySide6.QtWidgets import QInputDialog
+    QInputDialog.getText = staticmethod(_get_text)          # Windows'un düz pencereleri yerine Spypaper açılır penceresi
+    QInputDialog.getItem = staticmethod(_get_item)
     QMessageBox.information = _std("info")
     QMessageBox.warning = _std("warning")
     QMessageBox.critical = _std("error")

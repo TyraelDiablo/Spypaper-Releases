@@ -785,7 +785,8 @@ class ContentPage(Page):
         if self.cur.get("voxels") and os.path.isfile(vp):
             vox = voxel.load(vp)
         dlg = TextureDesigner(self.cur["type"], 16, 16, self._current_image("texture"),
-                              cube=self.cur.get("model") or False, voxels=vox, parent=self)
+                              cube=self.cur.get("model") or False, voxels=vox, faces=self._current_image("faces"),
+                              parent=self)
         if not dlg.exec():
             return
         name = f"{cid}_item.png"
@@ -798,6 +799,9 @@ class ContentPage(Page):
             self.cur["model"] = "voxel"
         elif dlg.is_cube():
             self.cur["model"] = "cube"
+            fname = f"{cid}_faces.png"                  # altı yüz yan yana: up, down, north, south, east, west
+            dlg.result_faces().save(self._dest(fname), "PNG")
+            self.cur["faces"] = fname
         else:
             self.cur.pop("model", None)
         self._tex_preview(self._tex_box())

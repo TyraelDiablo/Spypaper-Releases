@@ -303,7 +303,7 @@ class Preview(QWidget):
 class TextureDesigner(QDialog):
     """kind: tool | food | disc | painting | hud. allow_cube: eşyalarda blok (küp) görünümü seçeneği."""
 
-    def __init__(self, kind, w=16, h=16, image=None, cube=False, allow_cube=True, voxels=None, parent=None):
+    def __init__(self, kind, w=16, h=16, image=None, cube=False, allow_cube=True, voxels=None, faces=None, parent=None):
         super().__init__(parent)
         self.kind = kind
         self.setWindowTitle(t("Doku Tasarımı"))
@@ -342,8 +342,8 @@ class TextureDesigner(QDialog):
         self.grid_btn.toggled.connect(lambda on: (setattr(self.canvas, "grid", on), self.canvas.update()))
         side.addWidget(self.grid_btn)
         side.addSpacing(10)
-        side.addWidget(button("Geri Al", "ghost", lambda: self.canvas.do_undo()))
-        side.addWidget(button("Yinele", "ghost", lambda: self.canvas.do_redo()))
+        side.addWidget(button("Geri Al", "ghost", lambda: self._active().do_undo()))
+        side.addWidget(button("Yinele", "ghost", lambda: self._active().do_redo()))
         side.addWidget(button("Temizle", "ghost", lambda: self.canvas.clear()))
         side.addWidget(button("Hepsini Boya", "ghost", lambda: self.canvas.fill_all(self.canvas.color)))
         side.addStretch(1)
@@ -371,14 +371,49 @@ class TextureDesigner(QDialog):
         self.layer_hint = label("3B modelde tuval, seçili yükseklikteki katmana yukarıdan bakar. Soluk pikseller alttaki katmandır.",
                                 "Muted", wrap=True)
         mid.addWidget(self.layer_hint)
-        mid.addWidget(self.canvas, 1)
+        # 3B boyama görünümü (blok: altı ayrı yüz; 3B eşya: voksel yüzeyi)
+        from .viewport3d import FaceModel, Viewport3D
+        self.faces = FaceModel()
+        if faces is not None and not faces.isNull():
+            self.faces.load_strip(faces)
+            self._faces_loaded = True
+        else:
+            self._faces_loaded = False
+        self.view3d = Viewport3D(self.faces)
+        self.view3d.picked.connect(self._set_color)
+        self.view3d.changed.connect(self._refresh_preview)
+        self.v3_bar = QWidget()
+        vb = QHBoxLayout(self.v3_bar)
+        vb.setContentsMargins(0, 0, 0, 0)
+        vb.setSpacing(4)
+        for name, yaw, pitch in ((N_("Çapraz"), -35, 25), (N_("Ön"), 0, 0), (N_("Arka"), 180, 0), (N_("Sol"), 90, 0),
+                                 (N_("Sağ"), -90, 0), (N_("Üst"), 0, 89), (N_("Alt"), 0, -89)):
+            vb.addWidget(button(name, "ghost", lambda _=False, y=yaw, p=pitch: self.view3d.view(y, p)))
+        vb.addStretch(1)
+        self.layers_btn = QPushButton(t("Katmanlar"))
+        self.layers_btn.setCheckable(True)
+        self.layers_btn.setProperty("variant", "ghost")
+        self.layers_btn.toggled.connect(lambda _on: self._shape_changed())
+        vb.addWidget(self.layers_btn)
+        self.draft_btn = button("Taslağı Kur", "primary", self._draft,
+                                tooltip="Bloğu ya da eşyayı seçili şablon ve renklerle başlangıç modeli olarak kurar")
+        vb.addWidget(self.draft_btn)
+        mid.addWidget(self.v3_bar)
+        self.v3_hint = label("Sol tık boyar, sağ tık siler, sağ tuşla sürükle döndürür, tekerlek yakınlaştırır, orta tık renk "
+                             "alır. 3B eşyada Shift+tık tıklanan yüzün yanına voksel ekler.", "Muted", wrap=True)
+        mid.addWidget(self.v3_hint)
+        from PySide6.QtWidgets import QStackedWidget
+        self.center = QStackedWidget()
+        self.center.addWidget(self.canvas)
+        self.center.addWidget(self.view3d)
+        mid.addWidget(self.center, 1)
         body.addLayout(mid, 1)
         self.vox = {}
         self.img2d = None
         self.cur_layer = 0
-        QShortcut(QKeySequence.Undo, self, self.canvas.do_undo)
-        QShortcut(QKeySequence.Redo, self, self.canvas.do_redo)
-        QShortcut(QKeySequence("Ctrl+Y"), self, self.canvas.do_redo)
+        QShortcut(QKeySequence.Undo, self, lambda: self._active().do_undo())
+        QShortcut(QKeySequence.Redo, self, lambda: self._active().do_redo())
+        QShortcut(QKeySequence("Ctrl+Y"), self, lambda: self._active().do_redo())
 
         # sağ: renkler, şablon, biçim, önizleme
         right = QVBoxLayout()
@@ -457,7 +492,16 @@ class TextureDesigner(QDialog):
     def is_voxel(self):
         return bool(self.allow_cube and self.shape.currentData() == "voxel")
 
+    def _active(self):
+        return self.view3d if self.center.currentWidget() is self.view3d else self.canvas
+
     def _shape_changed(self, *_):
+        cube = self.is_cube()
+        if cube and not self._faces_loaded:           # blok ilk açılışta: düz doku altı yüze taslak olarak
+            src = self.canvas.image() if self._mode == "2d" else self.img2d
+            if src is not None and not src.isNull():
+                self.faces.fill_from(src)
+            self._faces_loaded = True
         want = "3d" if self.is_voxel() else "2d"
         if want != self._mode:
             if want == "3d":
@@ -474,8 +518,21 @@ class TextureDesigner(QDialog):
                 self.canvas.undo.clear()
                 if self.img2d is not None:
                     self.canvas.set_image(self.img2d)
-        for w in (self.layer_box, self.layer_hint, self.rot_btn):
-            w.setVisible(self._mode == "3d")
+        from .viewport3d import VoxelModel
+        use3d = cube or (self._mode == "3d" and not self.layers_btn.isChecked())
+        if cube:
+            self.view3d.set_model(self.faces)
+        elif self._mode == "3d":
+            self.view3d.set_model(VoxelModel(self.vox))
+        self.center.setCurrentWidget(self.view3d if use3d else self.canvas)
+        self.layers_btn.setVisible(self._mode == "3d")
+        for w in (self.v3_bar, self.v3_hint):
+            w.setVisible(cube or self._mode == "3d")
+        for w in (self.layer_box, self.layer_hint):
+            w.setVisible(self._mode == "3d" and not use3d)
+        if self._mode == "3d" and not use3d:
+            self._load_slice(self.layer.value())
+        self.rot_btn.setVisible(self._mode == "3d")
         self._refresh_preview()
 
     def _grid_from_px(self):
@@ -540,6 +597,8 @@ class TextureDesigner(QDialog):
     # --- yardımcılar ---
     def _set_tool(self, k):
         self.canvas.tool = k
+        if hasattr(self, "view3d"):
+            self.view3d.tool = k if k in ("pen", "eraser", "pick") else "pen"
         for b, (key, _n, _s) in zip(self.tool_group.buttons(), TOOLS):
             b.setChecked(key == k)
         self.canvas.setCursor(Qt.CrossCursor if k != "pick" else Qt.PointingHandCursor)
@@ -551,6 +610,8 @@ class TextureDesigner(QDialog):
                 self._recent = ([prev] + self._recent)[:6]
                 self._draw_recent()
         self.canvas.color = QColor(c)
+        if hasattr(self, "view3d"):
+            self.view3d.color = QColor(c)
         self.swatch.setStyleSheet(f"QPushButton{{background:{c.name()}; border:1px solid {TOKENS['border']}; border-radius:6px;}}")
         if self.canvas.tool in ("eraser", "pick"):
             self._set_tool("pen")
@@ -581,9 +642,47 @@ class TextureDesigner(QDialog):
         g = TT.render(key, self.canvas.color.name(), second)
         self.canvas.stamp(g, (self.canvas.w - 16) // 2, (self.canvas.h - 16) // 2)
 
+    def _draft(self):
+        """Taslak: blokta seçili şablon/doku altı yüze; 3B eşyada şablon 1 piksel kalınlıkta voksel modele."""
+        from core import voxel
+        tpl = self.tpl.currentData() if hasattr(self, "tpl") else None
+        second = self._recent[0] if self._recent else None
+        grid = TT.render(tpl, self.canvas.color.name(), second) if tpl else None
+        if self.is_cube():
+            self.view3d.push_undo()
+            if grid:
+                img = QImage(16, 16, QImage.Format_ARGB32)
+                img.fill(Qt.transparent)
+                for y, r in enumerate(grid):
+                    for x, c in enumerate(r):
+                        if c:
+                            img.setPixelColor(x, y, QColor(c))
+                self.faces.fill_from(img)
+            else:
+                src = self.canvas.image()
+                self.faces.fill_from(src)
+        elif self._mode == "3d":
+            self.view3d.push_undo()
+            if grid is None:
+                tmp = Canvas(16, 16)
+                if self.img2d is not None:
+                    tmp.set_image(self.img2d)
+                grid = [[(c.name() if c is not None else None) for c in r] for r in tmp.px]
+            self.vox.clear()
+            self.vox.update(voxel.extrude(grid, 1))
+        self.view3d.update()
+        self._refresh_preview()
+
+    def result_faces(self):
+        return self.faces.strip() if self.is_cube() else None
+
     def _refresh_preview(self, *_):
+        if self.is_cube():
+            self.preview.set(self.faces.front(), True)
+            return
         if getattr(self, "_mode", "2d") == "3d":
-            self._store_slice()
+            if self.center.currentWidget() is self.canvas:
+                self._store_slice()
             self.preview.set(QImage(), False, self.vox)
         else:
             self.preview.set(self.canvas.image(), self.is_cube())
