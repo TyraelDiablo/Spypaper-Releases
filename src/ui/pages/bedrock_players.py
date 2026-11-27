@@ -18,7 +18,9 @@ ARMOR_SLOTS = [N_("Kask"), N_("Göğüslük"), N_("Pantolon"), N_("Bot"), N_("G�
 
 
 def _q(name):
-    return '"' + name.replace('"', "") + '"'        # Bedrock adlarında boşluk olabilir
+    """Bedrock adlarında boşluk olabilir; yalnızca o zaman tırnak (bazı komutlar tırnaklı adı tanımıyor)."""
+    name = name.replace('"', "")
+    return f'"{name}"' if " " in name else name
 
 
 class BedrockPlayersPage(Page):
