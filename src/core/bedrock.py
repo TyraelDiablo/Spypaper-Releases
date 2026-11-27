@@ -76,15 +76,24 @@ def latest_url(contact="", preview=False):
     raise BedrockError(N_("Bedrock sunucusunun indirme bağlantısı bulunamadı. İnternet bağlantını kontrol et."))
 
 
-def versions(contact=""):
-    v = version_of(latest_url(contact))
+def versions(contact="", preview=False):
+    v = version_of(latest_url(contact, preview))
     return [v] if v else []
 
 
-def latest(version, contact=""):
-    url = latest_url(contact)
+def latest(version, contact="", preview=False):
+    url = latest_url(contact, preview)
     v = version_of(url)
-    return {"url": url, "name": os.path.basename(url), "version": v, "build": "", "label": v, "bedrock": True}
+    return {"url": url, "name": os.path.basename(url), "version": v, "build": "", "label": v, "bedrock": True,
+            "preview": preview}
+
+
+def is_preview(path):
+    try:
+        with open(os.path.join(path, META), encoding="utf-8") as f:
+            return bool(json.load(f).get("preview"))
+    except (OSError, ValueError):
+        return False
 
 
 def installed_version(path):
@@ -133,7 +142,7 @@ def install(info, path, contact="", progress=None):
         except OSError:
             pass
     with open(os.path.join(path, META), "w", encoding="utf-8") as f:
-        json.dump({"version": info.get("version", "")}, f)
+        json.dump({"version": info.get("version", ""), "preview": bool(info.get("preview"))}, f)
     return exe
 
 

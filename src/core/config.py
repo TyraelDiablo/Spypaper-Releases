@@ -133,7 +133,7 @@ def detect_version(path):
     """latest.log'dan Minecraft sürümü ve yazılım (Paper/Purpur/Fabric/Forge/NeoForge/Vanilla...)."""
     from . import bedrock
     if bedrock.is_bedrock(path):
-        return bedrock.installed_version(path), "Bedrock"
+        return bedrock.installed_version(path), ("Bedrock Preview" if bedrock.is_preview(path) else "Bedrock")
     log = os.path.join(path, "logs", "latest.log")
     ver, soft = "", ""
     if os.path.exists(log):

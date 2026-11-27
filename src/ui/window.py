@@ -32,14 +32,16 @@ from .pages.discord import DiscordPage
 from .pages.configs import ConfigsPage
 from .pages.velocity import VelocityPage
 from .pages.bots import BotsPage
+from .pages.bedrock_addons import BedrockAddonsPage
+from .pages.bedrock_players import BedrockPlayersPage
 
 from core import N_
 
 # Kenar çubuğu grupları (anahtar, başlık, sayfalar). Sekmeler yalnızca kendi grupları içinde sıralanır.
 GROUPS = [
     ("general", N_("Genel"), [DashboardPage, ConsolePage, LogsPage, MapPage, EsploraPage, NotesPage]),
-    ("players", N_("Oyuncular"), [PlayersPage, TeamsPage, AdminPage, BotsPage]),
-    ("content", N_("İçerik"), [PluginsPage, ModTransPage, ContentPage]),
+    ("players", N_("Oyuncular"), [PlayersPage, BedrockPlayersPage, TeamsPage, AdminPage, BotsPage]),
+    ("content", N_("İçerik"), [PluginsPage, BedrockAddonsPage, ModTransPage, ContentPage]),
     ("server", N_("Sunucu"), [VelocityPage, SettingsPage, ConfigsPage, FilesPage]),
     ("automation", N_("Otomasyon"), [MaintenancePage, TasksPage, DiscordPage]),
     ("security", N_("Güvenlik"), [GuardPage, DangerPage]),
@@ -143,9 +145,9 @@ class ServerPanel(QWidget):
         elif is_proxy(app.config.server_path):      # proxy'de dünya, oyuncu verisi ve server.properties yok
             self.hidden = set(self.hidden) | {PAGES.index(c) for c in (
                 MapPage, PlayersPage, TeamsPage, AdminPage, BotsPage, ModTransPage, ContentPage, SettingsPage,
-                MaintenancePage)}
+                MaintenancePage, BedrockAddonsPage, BedrockPlayersPage)}
         else:
-            self.hidden = set(self.hidden) | {PAGES.index(VelocityPage)}
+            self.hidden = set(self.hidden) | {PAGES.index(c) for c in (VelocityPage, BedrockAddonsPage, BedrockPlayersPage)}
         for i, cls in enumerate(PAGES):
             page = cls(app, self.bridge)
             self.pages.append(page)

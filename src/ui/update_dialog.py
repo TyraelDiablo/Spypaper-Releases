@@ -154,8 +154,13 @@ class UpdateDialog(QDialog):
                                    v=info["version"], tag=tag))
         warns = []
         self.steps = []
-        self.migrate.setVisible(not same_soft)
-        if not same_soft:
+        be_switch = not same_soft and software.is_bedrock_key(key) and software.is_bedrock_key(self.cur_soft)
+        self.migrate.setVisible(not same_soft and not be_switch)
+        if be_switch:                                  # Bedrock <-> Bedrock Preview
+            warns.append(t("Preview (beta) dünyayı dönüştürür; normal sürüme dönünce dünya açılmayabilir. Önce yedek al.")
+                         if software.SOFTWARE[key].get("preview") else
+                         t("Preview'dan normal sürüme geçiliyor. Preview'da açılmış dünya bu sürümde açılmayabilir; yedeğin olduğundan emin ol."))
+        elif not same_soft:
             try:
                 self.steps = switch.plan(self.app.config.server_path, self._level(), self.cur_soft, key)
             except switch.SwitchError as e:

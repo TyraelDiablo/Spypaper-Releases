@@ -38,6 +38,11 @@ class App:
         self.guard.is_bot = self.bots.is_bot
         from .scheduler import Scheduler
         self.scheduler = Scheduler(profile, self.server, self.backups)
+        def _bedrock_names(line, cfg=self.config):
+            if "xuid" in line:
+                from . import bedrock_players
+                bedrock_players.on_line(cfg.server_path, line)
+        self.server.hooks.append(_bedrock_names)
         from .ingame_ai import IngameAI
         self.ingame_ai = IngameAI(profile, self.server, self.bots, tr=lambda *a, **k: self.scheduler.tr(*a, **k))
         from .perf import PerfMonitor

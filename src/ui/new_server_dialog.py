@@ -161,9 +161,17 @@ class NewServerDialog(QDialog):
             self.port.setValue(25565)
 
     def _bedrock_ui(self, on):
-        for w in (self.world_title, self.world, self.java_lbl):
+        for w in (self.world_title, self.world, self.java_lbl, self.ram):
             w.setVisible(not on)
         self.bedrock_note.setVisible(on)
+        pv = on and bool(software.SOFTWARE.get(self.sw.currentData(), {}).get("preview"))
+        self.bedrock_note.setText(t("Bedrock Dedicated Server: Mojang'ın resmi Bedrock sunucusu. Telefon, konsol ve Windows "
+                                    "Bedrock oyuncuları bağlanır; Java oyuncuları bağlanamaz. Eklenti ve mod yoktur "
+                                    "(Marketplace içerikleri hariç). Port UDP'dir (varsayılan 19132). Eklenti, harita, "
+                                    "oyuncu verisi gibi Java'ya özel sayfalar bu sunucuda gizlenir.")
+                                  + ("\n\n" + t("Preview (beta): yalnızca Minecraft Preview uygulamasıyla girilir, hatalı "
+                                                 "olabilir. Preview'da açılan dünya normal sürüme geri dönmeyebilir.")
+                                     if pv else ""))
         if on and self.port.value() in (25565, 25577):
             self.port.setValue(19132)
         elif not on and self.port.value() == 19132:
