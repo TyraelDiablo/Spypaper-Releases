@@ -116,9 +116,13 @@ def install(info, path, contact="", progress=None):
         if os.path.isfile(p):
             with open(p, "rb") as f:
                 keep[k] = f.read()
+    builtin = set()
     try:
         with zipfile.ZipFile(zpath) as z:
             for m in z.infolist():
+                parts = m.filename.replace("\\", "/").split("/")
+                if len(parts) > 2 and parts[0] in ("behavior_packs", "resource_packs"):
+                    builtin.add(parts[0] + "/" + parts[1])           # Mojang'ın kendi paketleri
                 name = m.filename.replace("\\", "/")
                 if name.startswith("/") or ".." in name.split("/"):
                     continue                              # zip dışına yazma girişimi
@@ -142,7 +146,8 @@ def install(info, path, contact="", progress=None):
         except OSError:
             pass
     with open(os.path.join(path, META), "w", encoding="utf-8") as f:
-        json.dump({"version": info.get("version", ""), "preview": bool(info.get("preview"))}, f)
+        json.dump({"version": info.get("version", ""), "preview": bool(info.get("preview")),
+                   "builtin": sorted(builtin)}, f)
     return exe
 
 

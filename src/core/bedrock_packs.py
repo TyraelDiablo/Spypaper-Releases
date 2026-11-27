@@ -119,8 +119,20 @@ def _pack_info(folder, kind, dev=False):
             "min_engine": ver_text(h.get("min_engine_version")) if h.get("min_engine_version") else ""}
 
 
-def list_packs(server_path):
+BUILTIN_RE = re.compile(r"^(vanilla|chemistry|experimental|editor|server_|edu_|reflected)", re.I)
+
+
+def _builtin_set(server_path):
+    try:
+        with open(os.path.join(server_path, ".spypaper-bedrock.json"), encoding="utf-8") as f:
+            return set(json.load(f).get("builtin") or [])
+    except (OSError, ValueError):
+        return set()
+
+
+def list_packs(server_path, include_builtin=False):
     out = []
+    builtin = _builtin_set(server_path)
     for kind in KINDS:
         for base, dev in ((KINDS[kind], False), (DEV[kind], True)):
             root = os.path.join(server_path, base)
@@ -132,7 +144,10 @@ def list_packs(server_path):
                 p = os.path.join(root, n)
                 if os.path.isdir(p) and (os.path.isfile(os.path.join(p, "manifest.json"))
                                          or os.path.isfile(os.path.join(p, "contents.json"))):
-                    out.append(_pack_info(p, kind, dev))
+                    info = _pack_info(p, kind, dev)
+                    info["builtin"] = (not dev) and (f"{base}/{n}" in builtin or bool(BUILTIN_RE.match(n)))
+                    if include_builtin or not info["builtin"]:
+                        out.append(info)
     return out
 
 
@@ -181,6 +196,8 @@ def missing_deps(packs, pack):
 
 
 def remove(server_path, pack):
+    if pack.get("builtin"):
+        raise PackError(N_("Bu paket oyunun kendi paketi; silinemez."))
     for kind in KINDS:
         if pack["uuid"]:
             items = [d for d in enabled(server_path, kind) if d.get("pack_id") != pack["uuid"]]
@@ -273,6 +290,13 @@ def install_file(server_path, file_path, enable=True):
                 shutil.rmtree(dest)                              # aynı paketin eski sürümü
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             shutil.copytree(d, dest)
+            mp = os.path.join(dest, "manifest.json")
+            try:                                    # BDS yorumlu/sondaki virgüllü manifest'i yok sayar: düz JSON'a çevir
+                with open(mp, encoding="utf-8-sig") as f:
+                    json.loads(f.read())
+            except ValueError:
+                with open(mp, "w", encoding="utf-8") as f:
+                    json.dump(man, f, indent=2, ensure_ascii=False)
             info = _pack_info(dest, kind)
             if enable and uuid:
                 set_enabled(server_path, info, True)

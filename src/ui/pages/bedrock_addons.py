@@ -47,6 +47,9 @@ class BedrockAddonsPage(Page):
         c.add(row(self.b_toggle, self.b_up, self.b_down, self.b_del, None, stretch_end=False))
         self.detail = label("", "Muted", wrap=True)
         c.add(self.detail)
+        self.show_builtin = QCheckBox(t("Oyunun kendi paketlerini de göster"))
+        self.show_builtin.toggled.connect(self.on_show)
+        c.add(self.show_builtin)
         self.tex_req = QCheckBox(t("Oyuncular kaynak paketlerini indirmek zorunda olsun (texturepack-required)"))
         self.tex_req.toggled.connect(lambda on: BP.set_texture_required(self.path, on))
         c.add(self.tex_req)
@@ -90,7 +93,7 @@ class BedrockAddonsPage(Page):
 
     # ------------------------------------------------------------------ yüklü
     def on_show(self):
-        self.packs = BP.list_packs(self.path)
+        self.packs = BP.list_packs(self.path, self.show_builtin.isChecked())
         on = {k: [d["pack_id"] for d in BP.enabled(self.path, k)] for k in BP.KINDS}
         self.packs.sort(key=lambda p: (p["kind"], on[p["kind"]].index(p["uuid"]) if p["uuid"] in on[p["kind"]] else 999,
                                        p["name"].lower()))
@@ -107,6 +110,8 @@ class BedrockAddonsPage(Page):
                 notes.append(t("Deneysel özellik ister"))
             if p["dev"]:
                 notes.append(t("Geliştirme klasörü"))
+            if p.get("builtin"):
+                notes.append(t("Oyunun kendi paketi"))
             enabled = p["uuid"] in on[p["kind"]]
             rows.append((p["name"], t(KIND_NAMES[p["kind"]]), BP.ver_text(p["version"]),
                          (t("Açık") + f" #{on[p['kind']].index(p['uuid']) + 1}") if enabled else t("Kapalı"),
@@ -129,7 +134,7 @@ class BedrockAddonsPage(Page):
         usable = bool(p and p["uuid"] and not p["encrypted"])
         for b in (self.b_toggle, self.b_up, self.b_down):
             b.setEnabled(usable)
-        self.b_del.setEnabled(bool(p))
+        self.b_del.setEnabled(bool(p) and not p.get("builtin"))
         if not p:
             self.detail.setText("")
             return

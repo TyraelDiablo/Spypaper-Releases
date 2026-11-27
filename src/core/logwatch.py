@@ -91,9 +91,9 @@ def classify(level, msg, known_players):
     m = RE_ADV.match(msg)
     if m:
         return "adv", m.group(1), m.group(2)
-    if RE_DONE.match(msg):
+    if RE_DONE.match(msg) or msg == "Server started.":          # ikincisi: Bedrock
         return "start", "", msg
-    if msg.startswith("Stopping server") or msg.startswith("Stopping the server"):
+    if msg.startswith("Stopping server") or msg.startswith("Stopping the server") or msg == "Server stop requested.":
         return "stop", "", msg
     if RE_LAG.search(msg):
         return "lag", "", msg
