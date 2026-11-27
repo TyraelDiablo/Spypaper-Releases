@@ -9,7 +9,8 @@ import threading
 
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QHBoxLayout, QLineEdit, QProgressBar, QScrollArea, QStackedWidget, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QHBoxLayout, QLineEdit, QProgressBar, QScrollArea, QSpinBox, QStackedWidget, QVBoxLayout,
+    QWidget,
 )
 
 from core import N_, danger
@@ -123,10 +124,49 @@ class DangerPage(Page):
         col.addWidget(tp)
 
         # yedekten geri yükle
-        r = danger_card("Yedekten Geri Yükle", "Şu anki dünya silinir ve seçilen yedek yerine konur")
+        r = danger_card("Yedekten Geri Yükle", "Tüm dünyayı ya da yalnızca seçtiğin parçaları yedekten geri al")
         self.backup_box = QComboBox()
         self.backup_box.setMinimumWidth(320)
+        self.backup_box.currentIndexChanged.connect(self._fill_backup_players)
         r.add(row(self.backup_box))
+        self.restore_mode = QComboBox()
+        for k, n in (("all", N_("Tüm dünya")), ("parts", N_("Seçilen parçalar")), ("area", N_("Yalnızca bir bölge"))):
+            self.restore_mode.addItem(t(n), k)
+        self.restore_mode.currentIndexChanged.connect(self._restore_mode_changed)
+        r.add(row(label("Ne geri yüklensin?", "Muted"), self.restore_mode))
+        self.parts_box = QWidget()
+        pl = QHBoxLayout(self.parts_box)
+        pl.setContentsMargins(0, 0, 0, 0)
+        self.part_cb = {}
+        for k, n in (("overworld", "Overworld"), ("nether", "Nether"), ("end", "End"), ("players", N_("Oyuncu verisi"))):
+            cb = QCheckBox(t(n))
+            cb.setCursor(Qt.PointingHandCursor)
+            cb.toggled.connect(self._restore_mode_changed)
+            self.part_cb[k] = cb
+            pl.addWidget(cb)
+        self.player_pick = QComboBox()
+        self.player_pick.setMinimumWidth(180)
+        pl.addWidget(self.player_pick)
+        pl.addStretch(1)
+        r.add(self.parts_box)
+        self.area_box = QWidget()
+        al = QHBoxLayout(self.area_box)
+        al.setContentsMargins(0, 0, 0, 0)
+        self.area_dim = QComboBox()
+        for k, n in (("overworld", "Overworld"), ("nether", "Nether"), ("end", "End")):
+            self.area_dim.addItem(n, k)
+        self.area_x, self.area_z, self.area_r = QSpinBox(), QSpinBox(), QSpinBox()
+        for sb in (self.area_x, self.area_z):
+            sb.setRange(-30000000, 30000000)
+        self.area_r.setRange(16, 20000)
+        self.area_r.setValue(200)
+        self.area_r.setSingleStep(50)
+        for w in (self.area_dim, label("X"), self.area_x, label("Z"), self.area_z, label("Yarıçap"), self.area_r):
+            al.addWidget(w)
+        al.addStretch(1)
+        r.add(self.area_box)
+        self.restore_hint = label("", "Muted", wrap=True)
+        r.add(self.restore_hint)
         self.restore_safety = QCheckBox(t("Önce şu anki dünyanın yedeğini al"))
         self.restore_safety.setChecked(True)
         self.restore_safety.setCursor(Qt.PointingHandCursor)
@@ -140,6 +180,29 @@ class DangerPage(Page):
         self.btn_players = button("Oyuncu Verilerini Sil", "danger", self.reset_players)
         p.add(row(None, self.btn_players, stretch_end=False))
         col.addWidget(p)
+
+        # dünya temizliği
+        tr = danger_card("Dünya Temizliği", "Oyuncuların neredeyse hiç kalmadığı chunk'lar silinir; dünya küçülür, "
+                                            "o bölgeler gidildiğinde yeniden oluşur")
+        self.trim_min, self.trim_keep = QSpinBox(), QSpinBox()
+        self.trim_min.setRange(1, 600)
+        self.trim_min.setValue(5)
+        self.trim_min.setSuffix(" " + t("dk"))
+        self.trim_keep.setRange(0, 100000)
+        self.trim_keep.setSingleStep(250)
+        self.trim_keep.setValue(500)
+        tr.add(row(label("Oyuncuların toplam kaldığı süre bundan az olan chunk'lar:", "Muted"), self.trim_min))
+        tr.add(row(label("Doğma noktası çevresinde korunacak yarıçap (blok):", "Muted"), self.trim_keep))
+        self.trim_info = label("", "Muted", wrap=True)
+        tr.add(self.trim_info)
+        self.trim_safety = QCheckBox(t("Önce dünya yedeği al"))
+        self.trim_safety.setChecked(True)
+        tr.add(self.trim_safety)
+        self.btn_trim_plan = button("Önizle", "ghost", self.trim_preview)
+        self.btn_trim = button("Temizle", "danger", self.trim_apply)
+        tr.add(row(None, self.btn_trim_plan, self.btn_trim, stretch_end=False))
+        col.addWidget(tr)
+        self._trim_plan = None
 
         # sunucuyu sil
         d = danger_card("Sunucuyu Sil", "Sunucu klasörü Geri Dönüşüm Kutusu'na taşınır ve sunucu listeden kaldırılır")
@@ -213,6 +276,8 @@ class DangerPage(Page):
             self.backup_box.addItem(f"{name}  ·  {size / 1048576:.1f} MB  ·  {when:%d.%m.%Y %H:%M}", name)
         if not self.backup_box.count():
             self.backup_box.addItem(t("(yedek yok)"), "")
+        self._fill_backup_players()
+        self._restore_mode_changed()
         self._sync()
 
     def _sync(self):
@@ -220,8 +285,9 @@ class DangerPage(Page):
         self.run_lbl.setText(t("Sunucu çalışıyor: bu işlemler için önce sunucuyu durdur.") if running else "")
         self.run_lbl.setVisible(running)
         ok = not running and not self.busy
-        for b in (self.btn_reset, self.btn_players, self.btn_delete, self.btn_template):
+        for b in (self.btn_reset, self.btn_players, self.btn_delete, self.btn_template, self.btn_trim_plan):
             b.setEnabled(ok)
+        self.btn_trim.setEnabled(ok and bool(self._trim_plan and self._trim_plan["chunks"]))
         self.btn_restore.setEnabled(ok and bool(self.backup_box.currentData()))
 
     def _confirm_name(self, what):
@@ -267,6 +333,24 @@ class DangerPage(Page):
         elif job == "restore":
             tops, bk = res
             self.info(t("Yedek geri yüklendi: {dirs}", dirs=", ".join(tops)) +
+                      ("\n" + t("Önceki dünyanın yedeği: {file}", file=os.path.basename(bk)) if bk else ""))
+        elif job == "trim_plan":
+            self._trim_plan = res
+            if res["chunks"]:
+                self.trim_info.setText(t("{n} / {total} chunk silinecek; yaklaşık {mb} MB yer açılır. Temizle'ye bas.",
+                                         n=res["chunks"], total=res["total"], mb=f"{res['free'] / 1048576:.0f}"))
+            else:
+                self.trim_info.setText(t("Silinecek chunk yok ({total} chunk incelendi).", total=res["total"]))
+            self._sync()
+        elif job == "trim":
+            saved, bk = res
+            self._trim_plan = None
+            self.trim_info.setText("")
+            self.info(t("Dünya temizlendi; {mb} MB yer açıldı.", mb=f"{saved / 1048576:.0f}") +
+                      ("\n" + t("Yedek: {file}", file=os.path.basename(bk)) if bk else ""))
+        elif job == "restore_part":
+            n, bk = res
+            self.info(t("{n} dosya yedekten geri yüklendi.", n=n) +
                       ("\n" + t("Önceki dünyanın yedeği: {file}", file=os.path.basename(bk)) if bk else ""))
         elif job == "template":
             moved, applied = res
@@ -325,14 +409,103 @@ class DangerPage(Page):
         seed = self.seed.text()
         self._bg("reset", lambda: danger.reset_world(self.app, dims, mode, seed, backup))
 
+    def _fill_backup_players(self, *_):
+        self.player_pick.clear()
+        self.player_pick.addItem(t("Tüm oyuncular"), None)
+        name = self.backup_box.currentData()
+        if not name:
+            return
+        try:
+            uuids = danger.backup_players(os.path.join(self.app.backups.folder, name), danger.level_name(self.app.properties))
+        except Exception:
+            return
+        try:
+            self.app.players._load_name_cache()
+            names = self.app.players.uuid_to_name
+        except Exception:
+            names = {}
+        for u in uuids:
+            self.player_pick.addItem(names.get(u, u[:8] + "…"), u)
+
+    def _restore_mode_changed(self, *_):
+        mode = self.restore_mode.currentData()
+        self.parts_box.setVisible(mode == "parts")
+        self.area_box.setVisible(mode == "area")
+        self.player_pick.setEnabled(self.part_cb["players"].isChecked())
+        self.restore_hint.setText({
+            "all": t("Şu anki dünyanın tamamı silinir, yedekteki yerine konur."),
+            "parts": t("Yalnızca işaretlediğin parçalar yedektekiyle değiştirilir; geri kalan her şey olduğu gibi kalır. "
+                       "Oyuncu verisi: envanter, konum, ender sandığı, istatistik ve ilerlemeler."),
+            "area": t("Seçilen noktanın çevresindeki bölge dosyaları (512×512 bloklık parçalar) yedektekiyle değiştirilir. "
+                      "Yarıçap 512'ye yuvarlanır; çevredeki birkaç yüz blok da geri dönebilir."),
+        }[mode])
+
     def restore(self):
         name = self.backup_box.currentData()
         if not name:
             return
-        if not self._confirm_name(t("Şu anki dünya silinip '{file}' geri yüklenecek.", file=name)):
-            return
+        mode = self.restore_mode.currentData()
         safety = self.restore_safety.isChecked()
-        self._bg("restore", lambda: danger.restore_backup(self.app, name, safety))
+        if mode == "all":
+            if not self._confirm_name(t("Şu anki dünya silinip '{file}' geri yüklenecek.", file=name)):
+                return
+            self._bg("restore", lambda: danger.restore_backup(self.app, name, safety))
+            return
+        if mode == "parts":
+            parts = {k for k, cb in self.part_cb.items() if cb.isChecked()}
+            if not parts:
+                self.warn("En az bir parça seç.")
+                return
+            who = self.player_pick.currentData()
+            players = [who] if ("players" in parts and who) else None
+            what = ", ".join(cb.text() for cb in self.part_cb.values() if cb.isChecked())
+            if "players" in parts and who:
+                what += f" ({self.player_pick.currentText()})"
+            area = None
+        else:
+            parts = {"area"}
+            players = None
+            area = (self.area_dim.currentData(), self.area_x.value(), self.area_z.value(), self.area_r.value())
+            what = t("{dim} · X {x}, Z {z} çevresi ({r} blok)", dim=self.area_dim.currentText(),
+                     x=area[1], z=area[2], r=area[3])
+        if not self._confirm_name(t("'{file}' yedeğinden geri yüklenecek: {what}", file=name, what=what)):
+            return
+        self._bg("restore_part", lambda: danger.restore_partial(self.app, name, parts, players, area, safety))
+
+    def _trim_args(self):
+        lv = danger.level_name(self.app.properties)
+        spawn = (0, 0)
+        try:
+            from core.players import _get, _val, read_nbt
+            root = read_nbt(os.path.join(self.app.config.server_path, lv, "level.dat"))
+            data = _get(root, "Data")
+            sx, sz = _get(data, "SpawnX"), _get(data, "SpawnZ")
+            if sx is not None:
+                spawn = (int(_val(sx)), int(_val(sz)))
+        except Exception:
+            pass
+        return [lv, lv + "_nether", lv + "_the_end"], (spawn[0], spawn[1], self.trim_keep.value())
+
+    def trim_preview(self):
+        from core import trim
+        levels, keep = self._trim_args()
+        mins = self.trim_min.value()
+        self._trim_plan = None
+        self._bg("trim_plan", lambda: trim.plan(self.app.config.server_path, levels, mins, keep))
+
+    def trim_apply(self):
+        from core import trim
+        p = self._trim_plan
+        if not p or not p["chunks"]:
+            return
+        if not self._confirm_name(t("{n} chunk silinecek (yaklaşık {mb} MB).", n=p["chunks"], mb=f"{p['free'] / 1048576:.0f}")):
+            return
+        safety = self.trim_safety.isChecked()
+
+        def job():
+            bk = self.app.backups.create(prefix="before_trim") if safety else None
+            return trim.apply(self.app.server, p), bk
+        self._bg("trim", job)
 
     def reset_players(self):
         if self._confirm_name(t("Tüm oyuncuların envanteri, konumu, istatistikleri ve ilerlemeleri silinecek.")):

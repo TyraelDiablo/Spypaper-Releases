@@ -29,20 +29,25 @@ PAPER_FAMILY = {"Paper", "Purpur", "Folia", "Pufferfish", "Leaf", "Leaves", "Gal
 SPIGOT = {"Spigot", "CraftBukkit", "Bukkit"}
 
 ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]|§.")
-RE_PAPER_TPS = re.compile(r"TPS from last [\dsm, ]+:\s*\*?([\d.]+)")    # 1m, 5m, 15m (yeni Paper: 5s, 1m, …)
+NUM = r"(\d+(?:[.,]\d+)?)"          # Java sistem diline göre ondalık nokta ya da virgül yazar (20,0)
+RE_PAPER_TPS = re.compile(r"TPS from last [\dsm, ]+:\s*\*?" + NUM)    # 1m, 5m, 15m (yeni Paper: 5s, 1m, …)
 RE_MSPT_HEAD = re.compile(r"Server tick times \(avg/min/max\)")
-RE_MSPT_VALS = re.compile(r"([\d.]+)/([\d.]+)/([\d.]+)")
-RE_TQ_AVG = re.compile(r"Average time per tick:\s*([\d.]+)\s*ms")
-RE_TQ_RATE = re.compile(r"Target tick rate:\s*([\d.]+)")
-RE_FORGE = re.compile(r"Overall\s*:.*?Mean tick time:\s*([\d.]+)\s*ms.*?Mean TPS:\s*([\d.]+)")
-RE_NEO = re.compile(r"Overall\s*:\s*([\d.]+)\s*TPS\s*\(([\d.]+)\s*ms/tick\)")
+RE_MSPT_VALS = re.compile(NUM + "/" + NUM + "/" + NUM)
+RE_TQ_AVG = re.compile(r"Average time per tick:\s*" + NUM + r"\s*ms")
+RE_TQ_RATE = re.compile(r"Target tick rate:\s*" + NUM)
+RE_FORGE = re.compile(r"Overall\s*:.*?Mean tick time:\s*" + NUM + r"\s*ms.*?Mean TPS:\s*" + NUM)
+RE_NEO = re.compile(r"Overall\s*:\s*" + NUM + r"\s*TPS\s*\(" + NUM + r"\s*ms/tick\)")
 # sorgu penceresinde gizlenen satırlar (yanıtın parçaları ve "bilinmeyen komut" hatası)
 HIDE = re.compile(
-    r"^(TPS from last|Server tick times|\s*[◴⏲]?\s*[\d.]+/[\d.]+/[\d.]+|The game is running|The game is sprinting|"
+    r"^(TPS from last|Server tick times|\s*[◴⏲]?\s*[\d.,]+/[\d.,]+/[\d.,]+|The game is running|The game is sprinting|"
     r"The game is frozen|Target tick rate|Average time per tick|Percentiles|Dim(?:ension)?\s|Overall\s*:|"
-    r".*\bTPS\s*\([\d.]+\s*ms/tick\)|.*Mean tick time:|"
+    r".*\bTPS\s*\([\d.,]+\s*ms/tick\)|.*Mean tick time:|"
     r"Unknown or incomplete command|Unknown command|.*<--\[HERE\]|Incorrect argument)")
 RE_UNKNOWN = re.compile(r"^(Unknown or incomplete command|Unknown command|Incorrect argument)")
+
+def _f(v):
+    return float(v.replace(",", "."))
+
 
 STATUS = {
     "waiting": N_("Ölçüm bekleniyor…"),
@@ -67,6 +72,8 @@ def _ver_tuple(v):
 
 def probes_for(software, version):
     """Yazılım ve sürüme göre gönderilecek komutlar (boş liste: desteklenmiyor)."""
+    if software.startswith("Bedrock"):   # BDS'de TPS komutu yok
+        return []
     if software in PAPER_FAMILY:
         return ["tps", "mspt"]
     if software in SPIGOT:
@@ -185,12 +192,12 @@ class PerfMonitor:
             m = RE_MSPT_VALS.search(msg)
             self._mspt_next = False
             if m:
-                c["mspt"] = float(m.group(1))
+                c["mspt"] = _f(m.group(1))
                 self._got = True
                 return
         m = RE_PAPER_TPS.search(msg)
         if m:
-            c["tps"] = min(20.0, float(m.group(1)))
+            c["tps"] = min(20.0, _f(m.group(1)))
             self._got = True
             return
         if RE_MSPT_HEAD.search(msg):
@@ -198,21 +205,21 @@ class PerfMonitor:
             return
         m = RE_TQ_RATE.search(msg)
         if m:
-            c["rate"] = float(m.group(1))
+            c["rate"] = _f(m.group(1))
             return
         m = RE_TQ_AVG.search(msg)
         if m:
-            c["mspt"] = float(m.group(1))
+            c["mspt"] = _f(m.group(1))
             self._got = True
             return
         m = RE_FORGE.search(msg)
         if m:
-            c["mspt"], c["tps"] = float(m.group(1)), min(20.0, float(m.group(2)))
+            c["mspt"], c["tps"] = _f(m.group(1)), min(20.0, _f(m.group(2)))
             self._got = True
             return
         m = RE_NEO.search(msg)
         if m:
-            c["tps"], c["mspt"] = min(20.0, float(m.group(1))), float(m.group(2))
+            c["tps"], c["mspt"] = min(20.0, _f(m.group(1))), _f(m.group(2))
             self._got = True
             return
         if RE_UNKNOWN.match(msg):

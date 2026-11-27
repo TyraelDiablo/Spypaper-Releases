@@ -215,3 +215,109 @@ def delete_server(app):
         return "recycle"
     _rmtree(sp)
     return "deleted"
+
+
+# ---------------------------------------------------------------- seçerek geri yükleme
+import re as _re
+
+_REGION = _re.compile(r"(?:^|/)(region|entities|poi)/r\.(-?\d+)\.(-?\d+)\.mca$")
+PARTS = ("overworld", "nether", "end", "players", "area")
+
+
+def _classify(name, level):
+    """Yedekteki bir yolun ait olduğu parça: overworld | nether | end | players | None (dünya dışı)."""
+    n = name.replace("\\", "/")
+    if n.startswith(level + "_nether/"):
+        return "nether"
+    if n.startswith(level + "_the_end/"):
+        return "end"
+    if not n.startswith(level + "/"):
+        return None
+    rest = n[len(level) + 1:]
+    if rest.startswith(("DIM-1/", "dimensions/minecraft/the_nether/")):
+        return "nether"
+    if rest.startswith(("DIM1/", "dimensions/minecraft/the_end/")):
+        return "end"
+    if rest.split("/")[0] in PLAYER_DIRS:
+        return "players"
+    return "overworld"
+
+
+def _player_uuid(name):
+    base = name.replace("\\", "/").rsplit("/", 1)[-1]
+    m = _re.match(r"([0-9a-fA-F-]{32,36})\.(?:dat|dat_old|json)$", base)
+    return m.group(1).lower() if m else None
+
+
+def backup_players(zip_path, level):
+    """Yedekte verisi bulunan oyuncuların UUID'leri."""
+    with zipfile.ZipFile(zip_path) as z:
+        return sorted({u for m in z.infolist() if _classify(m.filename, level) == "players"
+                       for u in (_player_uuid(m.filename),) if u})
+
+
+def _region_wanted(name, cx, cz, radius):
+    """Bölge dosyası (512×512 blok) seçilen dairenin kapsadığı kareye değiyor mu?"""
+    m = _REGION.search(name.replace("\\", "/"))
+    if not m:
+        return False
+    rx, rz = int(m.group(2)), int(m.group(3))
+    x0, z0 = rx * 512, rz * 512
+    return x0 <= cx + radius and x0 + 511 >= cx - radius and z0 <= cz + radius and z0 + 511 >= cz - radius
+
+
+def restore_partial(app, zip_name, parts, players=None, area=None, safety_backup=True, progress=None):
+    """Yedeğin yalnızca seçilen parçalarını geri yükler.
+
+    parts: {"overworld","nether","end"} boyutların tamamı, "players" oyuncu verisi (players=None ise hepsi, liste ise
+    yalnızca o UUID'ler), "area" yalnızca bir bölge: area=(boyut, x, z, yarıçap) – o boyutun bölge dosyaları.
+    Döndürür: (geri yüklenen dosya sayısı, güvenlik yedeği)
+    """
+    _require_stopped(app.server)
+    sp = app.config.server_path
+    level = level_name(app.properties)
+    path = os.path.join(app.backups.folder, os.path.basename(zip_name))
+    if not os.path.isfile(path):
+        raise DangerError(N_("Yedek bulunamadı: {name}"), name=zip_name)
+    want_players = {u.replace("-", "").lower() for u in players} if players else None
+    try:
+        z = zipfile.ZipFile(path)
+    except zipfile.BadZipFile:
+        raise DangerError(N_("Yedek dosyası bozuk: {name}"), name=zip_name)
+    with z:
+        members = _safe_members(z, sp)
+        chosen = []
+        for m in members:
+            if m.is_dir():
+                continue
+            kind = _classify(m.filename, level)
+            if kind in parts and kind in ("overworld", "nether", "end"):
+                chosen.append(m)
+            elif kind == "players" and "players" in parts:
+                u = _player_uuid(m.filename)
+                if want_players is None or (u and u.replace("-", "") in want_players):
+                    chosen.append(m)
+            elif "area" in parts and area and kind == area[0] and _region_wanted(m.filename, *area[1:]):
+                chosen.append(m)
+        if not chosen:
+            raise DangerError(N_("Yedekte seçilen parçalara ait dosya yok."))
+        bk = None
+        if safety_backup:
+            try:
+                bk = app.backups.create(prefix="before_restore")
+            except FileNotFoundError:
+                bk = None
+        # tüm boyut geri yüklemesinde o boyutun bölge klasörleri önce temizlenir (yedekten sonra oluşan bölgeler kalmasın)
+        whole = {k for k in parts if k in ("overworld", "nether", "end")}
+        if whole:
+            for root, dirs, files in os.walk(sp):
+                rel = os.path.relpath(root, sp).replace(os.sep, "/")
+                if os.path.basename(root) in ("region", "entities", "poi") and _classify(rel + "/x", level) in whole:
+                    for f in files:
+                        if f.endswith(".mca"):
+                            os.remove(os.path.join(root, f))
+        for i, m in enumerate(chosen, 1):
+            z.extract(m, sp)
+            if progress:
+                progress(i, len(chosen))
+    return len(chosen), bk

@@ -26,7 +26,7 @@ NAME_PREFIXES = ("entity.minecraft.", "item.minecraft.", "block.minecraft.", "ga
 ADMIN = re.compile(r"^\[([^\]:]+): (.+)\]$")          # chat.type.admin "[%s: %s]"
 LOGGER = re.compile(r"^\[([^\]]+)\] (.*)$")
 # satır başı: '[12:00:00] [Server thread/INFO]:', '[12:00:00 INFO]:', Forge/NeoForge'da üçüncü [logger/MARKER] parantezi
-PREFIX = re.compile(r"^((?:\[[^\]]*\]\s*)+:\s?)(.*)$")
+PREFIX = re.compile(r"^(\[\d{4}-\d{2}-\d{2} [^\]]+\]\s?|(?:\[[^\]]*\]\s*)+:\s?)(.*)$")   # ilk seçenek: Bedrock "[2026-11-26 22:48:52:003 INFO] "
 ARG = re.compile(r"%(?:(\d+)\$)?s")
 
 # Sık Paper/vanilla sunucu mesajları -> panel dili (t ile)

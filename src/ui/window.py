@@ -31,14 +31,17 @@ from .pages.tasks import TasksPage
 from .pages.discord import DiscordPage
 from .pages.configs import ConfigsPage
 from .pages.velocity import VelocityPage
+from .pages.bots import BotsPage
+from .pages.bedrock_addons import BedrockAddonsPage
+from .pages.bedrock_players import BedrockPlayersPage
 
 from core import N_
 
 # Kenar çubuğu grupları (anahtar, başlık, sayfalar). Sekmeler yalnızca kendi grupları içinde sıralanır.
 GROUPS = [
     ("general", N_("Genel"), [DashboardPage, ConsolePage, LogsPage, MapPage, EsploraPage, NotesPage]),
-    ("players", N_("Oyuncular"), [PlayersPage, TeamsPage, AdminPage]),
-    ("content", N_("İçerik"), [PluginsPage, ModTransPage, ContentPage]),
+    ("players", N_("Oyuncular"), [PlayersPage, BedrockPlayersPage, TeamsPage, AdminPage, BotsPage]),
+    ("content", N_("İçerik"), [PluginsPage, BedrockAddonsPage, ModTransPage, ContentPage]),
     ("server", N_("Sunucu"), [VelocityPage, SettingsPage, ConfigsPage, FilesPage]),
     ("automation", N_("Otomasyon"), [MaintenancePage, TasksPage, DiscordPage]),
     ("security", N_("Güvenlik"), [GuardPage, DangerPage]),
@@ -102,6 +105,7 @@ class ServerPanel(QWidget):
     def __init__(self, ctl, app):
         super().__init__()
         self.ctl, self.app = ctl, app
+        app.ingame_ai.settings = ctl.settings          # oyun içi yapay zeka, Esplora ile aynı sağlayıcıyı kullanır
         self.bridge = ServerBridge(app.server)
         app.players.set_language(i18n.current())   # eşya adları panel dilinde
         app.logtrans.ui_t = t                       # sunucu mesajları sözlüğü panel dilinde
@@ -133,11 +137,17 @@ class ServerPanel(QWidget):
         soft = detect_version(app.config.server_path)[1]
         if soft == "Vanilla":     # vanilla eklenti/mod yükleyemez
             self.hidden = set(self.hidden) | {PAGES.index(PluginsPage), PAGES.index(ModTransPage)}
-        if is_proxy(app.config.server_path):      # proxy'de dünya, oyuncu verisi ve server.properties yok
+        from core.bedrock import is_bedrock
+        if is_bedrock(app.config.server_path):    # Bedrock (vanilla): Java dünyasına, eklentiye ve NBT'ye bağlı sayfalar yok
             self.hidden = set(self.hidden) | {PAGES.index(c) for c in (
-                MapPage, PlayersPage, TeamsPage, AdminPage, ModTransPage, ContentPage, SettingsPage, MaintenancePage)}
+                MapPage, PlayersPage, TeamsPage, AdminPage, BotsPage, ModTransPage, ContentPage, SettingsPage,
+                MaintenancePage, PluginsPage, VelocityPage, ConfigsPage, GuardPage, DangerPage) if c in PAGES}
+        elif is_proxy(app.config.server_path):      # proxy'de dünya, oyuncu verisi ve server.properties yok
+            self.hidden = set(self.hidden) | {PAGES.index(c) for c in (
+                MapPage, PlayersPage, TeamsPage, AdminPage, BotsPage, ModTransPage, ContentPage, SettingsPage,
+                MaintenancePage, BedrockAddonsPage, BedrockPlayersPage)}
         else:
-            self.hidden = set(self.hidden) | {PAGES.index(VelocityPage)}
+            self.hidden = set(self.hidden) | {PAGES.index(c) for c in (VelocityPage, BedrockAddonsPage, BedrockPlayersPage)}
         for i, cls in enumerate(PAGES):
             page = cls(app, self.bridge)
             self.pages.append(page)
@@ -215,7 +225,7 @@ class ServerPanel(QWidget):
         self.btn_start = button("Başlat", "primary", self.start)
         self.btn_stop = button("Durdur", "danger", self.stop)
         self.btn_update = button("Güncelle", "ghost", self.update_paper,
-                                 tooltip="Sunucu yazılımını kur ya da güncelle (Paper, Purpur, Vanilla, Fabric, Forge, NeoForge)")
+                                 tooltip="Sunucu yazılımını güncelle ya da başka bir yazılıma geç (Paper, Purpur, Folia, Vanilla, Fabric, Forge, NeoForge)")
         tl.addWidget(self.btn_update)
         tl.addWidget(self.btn_start)
         tl.addWidget(self.btn_stop)
@@ -337,6 +347,9 @@ class ServerPanel(QWidget):
     def _java_ok(self):
         """Seçili Java sunucunun Minecraft sürümü için yetersizse ya da bulunamıyorsa sorar."""
         from core import javamgr
+        from core.bedrock import is_bedrock
+        if is_bedrock(self.app.config.server_path):
+            return True
         try:
             req, major, exe = javamgr.check(self.app.config)
         except Exception as e:
@@ -393,6 +406,9 @@ def eula_ok(parent, server_path):
     """Minecraft EULA'sı kabul edilmemişse sunucu açılmaz. Kullanıcıya sorup eula.txt'yi yazar.
     Panel bunu kendiliğinden kabul etmez."""
     from core.config import is_proxy
+    from core.bedrock import is_bedrock
+    if is_bedrock(server_path):                # BDS: EULA indirirken kabul edilir, eula.txt yok
+        return True
     if is_proxy(server_path):                  # Velocity proxy'nin EULA'sı yok
         return True
     path = os.path.join(server_path, "eula.txt")
@@ -450,6 +466,7 @@ class MainWindow(QMainWindow):
         self.remote.autostart()
         self._handled_run, self._crashes = {}, {}
         restore_sharing(self.settings.servers())          # içerik editörünün kaynak paketi paylaşımı
+        self.reattach()                                   # Spypaper kapalıyken açık kalan sunuculara bağlan
         # otomatik bakım: tüm sunucular için (paneli açık olmasa da) saniyede bir
         self.maint_timer = QTimer(self)
         self.maint_timer.timeout.connect(self.maintenance_tick)
@@ -543,6 +560,8 @@ class MainWindow(QMainWindow):
             if not srv.ended_run or self._handled_run.get(sid) == srv.ended_run or srv.is_running:
                 continue
             self._handled_run[sid] = srv.ended_run          # her kapanış bir kez işlenir
+            if srv.crashed:
+                self._blame(app)
             if not (srv.crashed and app.config.get("auto_restart")):
                 continue
             hist = [x for x in self._crashes.get(sid, []) if now - x < CRASH_WINDOW] + [now]
@@ -561,6 +580,26 @@ class MainWindow(QMainWindow):
             if srv.on_line:
                 srv.on_line(line)
             QTimer.singleShot(RESTART_DELAY * 1000, lambda a=app: self._auto_restart(a))
+
+    def _blame(self, app):
+        """Çökmede yığın izinden olası suçlu eklenti/modu konsola yazar (core.blame)."""
+        try:
+            from core import blame
+            srv = app.server
+            text = blame.crash_text(app.config.server_path, list(srv.history)[-400:])
+            sus = blame.suspects(text, app.config.server_path)
+        except Exception as e:
+            print(f"[blame] {e}")
+            return
+        if not sus:
+            return
+        names = ", ".join(f"{jar} ({t('hatada adı geçiyor') if why == 'named' else t('yığın izinde {n} kez', n=n)})"
+                          for jar, n, why in sus)
+        line = "[Spypaper] " + t("Çökmenin olası sebebi: {names}. Bu eklentiyi/modu güncellemeyi ya da geçici olarak "
+                                 "kaldırmayı dene.", names=names)
+        srv.history.append(line)
+        if srv.on_line:
+            srv.on_line(line)
 
     def _auto_restart(self, app):
         if app.server.is_running or app.maintenance.active:
@@ -582,6 +621,18 @@ class MainWindow(QMainWindow):
                 app.perf.tick()                     # TPS/MSPT sorgusu (yalnızca çalışan sunucularda)
             except Exception as e:
                 print(f"[tps] {app.config.name}: {e}")
+            try:
+                app.pregen.tick()                   # ön yükleme: oyuncu girince duraklat
+            except Exception as e:
+                print(f"[ön yükleme] {app.config.name}: {e}")
+            try:
+                app.sanctions.tick()                # süresi dolan süreli banlar
+            except Exception as e:
+                print(f"[sicil] {app.config.name}: {e}")
+            try:
+                app.perfhist.tick()                 # dakikada bir performans geçmişi
+            except Exception as e:
+                print(f"[performans geçmişi] {app.config.name}: {e}")
         for prof in self.settings.servers():
             if not prof.exists:
                 continue
@@ -655,6 +706,30 @@ class MainWindow(QMainWindow):
         self.server_state_changed()
 
     def server_state_changed(self):
+        if self.view[0] == "home":
+            self.home.refresh_status()
+
+    def reattach(self):
+        """Klasöründe java süreci çalışan sunucular "açık" görünür; konsol log'dan izlenir, komutlar RCON'la gider."""
+        try:
+            import psutil
+        except ImportError:
+            return
+        cwds = set()
+        for p in psutil.process_iter(["name"]):
+            try:
+                if "java" in (p.info["name"] or "").lower():
+                    cwds.add(os.path.normcase(p.cwd()))
+            except psutil.Error:
+                continue
+        for prof in self.settings.servers():
+            sp = prof.server_path or ""
+            if sp and os.path.normcase(os.path.abspath(sp)) in cwds:
+                try:
+                    if self.app_for(prof.id).attach():
+                        print(f"[attach] {prof.name}")
+                except Exception as e:
+                    print(f"[attach] {prof.name}: {e}")
         if self.view[0] == "home":
             self.home.refresh_status()
 
@@ -733,7 +808,9 @@ class MainWindow(QMainWindow):
         from . import sleep
         if getattr(self, "sleeping", None):
             return
-        if not self.settings.get("sleep_pin_hash"):
+        from core import auth
+        use_auth = auth.enabled(self.settings) and auth.cfg(self.settings)["on_sleep"]
+        if not use_auth and not self.settings.get("sleep_pin_hash"):
             p1, ok = get_text(self, t("Uyku Modu"), t("Uyku modundan çıkmak için bir PIN belirle (4-12 rakam)."),
                               password=True)
             if not ok:
@@ -776,11 +853,21 @@ class MainWindow(QMainWindow):
 
     def _sleep_pin_ok(self, purpose=""):
         from core.safemode import verify_pin
+        from core import auth
         from .msgbox import get_text
         stored = self.settings.get("sleep_pin_hash")
-        if not stored:
+        use_auth = auth.enabled(self.settings) and auth.cfg(self.settings)["on_sleep"]
+        if not stored and not use_auth:
             return True
         app = QApplication.instance()
+        if use_auth:                                         # panel doğrulaması uyku PIN'inin yerine geçer
+            app.removeEventFilter(self._blocker)
+            try:
+                from .auth_dialog import verify
+                return verify(self, self.settings, purpose)
+            finally:
+                if getattr(self, "sleeping", None):
+                    app.installEventFilter(self._blocker)
         app.removeEventFilter(self._blocker)                 # PIN diyaloğunda yazılabilsin
         try:
             for attempt in range(3):

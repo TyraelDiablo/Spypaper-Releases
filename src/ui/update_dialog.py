@@ -40,8 +40,10 @@ class UpdateDialog(QDialog):
         v.addWidget(label(t("Şu anki: {jar}  ({cur})", jar=jar, cur=cur or t("bilinmiyor")), "Muted", wrap=True))
 
         self.sw = QComboBox()
+        be = software.is_bedrock_key(self.cur_soft)
         for key, info in software.SOFTWARE.items():
-            self.sw.addItem(info["name"], key)
+            if software.is_bedrock_key(key) == be:     # Java <-> Bedrock arasında geçiş olmaz
+                self.sw.addItem(info["name"], key)
         self.sw.setCurrentIndex(max(0, self.sw.findData(self.cur_soft)))
         self.sw.currentIndexChanged.connect(self._load_versions)
         self.sw.setMinimumWidth(150)
@@ -62,6 +64,10 @@ class UpdateDialog(QDialog):
         self.migrate.setChecked(True)
         self.migrate.hide()
         v.addWidget(self.migrate)
+        self.trial = QCheckBox(t("Önce sunucunun bir kopyasında dene: kopya açılmazsa asıl sunucuya dokunulmaz"))
+        self.trial.setToolTip(t("Sunucu klasörü (dünya dahil, yedekler hariç) geçici bir kopyaya alınır, yeni yazılım "
+                                "orada kurulup açılır. Diskte sunucu kadar boş yer ve birkaç dakika gerekir."))
+        v.addWidget(self.trial)
         self.backup = QCheckBox(t("Önce dünya yedeği al"))
         self.backup.setChecked(True)
         v.addWidget(self.backup)
@@ -148,8 +154,13 @@ class UpdateDialog(QDialog):
                                    v=info["version"], tag=tag))
         warns = []
         self.steps = []
-        self.migrate.setVisible(not same_soft)
-        if not same_soft:
+        be_switch = not same_soft and software.is_bedrock_key(key) and software.is_bedrock_key(self.cur_soft)
+        self.migrate.setVisible(not same_soft and not be_switch)
+        if be_switch:                                  # Bedrock <-> Bedrock Preview
+            warns.append(t("Preview (beta) dünyayı dönüştürür; normal sürüme dönünce dünya açılmayabilir. Önce yedek al.")
+                         if software.SOFTWARE[key].get("preview") else
+                         t("Preview'dan normal sürüme geçiliyor. Preview'da açılmış dünya bu sürümde açılmayabilir; yedeğin olduğundan emin ol."))
+        elif not same_soft:
             try:
                 self.steps = switch.plan(self.app.config.server_path, self._level(), self.cur_soft, key)
             except switch.SwitchError as e:
@@ -173,6 +184,8 @@ class UpdateDialog(QDialog):
         if info.get("beta"):
             warns.append(t("Bu Minecraft sürümü için yalnızca beta sürüm var."))
         self.warn_lbl.setText("\n".join(warns))
+        self.trial.setChecked(not same_soft or bool(self.cur_ver and info["version"] != self.cur_ver))
+        self.trial.setVisible(not info.get("bedrock"))
         self.adjustSize()
         self.btn.setText(t("Yeniden indir") if same else t("Kur") if not same_soft else t("Güncelle"))
         self.btn.setEnabled(True)
@@ -192,13 +205,46 @@ class UpdateDialog(QDialog):
         cfg = self.app.config
         do_migrate = self.migrate.isVisible() and self.migrate.isChecked()
         old_key, level = self.cur_soft, self._level()
+        do_trial = self.trial.isChecked() and not info.get("bedrock")   # deneme kopyası Java ile çalışır
 
         def run():
             try:
+                if do_trial:
+                    from core import trial
+                    prog = lambda a, b: self.progress.emit(a, b)
+                    self.install_log.emit(t("Deneme için sunucunun kopyası alınıyor…"))
+                    tp = trial.copy_server(cfg.server_path, progress=prog)
+                    try:
+                        self.install_log.emit(t("Kopyaya yeni yazılım kuruluyor…"))
+                        if info.get("installer"):
+                            tjar = software.install_with_installer(info, tp, cfg.get("java_path"), self.contact,
+                                                                   progress=prog, log=self.install_log.emit)
+                        else:
+                            tjar = updater.download(info, tp, cfg.get("jar_name"), self.contact, progress=prog)
+                        if do_migrate:
+                            switch.apply(tp, level, old_key, info["software"])
+                        trial.prepare_props(tp)
+                        self.install_log.emit(t("Kopya açılıyor; sunucu hazır olana kadar bekleniyor…"))
+                        self.progress.emit(0, 0)
+                        ok, lines, sus = trial.run(cfg, tp, tjar, log=self.install_log.emit)
+                    finally:
+                        trial.cleanup(tp)
+                    if not ok:
+                        msg = t("Deneme başarısız: yeni yazılımla sunucu açılmadı. Asıl sunucuya dokunulmadı.")
+                        if sus:
+                            msg += "\n" + t("Olası sebep: {names}", names=", ".join(j for j, _n, _w in sus))
+                        msg += "\n\n" + "\n".join(ln[-200:] for ln in lines[-6:])
+                        self.finished_dl.emit("", msg)
+                        return
+                    self.install_log.emit(t("Deneme başarılı; asıl sunucu güncelleniyor…"))
                 if do_backup:
                     self.app.backups.create(progress=lambda a, b: self.progress.emit(a, b))
                 prog = lambda a, b: self.progress.emit(a, b)
-                if info.get("installer"):
+                if info.get("bedrock"):
+                    from core import bedrock
+                    self.install_log.emit(t("İndiriliyor…"))
+                    name = bedrock.install(info, cfg.server_path, self.contact, progress=prog)
+                elif info.get("installer"):
                     self.install_log.emit(t("İndiriliyor…"))
                     name = software.install_with_installer(info, cfg.server_path, cfg.get("java_path"),
                                                            self.contact, progress=prog, log=self.install_log.emit)
@@ -213,7 +259,7 @@ class UpdateDialog(QDialog):
                 self.finished_dl.emit("", _err(e))
         self.status.setText(t("Yedek alınıyor…") if do_backup else
                             t("Kuruluyor…") if info.get("installer") else t("İndiriliyor…"))
-        if info.get("installer"):
+        if info.get("installer") or do_trial:
             self.log_lbl.show()
         threading.Thread(target=run, daemon=True).start()
 

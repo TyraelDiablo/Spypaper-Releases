@@ -291,6 +291,8 @@ class EsploraPage(Page):
 
         head = Card("Esplora", "Bu sunucuya özel yapay zeka asistanı. Yalnızca sunucu yönetimiyle ilgili sorulara yanıt verir.")
         head.header_actions.addWidget(button("Yeni sohbet", "ghost", self.reset))
+        head.header_actions.addWidget(button("Son Rapor", "ghost", self.show_report,
+                                             tooltip="Zamanlanmış Esplora raporunun sonuncusu; Görevler'den kurulur"))
         head.header_actions.addWidget(button("Geçmiş", "ghost", self.open_history,
                                              tooltip="Kayıtlı sohbetleri aç ya da sil"))
         head.header_actions.addWidget(button("Sunucu Bilgileri", "ghost", self.edit_knowledge,
@@ -457,6 +459,20 @@ class EsploraPage(Page):
         if 0 <= i < len(self.images):
             self.images.pop(i)
             self._show_thumbs()
+
+    def show_report(self):
+        from core import report
+        from ..msgbox import ask
+        path = report.latest(self.app.config.server_path)
+        if not path:                                    # henüz zamanlanmış rapor yok: şimdi hazırla
+            title, lines = self.app._report(24)
+            text = title + "\n\n" + "\n".join(lines)
+        else:
+            with open(path, encoding="utf-8") as f:
+                text = f.read()
+        if ask(self, text + "\n\n" + t("Esplora bu raporu yorumlasın mı?"), t("Esplora raporu")):
+            self.ask(t("Bu sunucu raporunu yorumla; sorun varsa nedenini ve ne yapmam gerektiğini söyle.") +
+                     "\n\n" + text, label="📋 " + t("Son raporu yorumla"))
 
     def open_access(self):
         from ..access_dialog import AccessDialog

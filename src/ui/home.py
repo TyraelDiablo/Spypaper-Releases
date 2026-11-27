@@ -117,6 +117,14 @@ class ServerCard(QFrame):
     def open(self):
         self.home.ctl.open_server(self.p.id)
 
+    def switch_software(self):
+        """Sunucuyu açar ve Sunucu Yazılımı penceresini gösterir (yazılım değiştirme ve güncelleme)."""
+        ctl = self.home.ctl
+        ctl.open_server(self.p.id)
+        panel = ctl.current_panel()
+        if panel and panel.app.config.id == self.p.id:
+            panel.update_paper()
+
     def quick_start(self):
         from core import ServerError
         from .widgets import err_text
@@ -139,6 +147,10 @@ class ServerCard(QFrame):
         m.addAction(t("Düzenle…"), lambda: self.home.edit_server(self.p))
         m.addAction(t("Klasörü Aç"), lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(self.p.server_path)))
         m.addAction(t("Kopyasını Oluştur…"), lambda: self.home.clone_server(self.p))
+        m.addAction(t("Yazılımı Değiştir / Güncelle…"), self.switch_software)
+        m.addSeparator()
+        m.addAction(t("Şablon Olarak Dışa Aktar…"), lambda: self.home.export_template(self.p))
+        m.addAction(t("Şablon Uygula…"), lambda: self.home.apply_template(self.p))
         m.addSeparator()
         m.addAction(t("Listeden Kaldır"), lambda: self.home.remove_server(self.p))
         m.exec(self.cursor().pos())
@@ -387,6 +399,106 @@ class HomeScreen(QWidget):
             if ask(self, t("'{name}' oluşturuldu (port {port}). Şimdi açılsın mı?", name=dlg.profile.name, port=port),
                    t("Kopyasını Oluştur")):
                 self.ctl.open_server(dlg.profile.id)
+
+    def _run_bg(self, title, fn):
+        """fn(progress) arka planda çalışır; ilerleme penceresi gösterilir. (sonuç, hata) döndürür."""
+        import threading
+        from PySide6.QtCore import QEventLoop
+        from PySide6.QtWidgets import QApplication, QProgressDialog
+        dlg = QProgressDialog(title, None, 0, 0, self)
+        dlg.setWindowTitle(t("Lütfen bekle"))
+        dlg.setWindowModality(Qt.WindowModal)
+        dlg.setMinimumDuration(0)
+        dlg.show()
+        box = {"done": False, "res": None, "err": None, "msg": title}
+
+        def prog(i, n, name=""):
+            box["msg"] = f"{title}\n{i}/{n} {name}"
+
+        def work():
+            try:
+                box["res"] = fn(prog)
+            except Exception as e:
+                box["err"] = e
+            box["done"] = True
+        threading.Thread(target=work, daemon=True).start()
+        while not box["done"]:
+            dlg.setLabelText(box["msg"])
+            QApplication.processEvents(QEventLoop.AllEvents, 100)
+            threading.Event().wait(0.05)
+        dlg.close()
+        return box["res"], box["err"]
+
+    def _tpl_soft(self, prof):
+        from core.config import detect_version, is_modded
+        mc, soft = detect_version(prof.server_path)[:2]
+        return soft, mc, is_modded(prof.server_path)
+
+    def export_template(self, prof):
+        from PySide6.QtWidgets import QFileDialog
+        from core import srvtemplate as ST
+        from .widgets import err_text
+        from .window import ask_pin
+        if not prof.exists or not ask_pin(self, prof):
+            return
+        safe = "".join(c for c in prof.name if c.isalnum() or c in " -_").strip() or "server"
+        dest, _ = QFileDialog.getSaveFileName(self, t("Şablon Olarak Dışa Aktar"),
+                                              os.path.join(os.path.expanduser("~"), safe + ST.EXT),
+                                              t("Spypaper sunucu şablonu") + f" (*{ST.EXT})")
+        if not dest:
+            return
+        if not dest.endswith(ST.EXT):
+            dest += ST.EXT
+        app = self.ctl.app_for(prof.id)
+        soft, mc, modded = self._tpl_soft(prof)
+        res, err = self._run_bg(t("Şablon hazırlanıyor…"), lambda _p: ST.export(app, dest, soft, mc, modded))
+        if err:
+            QMessageBox.critical(self, t("Hata"), err_text(err))
+            return
+        QMessageBox.information(self, t("Şablon Olarak Dışa Aktar"), t(
+            "Şablon kaydedildi: {file}\n{p} eklenti/mod ({k} tanesi Modrinth'ten otomatik kurulabilir), {f} ayar dosyası."
+            "\nDünya, oyuncu verisi, oyun dosyaları, Discord adresi ve PIN'ler şablona girmez.",
+            file=os.path.basename(dest), p=res["plugins"], k=res["known"], f=res["files"]))
+
+    def apply_template(self, prof):
+        from PySide6.QtWidgets import QFileDialog
+        from core import srvtemplate as ST
+        from .widgets import err_text
+        from .window import ask_pin
+        if not prof.exists or not ask_pin(self, prof):
+            return
+        if self.ctl.is_running(prof.id):
+            QMessageBox.warning(self, t("Uyarı"), t("Şablonu uygulamadan önce sunucuyu durdur."))
+            return
+        src, _ = QFileDialog.getOpenFileName(self, t("Şablon Uygula"), os.path.expanduser("~"),
+                                             t("Spypaper sunucu şablonu") + f" (*{ST.EXT})")
+        if not src:
+            return
+        try:
+            info = ST.summary(ST.read(src))
+        except ST.TemplateError as e:
+            QMessageBox.critical(self, t("Hata"), t(e.template, **e.kw))
+            return
+        soft, mc, modded = self._tpl_soft(prof)
+        text = t("'{tpl}' şablonu '{name}' sunucusuna uygulansın mı?", tpl=info["name"], name=prof.name) + "\n\n" + t(
+            "{props} sunucu ayarı, {tasks} zamanlanmış görev, {plugins} eklenti/mod ({known} tanesi Modrinth'ten "
+            "indirilecek). Aynı adlı ayar dosyalarının üzerine yazılır; dünya ve oyuncular değişmez.", **info)
+        if (info["software"], info["mc"]) != (soft, mc):
+            text += "\n\n" + t("Dikkat: şablon {a} {b} için yapılmış, bu sunucu {c} {d}. Eklentiler uyumsuz olabilir.",
+                                a=info["software"], b=info["mc"], c=soft, d=mc)
+        if not ask(self, text, t("Şablon Uygula")):
+            return
+        app = self.ctl.app_for(prof.id)
+        res, err = self._run_bg(t("Şablon uygulanıyor…"), lambda p: ST.apply(app, src, modded=modded, progress=p))
+        if err:
+            msg = t(err.template, **err.kw) if isinstance(err, ST.TemplateError) else err_text(err)
+            QMessageBox.critical(self, t("Hata"), msg)
+            return
+        msg = t("Şablon uygulandı: {p} ayar, {f} dosya, {i} eklenti/mod kuruldu.", p=res["props"], f=res["files"],
+                i=len(res["installed"]))
+        if res["missing"]:
+            msg += "\n\n" + t("Modrinth'te bulunamadı, elle eklemen gerekiyor:") + "\n" + "\n".join(res["missing"][:20])
+        QMessageBox.information(self, t("Şablon Uygula"), msg)
 
     def remove_server(self, prof):
         from .window import ask_pin

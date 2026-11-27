@@ -29,6 +29,7 @@ import time
 import zipfile
 from collections import deque
 
+from . import playermsg
 from .config import N_
 
 GUARD_DIR = "spypaper_guard"
@@ -50,6 +51,7 @@ NAME_RE = re.compile(r"^[A-Za-z0-9_.]{1,17}$")
 
 class GuardError(Exception):
     def __init__(self, template, **kw):
+        self.is_bot = lambda name: False      # core.bots: bot oyuncular doğrulanmaz ve atılmaz
         self.template, self.kw = template, kw
         super().__init__(template.format(**kw) if kw else template)
 
@@ -336,10 +338,10 @@ class Guard:
         allowed = {n.lower() for n in settings(self.profile)["op_allowed"]}
         with self._lock:
             for name in self.ops():
-                if name.lower() in allowed or not NAME_RE.match(name):
+                if name.lower() in allowed or not NAME_RE.match(name) or self.is_bot(name):
                     continue
                 self.server.try_send(f"deop {name}")
-                self.server.try_send(f"kick {name} " + self.tr(N_("İzinsiz yönetici yetkisi algılandı.")))
+                playermsg.kick(self.server, name, N_("İzinsiz yönetici yetkisi algılandı."), self.tr)
                 self.log("op", N_("İzinsiz OP geri alındı ve oyuncu atıldı: {name}"), name=name)
 
     # --- Bot Doğrulaması ---
@@ -402,11 +404,11 @@ class Guard:
 
     def _recheck(self, name, ip, since):
         self._pending.pop(name.lower(), None)
-        if not active(self.profile, "captcha") or name.lower() in self.verified():
+        if not active(self.profile, "captcha") or name.lower() in self.verified() or self.is_bot(name):
             return
         if self.downloaded(ip, since):
             self.mark_verified(name)
             self.log("captcha", N_("Doğrulandı: {name}"), name=name)
             return
-        self.server.try_send(f"kick {name} " + self.tr(N_("Doğrulama başarısız: sunucunun kaynak paketi indirilmedi. Paketi kabul edip tekrar bağlan.")))
+        playermsg.kick(self.server, name, N_("Doğrulama başarısız: sunucunun kaynak paketi indirilmedi. Paketi kabul edip tekrar bağlan."), self.tr)
         self.log("captcha", N_("Kaynak paketini indirmediği için atıldı: {name}"), name=name)

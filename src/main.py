@@ -16,6 +16,23 @@ from core import Settings
 from ui.window import MainWindow
 
 
+def _single_instance(qt):
+    """Bu kullanıcıda yalnızca bir Spypaper açık olabilir (exe ve kaynak sürüm dahil). Güncellemeden sonra yeni exe
+    açılırken eskisi kapanıyor olabilir: birkaç saniye beklenir."""
+    import tempfile
+    from PySide6.QtCore import QLockFile
+    lock = QLockFile(os.path.join(tempfile.gettempdir(), "spypaper-instance.lock"))
+    lock.setStaleLockTime(0)                         # çöken Spypaper'ın kilidi PID'den anlaşılır
+    if lock.tryLock(4000):
+        qt._instance_lock = lock                     # süreç boyunca tutulur
+        return True
+    from ui.i18n import t
+    from ui.msgbox import warning
+    warning(None, "Spypaper", t("Spypaper zaten açık. Aynı sunucuları iki panelden yönetmek zamanlanmış görevlerin, "
+                                "yedeklerin ve uyarıların iki kez çalışmasına yol açar; açık olan pencereyi kullan."))
+    return False
+
+
 def main(config_path=None):
     # gömülü harita (Qt WebEngine) için QApplication'dan önce ayarlanmalı
     QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
@@ -37,8 +54,15 @@ def main(config_path=None):
     i18n.load(settings.get("language"))               # açılış ekranı da panel dilinde ve temasında
     theme.apply(settings.get("theme"), settings.get("high_contrast"), settings.get("font_scale"))
     qt.setStyleSheet(theme.stylesheet())
+    if not _single_instance(qt):                     # ikinci Spypaper aynı sunucuları yönetmesin
+        sys.exit(0)
     if splash.run(settings):                          # güncelleme kuruldu: yeni exe başladı
         sys.exit(0)
+    from core import auth
+    if auth.enabled(settings) and auth.cfg(settings)["on_start"]:
+        from ui.auth_dialog import verify
+        if not verify(None, settings):              # doğrulanmadan panel açılmaz
+            sys.exit(0)
     from ui import motion
     qt._fader = motion.DialogFader()                # diyaloglar solarak açılır
     qt.installEventFilter(qt._fader)

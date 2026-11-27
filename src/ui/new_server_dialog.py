@@ -102,6 +102,12 @@ class NewServerDialog(QDialog):
                                 "Muted", wrap=True)
         self.proxy_note.hide()
         v.addWidget(self.proxy_note)
+        self.bedrock_note = label("Bedrock Dedicated Server: Mojang'ın resmi Bedrock sunucusu. Telefon, konsol ve Windows "
+                                  "Bedrock oyuncuları bağlanır; Java oyuncuları bağlanamaz. Eklenti ve mod yoktur "
+                                  "(Marketplace içerikleri hariç). Port UDP'dir (varsayılan 19132). Eklenti, harita, "
+                                  "oyuncu verisi gibi Java'ya özel sayfalar bu sunucuda gizlenir.", "Muted", wrap=True)
+        self.bedrock_note.hide()
+        v.addWidget(self.bedrock_note)
         self.form = form
 
         self.eula = QCheckBox(t("Minecraft EULA'sını okudum ve kabul ediyorum"))
@@ -154,9 +160,27 @@ class NewServerDialog(QDialog):
         elif not proxy and self.port.value() == 25577:
             self.port.setValue(25565)
 
+    def _bedrock_ui(self, on):
+        for w in (self.world_title, self.world, self.java_lbl, self.ram):
+            w.setVisible(not on)
+        self.bedrock_note.setVisible(on)
+        pv = on and bool(software.SOFTWARE.get(self.sw.currentData(), {}).get("preview"))
+        self.bedrock_note.setText(t("Bedrock Dedicated Server: Mojang'ın resmi Bedrock sunucusu. Telefon, konsol ve Windows "
+                                    "Bedrock oyuncuları bağlanır; Java oyuncuları bağlanamaz. Eklenti ve mod yoktur "
+                                    "(Marketplace içerikleri hariç). Port UDP'dir (varsayılan 19132). Eklenti, harita, "
+                                    "oyuncu verisi gibi Java'ya özel sayfalar bu sunucuda gizlenir.")
+                                  + ("\n\n" + t("Preview (beta): yalnızca Minecraft Preview uygulamasıyla girilir, hatalı "
+                                                 "olabilir. Preview'da açılan dünya normal sürüme geri dönmeyebilir.")
+                                     if pv else ""))
+        if on and self.port.value() in (25565, 25577):
+            self.port.setValue(19132)
+        elif not on and self.port.value() == 19132:
+            self.port.setValue(25565)
+
     def _load_versions(self, *_):
         key = self.sw.currentData()
         self._proxy_ui(software.is_proxy_key(key))
+        self._bedrock_ui(software.is_bedrock_key(key))
         self.ver.clear()
         self.btn.setEnabled(False)
         self.status.setText(t("{name} sürümleri alınıyor…", name=software.SOFTWARE[key]["name"]))
@@ -196,7 +220,8 @@ class NewServerDialog(QDialog):
             self.status.setText(t("Seçilen klasör boş değil: {path}", path=path))
             return
         proxy = software.is_proxy_key(self.sw.currentData())
-        err = None if proxy else self.world.validate()
+        be = software.is_bedrock_key(self.sw.currentData())
+        err = None if proxy or be else self.world.validate()
         if err:
             self.status.setText(err)
             return
@@ -211,7 +236,7 @@ class NewServerDialog(QDialog):
                     difficulty=self.diff.currentData(), online_mode=self.online.isChecked(),
                     whitelist=self.white.isChecked(), accept_eula=True,
                     java="java", contact=self.settings.get("update_contact"))
-        if proxy:
+        if proxy or be:
             pass
         elif self.world.is_template():
             opts["template"] = self.world.template()

@@ -7,7 +7,8 @@ from PySide6.QtCore import QTime, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QColor, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QFileDialog, QFormLayout, QGridLayout, QHBoxLayout, QLineEdit,
-    QListWidget, QProgressBar, QPushButton, QScrollArea, QSpinBox, QTableWidgetItem, QTimeEdit, QVBoxLayout,
+    QAbstractItemView, QHeaderView, QListWidget, QProgressBar, QPushButton, QScrollArea, QSpinBox, QTableWidget,
+    QTableWidgetItem, QTimeEdit, QVBoxLayout,
     QWidget,
 )
 
@@ -294,6 +295,9 @@ class SettingsPage(Page):
         from ..heightbox import HeightCard
         self.height_card = HeightCard(self)
         self.col.addWidget(self.height_card)
+        from ..playermsgbox import PlayerMsgCard
+        self.pm_card = PlayerMsgCard(self)
+        self.col.addWidget(self.pm_card)
 
         # server.properties
         props = Card("server.properties", "Değişikliklerin çoğu sunucu yeniden başlatılınca geçerli olur")
@@ -325,6 +329,7 @@ class SettingsPage(Page):
         self.auto_restart.setChecked(bool(c.get("auto_restart")))
         self.border.load()
         self.height_card.load()
+        self.pm_card.load()
 
         ip = self.app.properties.icon_path
         if ip:
@@ -434,18 +439,29 @@ class AdminPage(Page):
 
     def __init__(self, app, bridge):
         super().__init__(app, bridge)
-        act = Card("Oyuncu İşlemi", "Komutlar sunucu açıkken gönderilir")
+        from core.sanctions import DURATIONS
+        act = Card("Oyuncu İşlemi", "Komutlar sunucu açıkken gönderilir; uyarı, atma ve banlar nedeniyle Sicil'e yazılır")
         self.name = QLineEdit()
         self.name.setPlaceholderText(t("Oyuncu adı"))
-        self.name.setFixedWidth(260)
+        self.name.setFixedWidth(220)
+        self.name.textChanged.connect(self._filter_log)
+        self.reason = QLineEdit()
+        self.reason.setPlaceholderText(t("Neden (isteğe bağlı)"))
+        self.dur = QComboBox()
+        for sec, n in DURATIONS:
+            self.dur.addItem(t(n), sec)
+        act.add(row(self.name, self.reason, label("Ban süresi", "Muted"), self.dur))
         act.add(row(
-            self.name,
+            button("Uyar", "warn", lambda: self.punish("warn")),
+            button("At (Kick)", "warn", lambda: self.punish("kick")),
+            button("Banla", "danger", lambda: self.punish("ban")),
+            button("Banı Kaldır", "info", lambda: self.punish("pardon")),
+            None,
             button("Whitelist'e Ekle", "primary", lambda: self.run("whitelist add")),
-            button("Whitelist'ten Çıkar", "warn", lambda: self.run("whitelist remove")),
-            button("Banla", "danger", lambda: self.run("ban")),
-            button("Banı Kaldır", "info", lambda: self.run("pardon")),
+            button("Whitelist'ten Çıkar", "ghost", lambda: self.run("whitelist remove")),
             button("OP Ver", "purple", lambda: self.run("op")),
             button("OP Al", "ghost", lambda: self.run("deop")),
+            stretch_end=False,
         ))
         self.root.addWidget(act)
 
@@ -460,7 +476,21 @@ class AdminPage(Page):
             lists.addWidget(c, 1)
             self.lists[fn] = (c, lw)
         self.root.addLayout(lists, 1)
+
+        log = Card("Sicil", "Uyarı, atma ve banlar nedenleriyle; oyuncu adı yazınca o oyuncuya süzülür")
+        self.log = QTableWidget(0, 5)
+        self.log.setHorizontalHeaderLabels([t("Zaman"), t("Oyuncu"), t("İşlem"), t("Neden"), t("Durum")])
+        self.log.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
+        self.log.verticalHeader().hide()
+        self.log.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.log.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.log.itemClicked.connect(lambda it: self.name.setText(self.log.item(it.row(), 1).text()))
+        log.add(self.log, 1)
+        self.root.addWidget(log, 1)
         bridge.line.connect(self._maybe_reload)
+
+    KIND_NAMES = {"warn": N_("Uyarı"), "kick": N_("Atma"), "ban": N_("Ban"), "tempban": N_("Süreli ban"),
+                  "pardon": N_("Ban kaldırma")}
 
     def on_show(self):
         sp = self.app.config.server_path
@@ -471,17 +501,72 @@ class AdminPage(Page):
             if not names:
                 lw.addItem(t("(boş)"))
                 lw.item(0).setFlags(Qt.NoItemFlags)
+        self._filter_log()
+
+    def _filter_log(self, *_):
+        from datetime import datetime
+        q = self.name.text().strip().lower()
+        rows = [e for e in reversed(self.app.sanctions.entries()) if not q or q in e["player"].lower()][:300]
+        self.log.setRowCount(0)
+        for e in rows:
+            r = self.log.rowCount()
+            self.log.insertRow(r)
+            try:
+                when = datetime.fromisoformat(e["at"]).strftime("%d.%m.%Y %H:%M")
+            except (KeyError, ValueError):
+                when = e.get("at", "")
+            state = ""
+            if e["kind"] == "tempban":
+                try:
+                    until = datetime.fromisoformat(e["until"]).strftime("%d.%m %H:%M")
+                except (KeyError, ValueError):
+                    until = "?"
+                state = t("bitiş {t}", t=until) if e.get("active") else t("sona erdi")
+            elif e["kind"] == "pardon" and e.get("reason") == "auto":
+                state = t("süresi doldu")
+            reason = "" if e.get("reason") == "auto" else e.get("reason", "")
+            for c, v in enumerate((when, e["player"], t(self.KIND_NAMES.get(e["kind"], e["kind"])), reason, state)):
+                self.log.setItem(r, c, QTableWidgetItem(v))
 
     def _maybe_reload(self, line):
         if any(k in line for k in ("to the whitelist", "from the whitelist", "Banned", "Unbanned", "operator")):
             QTimer.singleShot(500, self.on_show)
 
-    def run(self, action):
+    def punish(self, kind):
         n = self.name.text().strip()
         if not n:
             self.warn("Lütfen bir oyuncu adı girin.")
             return
-        if action == "ban" and not self.confirm(t("{name} banlansın mı?", name=n)):
+        reason = self.reason.text().strip()
+        secs = self.dur.currentData() or 0
+        if kind == "ban" and secs:
+            kind = "tempban"
+        if kind in ("ban", "tempban"):
+            what = t("{name} banlansın mı?", name=n)
+            if secs:
+                what = t("{name} {d} süreyle banlansın mı? Süre dolunca ban kendiliğinden kalkar.", name=n,
+                         d=self.dur.currentText())
+            if not self.confirm(what):
+                return
+        if kind == "warn" and not reason:
+            self.warn("Uyarı için bir neden yaz.")
+            return
+        ok = True
+        for cmd in self.app.sanctions.commands(kind, n, reason):
+            ok = self.send(cmd) and ok
+        if not ok:
+            return
+        self.app.sanctions.record(kind, n, reason, secs)
+        warns = self.app.sanctions.warn_count(n)
+        self.reason.clear()
+        self._filter_log()
+        if kind == "warn" and warns >= 3:
+            self.info(t("{name} şimdiye kadar {n} kez uyarıldı.", name=n, n=warns))
+
+    def run(self, action):
+        n = self.name.text().strip()
+        if not n:
+            self.warn("Lütfen bir oyuncu adı girin.")
             return
         if self.send(f"{action} {n}"):
             self.name.clear()
@@ -504,6 +589,7 @@ class MaintenancePage(Page):
     backup_progress = Signal(int, int)
     backup_done = Signal(str, str)  # yol, hata
     map_done = Signal(object, str)  # harita dışa aktarma: bilgi, hata
+    pg_done = Signal(object, object)  # Chunky kurulumu: yol, hata
 
     def __init__(self, app, bridge):
         super().__init__(app, bridge)
@@ -574,6 +660,36 @@ class MaintenancePage(Page):
         top.addWidget(bk, 1)
         self.root.addLayout(top, 1)
 
+        pg = Card("Dünyayı Önceden Oluştur", "Bölgeler önceden üretilir; oyuncular yeni yerlere gidince kasma olmaz "
+                                             "(Chunky eklentisi/modu ile)")
+        self.pg_dim = QComboBox()
+        for k, n in (("overworld", "Overworld"), ("nether", "Nether"), ("end", "End")):
+            self.pg_dim.addItem(n, k)
+        self.pg_x, self.pg_z, self.pg_r = QSpinBox(), QSpinBox(), QSpinBox()
+        for sb in (self.pg_x, self.pg_z):
+            sb.setRange(-30000000, 30000000)
+        self.pg_r.setRange(100, 100000)
+        self.pg_r.setSingleStep(500)
+        self.pg_r.setValue(3000)
+        self.pg_auto = QCheckBox(t("Oyuncu girince duraklat, sunucu boşalınca devam et"))
+        self.pg_auto.setChecked(True)
+        self.pg_auto.toggled.connect(lambda on: setattr(self.app.pregen, "auto_pause", on))
+        pg.add(row(self.pg_dim, label("Merkez X"), self.pg_x, label("Z"), self.pg_z, label("Yarıçap (blok)"), self.pg_r,
+                   button("Dünya sınırından al", "ghost", self._pg_from_border)))
+        self.pg_install = button("Chunky'yi Kur", "primary", self._pg_install)
+        self.pg_start = button("Başlat", "primary", self._pg_start)
+        self.pg_pause = button("Duraklat", "ghost", lambda: self._pg_cmd("pause"))
+        self.pg_cancel = button("İptal", "ghost", lambda: self._pg_cmd("cancel"))
+        pg.add(row(self.pg_auto, None, self.pg_install, self.pg_start, self.pg_pause, self.pg_cancel, stretch_end=False))
+        self.pg_bar = QProgressBar()
+        self.pg_bar.setRange(0, 1000)
+        self.pg_lbl = label("", "Muted", wrap=True)
+        pg.add(self.pg_bar)
+        pg.add(self.pg_lbl)
+        self.root.addWidget(pg)
+        bridge.line.connect(self._pg_line)
+        self.pg_done.connect(self._pg_installed)
+
         self.backup_progress.connect(self._on_progress)
         self.backup_done.connect(self._on_backup_done)
         self.map_done.connect(self._on_map_done)
@@ -582,6 +698,104 @@ class MaintenancePage(Page):
         self.tick.start(1000)
         self._load_plan()
         self._tick()
+
+    # ---- ön yükleme (Chunky)
+    def _pg_soft(self):
+        from core.config import detect_version, is_modded
+        ver, soft = detect_version(self.app.config.server_path)
+        return ver, soft, is_modded(self.app.config.server_path)
+
+    def _pg_from_border(self):
+        from core import worldborder as WB
+        from core.danger import level_name
+        b = WB.saved(self.app.config.server_path, level_name(self.app.properties))
+        if not b or b[2] > 1_000_000:
+            self.warn("Kayıtlı bir dünya sınırı yok.")
+            return
+        self.pg_x.setValue(int(b[0]))
+        self.pg_z.setValue(int(b[1]))
+        self.pg_r.setValue(max(100, int(b[2] / 2)))
+
+    def _pg_install(self):
+        ver, soft, modded = self._pg_soft()
+        if not ver:
+            self.warn("Önce sunucuyu bir kez başlat (sürüm bilgisi gerekiyor).")
+            return
+        folder = self.app.plugins.folder
+        self.pg_install.setEnabled(False)
+        self.pg_lbl.setText(t("Chunky indiriliyor…"))
+
+        def work():
+            from core import pregen
+            try:
+                self.pg_done.emit(pregen.install(folder, soft, ver, modded), None)
+            except Exception as e:
+                self.pg_done.emit(None, e)
+        threading.Thread(target=work, daemon=True).start()
+
+    def _pg_installed(self, path, err):
+        self.pg_install.setEnabled(True)
+        if err is not None:
+            self.error(t(err.template, **err.kw) if hasattr(err, "template") else str(err))
+        else:
+            self.info(t("Chunky kuruldu: {file}. Sunucuyu yeniden başlatınca kullanılabilir.", file=os.path.basename(path)))
+        self._pg_refresh()
+
+    def _pg_start(self):
+        from core import pregen
+        from core.danger import level_name
+        ver, soft, _ = self._pg_soft()
+        world = pregen.world_names(soft, level_name(self.app.properties))[self.pg_dim.currentData()]
+        ok = True
+        for cmd in pregen.start_commands(world, self.pg_x.value(), self.pg_z.value(), self.pg_r.value()):
+            ok = self.send(cmd) and ok
+        if ok:
+            self.app.pregen.auto_pause = self.pg_auto.isChecked()
+            self.app.pregen.started()
+            self._pg_refresh()
+
+    def _pg_cmd(self, what):
+        st = self.app.pregen.state
+        if what == "pause":
+            cmd = "chunky continue" if st == "paused" else "chunky pause"
+            if self.send(cmd):
+                self.app.pregen.state = "running" if st == "paused" else "paused"
+                self.app.pregen._paused_by_us = False
+        elif what == "cancel" and self.confirm(t("Ön yükleme iptal edilsin mi? Üretilen bölgeler kalır.")):
+            if self.send("chunky cancel") and self.send("chunky confirm"):
+                self.app.pregen.state = "idle"
+        self._pg_refresh()
+
+    def _pg_line(self, line):
+        if self.app.pregen.feed(line):
+            self._pg_refresh()
+
+    def _pg_refresh(self):
+        from core import pregen
+        pg = self.app.pregen
+        has = pregen.installed(self.app.plugins.folder)
+        running = self.app.server.is_running
+        self.pg_install.setVisible(not has)
+        self.pg_start.setEnabled(has and running and pg.state in ("idle", "done"))
+        self.pg_pause.setEnabled(running and pg.state in ("running", "paused"))
+        self.pg_pause.setText(t("Devam Et") if pg.state == "paused" else t("Duraklat"))
+        self.pg_cancel.setEnabled(running and pg.state in ("running", "paused"))
+        self.pg_bar.setValue(int(pg.percent * 10))
+        if not has:
+            msg = t("Chunky kurulu değil. Kur'a bas; Spypaper Modrinth'ten bu sunucuya uygun sürümü indirir.")
+        elif not running:
+            msg = t("Başlatmak için sunucu açık olmalı.")
+        elif pg.state == "running":
+            msg = t("Çalışıyor: %{p} · kalan {eta} · saniyede {r} chunk", p=f"{pg.percent:.1f}", eta=pg.eta or "?",
+                    r=f"{pg.rate:.0f}")
+        elif pg.state == "paused":
+            msg = t("Duraklatıldı (%{p}).", p=f"{pg.percent:.1f}") + (
+                " " + t("Sunucu boşalınca kendiliğinden devam eder.") if pg._paused_by_us else "")
+        elif pg.state == "done":
+            msg = t("Tamamlandı.")
+        else:
+            msg = t("Hazır. Yarıçap {r} blok ≈ {n} chunk.", r=self.pg_r.value(), n=(self.pg_r.value() * 2 // 16) ** 2)
+        self.pg_lbl.setText(msg)
 
     def export_map(self):
         """Dünyayı paylaşılabilir taslak zip'ine çevirir (oyuncu verisi çıkarılır)."""
@@ -629,6 +843,7 @@ class MaintenancePage(Page):
                    align_center=(1, 2))
         self._load_plan()
         self._tick()
+        self._pg_refresh()
 
     def _load_plan(self):
         s = self.app.maintenance.schedule

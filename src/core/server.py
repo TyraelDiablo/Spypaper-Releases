@@ -32,6 +32,7 @@ class ServerProcess:
         self.hooks = []       # fn(str): her satırda, arayüzden bağımsız (ör. core.guard)
         self.send_hooks = []  # fn(str): gönderilen her komutta
         self.state_hooks = [] # fn(state): her durum değişiminde, arayüzden bağımsız (ör. core.discord)
+        self.prestart_hooks = []  # fn(server_path): java başlamadan hemen önce
         self.line_filters = []  # fn(str) -> True: satır panelin kendi sorgusunun yanıtı, gösterilmez (core.perf)
         self.history = deque(maxlen=5000)   # arayüz yeniden kurulunca konsol buradan dolar
         self.stop_requested = False
@@ -39,6 +40,7 @@ class ServerProcess:
         self.exit_code = None
         self.run_id = 0                     # her başlatmada artar
         self.ended_run = 0                  # sona eren son çalıştırmanın numarası (çökme bekçisi için)
+        self.external = False               # Spypaper dışında açık kalmış sunucuya yeniden bağlanıldı (core.attach)
 
     # --- durum ---
     @property
@@ -64,6 +66,15 @@ class ServerProcess:
         if not os.path.exists(os.path.join(path, jar)):
             raise ServerError("Klasörde '{jar}' bulunamadı:\n{path}", jar=jar, path=path)
 
+        for hook in list(self.prestart_hooks):     # ör. paketle gelen eklentiyi güncelle (core.playermsg)
+            try:
+                hook(path)
+            except Exception as e:
+                print(f"[prestart] {e}")
+        from . import bedrock
+        self.bedrock = bedrock.is_bedrock(path)
+        if self.bedrock:
+            return self._start_bedrock(path)
         cmd = [
             self.config.get("java_path"),
             f"-Xmx{self.config.get('ram_max')}",
@@ -79,6 +90,12 @@ class ServerProcess:
             cmd += [f"@{jar}", "nogui"]
         else:
             cmd += ["-jar", jar, "nogui"]
+        if self.config.get("rcon_attach") is not False:
+            try:
+                from .attach import ensure_rcon
+                ensure_rcon(path)               # Spypaper kapansa da sonra yeniden bağlanılabilsin
+            except Exception as e:
+                print(f"[attach] {e}")
         kwargs = {}
         if os.name == "nt":
             kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
@@ -92,12 +109,84 @@ class ServerProcess:
             raise ServerError("Sunucu başlatılamadı:\n{e}", e=e)
 
         self.history.clear()
+        self.external = False
         self.stop_requested = False
         self.crashed = False
         self.exit_code = None
         self.run_id += 1
         self._set_state(STARTING)
         threading.Thread(target=self._read_output, daemon=True).start()
+
+    def _start_bedrock(self, path):
+        """Bedrock Dedicated Server: Java yok, kendi exe'si; konsolu stdin/stdout."""
+        from . import bedrock
+        exe = os.path.join(path, bedrock.exe_name())
+        if not os.path.isfile(exe):
+            raise ServerError("Klasörde '{jar}' bulunamadı:\n{path}", jar=bedrock.exe_name(), path=path)
+        kwargs = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
+        env = dict(os.environ)
+        if os.name != "nt":
+            env["LD_LIBRARY_PATH"] = path
+        try:
+            self.process = subprocess.Popen(
+                [exe], cwd=path, env=env,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, encoding="utf-8", errors="replace", bufsize=1, **kwargs,
+            )
+        except Exception as e:
+            raise ServerError("Sunucu başlatılamadı:\n{e}", e=e)
+        self.history.clear()
+        self.external = False
+        self.stop_requested = False
+        self.crashed = False
+        self.exit_code = None
+        self.run_id += 1
+        try:                     # BDS log dosyası yazmaz: panelin log izleyicisi için konsolu logs/latest.log'a yazar
+            os.makedirs(os.path.join(path, "logs"), exist_ok=True)
+            self._blog = open(os.path.join(path, "logs", "latest.log"), "w", encoding="utf-8")
+        except OSError:
+            self._blog = None
+        self._set_state(STARTING)
+        threading.Thread(target=self._read_output, daemon=True).start()
+
+    def attach(self):
+        """Sunucu klasöründe hâlâ çalışan bir java süreci varsa ona bağlanır. True: bağlandı."""
+        if self.is_running:
+            return False
+        try:
+            from .attach import ExternalProcess, find_process
+            ps = find_process(self.config.server_path)
+            if not ps:
+                return False
+            proc = ExternalProcess(ps, self.config.server_path)
+        except Exception as e:
+            print(f"[attach] {e}")
+            return False
+        self.history.clear()
+        try:                                    # bağlamı göstermek için log'un son satırları
+            with open(os.path.join(self.config.server_path, "logs", "latest.log"), encoding="utf-8",
+                      errors="replace") as f:
+                from .attach import normalize
+                from .perf import HIDE, _msg
+                for ln in f.readlines()[-300:]:
+                    ln = normalize(ln)
+                    if ln and not HIDE.match(_msg(ln)) and not self._filtered(ln):   # TPS sorguları gizli
+                        self.history.append(ln)
+        except OSError:
+            pass
+        self.process = proc
+        self.external = True
+        self.stop_requested = False
+        self.crashed = False
+        self.exit_code = None
+        self.run_id += 1
+        self._set_state(RUNNING)
+        threading.Thread(target=self._read_output, daemon=True).start()
+        return True
+
+    @property
+    def can_send(self):
+        return self.is_running and (not self.external or self.process.writable)
 
     def stop(self):
         if self.is_running:
@@ -112,6 +201,15 @@ class ServerProcess:
         command = command.strip().lstrip("/")
         if not command:
             return
+        if getattr(self, "bedrock", False) and command.split()[0].lower() == "save-all":
+            # Bedrock'ta save-all yok: yedek için yazmayı durdurur, bir dakika sonra sürdürür
+            command = "save hold"
+            t = threading.Timer(60, lambda: self.try_send("save resume"))
+            t.daemon = True
+            t.start()
+        if self.external and not self.process.writable:
+            raise ServerError("Bu sunucu Spypaper kapalıyken açık kaldı ve RCON kapalı; konsol yalnızca okunabilir. "
+                              "Komut gönderebilmek için sunucuyu bir kez Spypaper'dan yeniden başlat.")
         for hook in list(self.send_hooks):
             try:
                 hook(command)
@@ -149,9 +247,16 @@ class ServerProcess:
             if not line:
                 break
             clean = line.rstrip()
-            if "Done (" in clean or "For help, type" in clean:
+            blog = getattr(self, "_blog", None)
+            if blog:
+                try:
+                    blog.write(clean + "\n")
+                    blog.flush()
+                except (OSError, ValueError):
+                    pass
+            if "Done (" in clean or "For help, type" in clean or "Server started." in clean:
                 self._set_state(RUNNING)
-            elif "Stopping server" in clean or "Stopping the server" in clean:
+            elif "Stopping server" in clean or "Stopping the server" in clean or "Server stop requested" in clean:
                 self.stop_requested = True          # konsoldan /stop da isteyerek durdurmadır
                 self._set_state(STOPPING)
             if self._filtered(clean):
@@ -164,6 +269,12 @@ class ServerProcess:
                     print(f"[hook] {e}")
             if self.on_line:
                 self.on_line(clean)
+        blog, self._blog = getattr(self, "_blog", None), None
+        if blog:
+            try:
+                blog.close()
+            except OSError:
+                pass
         try:
             self.exit_code = proc.wait(timeout=10)
         except Exception:

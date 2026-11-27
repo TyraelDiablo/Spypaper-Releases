@@ -37,10 +37,11 @@ EVENTS = {                       # olay -> (ayar adı, varsayılan)
     "chat": (N_("Sohbet mesajları"), False),
     "maintenance": (N_("Bakım başladı / bitti"), True),
     "task": (N_("Zamanlanmış görevler"), False),
+    "report": (N_("Esplora raporları"), True),
 }
 COLORS = {
     "start": 0x57F287, "stop": 0x95A5A6, "crash": 0xED4245, "join": 0x3BA55D, "leave": 0x747F8D,
-    "death": 0x992D22, "adv": 0xFEE75C, "chat": 0x5865F2, "maintenance": 0xE67E22, "task": 0x3498DB,
+    "death": 0x992D22, "adv": 0xFEE75C, "chat": 0x5865F2, "maintenance": 0xE67E22, "task": 0x3498DB, "report": 0x1ABC9C,
     "test": 0x5865F2,
 }
 QUEUE_MAX = 100
@@ -193,6 +194,8 @@ class Discord:
             title = "🛠️ " + (tr("Bakım başladı") if started else tr("Bakım bitti"))
         elif kind == "task":
             title, desc = "⏰ " + tr("Zamanlanmış görev: {name}", name=name), status
+        elif kind == "report":
+            title, desc = "📋 " + name, text
         elif kind == "test":
             title = "✅ " + tr("Spypaper bağlantı testi")
             desc = tr("Bu kanal artık '{server}' sunucusunun bildirimlerini alacak.", server=self.config.name)

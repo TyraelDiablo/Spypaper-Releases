@@ -1,0 +1,25 @@
+name: SpypaperMessages
+version: 1.2
+main: dev.spypaper.messages.SpypaperMessages
+api-version: '1.20'
+author: Spypaper
+description: Spypaper mesajlarini her oyuncunun kendi oyun dilinde gonderir.
+commands:
+  spypaper-kick:
+    description: Oyuncuyu kendi dilindeki Spypaper mesajiyla atar.
+    permission: spypaper.messages
+  spypaper-say:
+    description: Herkese kendi dilinde Spypaper uyarisi.
+    permission: spypaper.messages
+  spypaper-locales:
+    description: Cevrimici oyuncularin oyun dillerini yazar.
+    permission: spypaper.messages
+  spypaper-bot:
+    description: Spypaper bot oyunculari (spawn, action, remove, list).
+    permission: spypaper.messages
+  spypaper-reload:
+    description: messages.tsv dosyasini yeniden okur.
+    permission: spypaper.messages
+permissions:
+  spypaper.messages:
+    default: op

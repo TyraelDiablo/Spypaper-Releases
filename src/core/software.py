@@ -225,6 +225,13 @@ SOFTWARE = {
     "fabric":   {"name": "Fabric",   "versions": _fabric_versions,   "latest": _fabric_latest,   "modded": True},
     "forge":    {"name": "Forge",    "versions": _forge_versions,    "latest": _forge_latest,    "modded": True},
     "neoforge": {"name": "NeoForge", "versions": _neoforge_versions, "latest": _neoforge_latest, "modded": True},
+    "bedrock":  {"name": "Bedrock (vanilla)", "versions": lambda c: __import__("core.bedrock", fromlist=["x"]).versions(c),
+                 "latest": lambda v, c: __import__("core.bedrock", fromlist=["x"]).latest(v, c), "modded": False,
+                 "bedrock": True},
+    "bedrock_preview": {"name": "Bedrock Preview (beta)",
+                        "versions": lambda c: __import__("core.bedrock", fromlist=["x"]).versions(c, True),
+                        "latest": lambda v, c: __import__("core.bedrock", fromlist=["x"]).latest(v, c, True),
+                        "modded": False, "bedrock": True, "preview": True},
     "velocity": {"name": "Velocity (proxy)", "versions": _velocity_versions, "latest": _velocity_latest, "modded": False,
                  "proxy": True},
 }
@@ -234,9 +241,13 @@ def is_proxy_key(key):
     return bool(SOFTWARE.get(key, {}).get("proxy"))
 
 
+def is_bedrock_key(key):
+    return bool(SOFTWARE.get(key, {}).get("bedrock"))
+
+
 def key_from_detected(soft):
     """detect_version() çıktısını ("Paper", "NeoForge", ...) sağlayıcı anahtarına çevirir."""
-    s = (soft or "").lower()
+    s = (soft or "").lower().replace(" ", "_")
     return s if s in SOFTWARE else "paper"
 
 
@@ -255,6 +266,10 @@ def latest_build(key, version, contact=""):
 def current(server_path, jar_name):
     """(yazılım_anahtarı, mc_sürümü, etiket) — etiket: Paper/Purpur build no, Forge/NeoForge sürümü vb."""
     from .config import detect_version
+    from . import bedrock
+    if bedrock.is_bedrock(server_path):
+        v = bedrock.installed_version(server_path)
+        return ("bedrock_preview" if bedrock.is_preview(server_path) else "bedrock"), v, v
     jar = (jar_name or "").replace("\\", "/")
     base = os.path.basename(jar)
     pats = (

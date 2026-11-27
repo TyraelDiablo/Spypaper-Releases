@@ -19,6 +19,7 @@ import os
 import threading
 from datetime import datetime, timedelta
 
+from . import playermsg
 from .config import N_
 
 MOTD_LINES = (N_("Sunucu şu an bakımda."), N_("Lütfen daha sonra tekrar dene."))
@@ -153,7 +154,7 @@ class Maintenance:
                 if left <= sec and (start, sec) not in self._warned:
                     self._warned.add((start, sec))
                     if left > sec - 2:                 # uyarı zamanı kaçırıldıysa (panel yeni açıldı) geç
-                        self.server.try_send("say §c§l[!] §e" + self.tr(WARN_TEXT[sec]))
+                        playermsg.announce(self.server, WARN_TEXT[sec], self.tr)
             return None
         self.enable(until=end, window=start, backup=self.schedule["backup"], wait=False)
         return "started"
@@ -227,10 +228,9 @@ class Maintenance:
             self.server.try_send("whitelist reload")
             self.server.try_send("whitelist on")
             ops = self._ops()
-            reason = self.tr(KICK_TEXT)
             for name in self.online():
                 if name.lower() not in ops:
-                    self.server.try_send(f"kick {name} {reason}")
+                    playermsg.kick(self.server, name, KICK_TEXT, self.tr)
             self.server.try_send("save-all flush")
         self._notify(True)
         if not backup:

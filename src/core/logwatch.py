@@ -18,10 +18,14 @@ LINE_RES = (
     re.compile(r"^\[(?:\d{1,2}[A-Za-z]{3}\d{4} )?(\d{2}):(\d{2}):(\d{2})(?:[.,]\d+)?\]\s*\[[^\]]*?/(\w+)\]"
                r"(?:\s*\[[^\]]*\])*:\s?(.*)$"),
     re.compile(r"^\[(\d{2}):(\d{2}):(\d{2})\s+(\w+)\]:\s?(.*)$"),
+    # Bedrock Dedicated Server: [2026-11-26 22:00:00:123 INFO] mesaj
+    re.compile(r"^\[\d{4}-\d{2}-\d{2} (\d{2}):(\d{2}):(\d{2})(?:[:.,]\d+)?\s+(\w+)\]\s?(.*)$"),
 )
 NAME = r"([A-Za-z0-9_.*~-]{2,32})"
 RE_JOIN = re.compile(rf"^{NAME} joined the game")
 RE_LEAVE = re.compile(rf"^{NAME} left the game")
+RE_BE_JOIN = re.compile(r"^Player connected:\s*([^,]{1,32}),\s*xuid")      # Bedrock (adlarda boşluk olabilir)
+RE_BE_LEAVE = re.compile(r"^Player disconnected:\s*([^,]{1,32}),\s*xuid")
 RE_CHAT = re.compile(r"^(?:\[Not Secure\]\s*)?<([^>]+)>\s?(.*)$")
 RE_CMD = re.compile(rf"^{NAME} issued server command:\s*(.*)$")
 RE_ADV = re.compile(rf"^{NAME} has (?:made the advancement|completed the challenge|reached the goal) \[(.+)\]")
@@ -71,11 +75,11 @@ def _parse_line(line):
 def classify(level, msg, known_players):
     """(tür, oyuncu, metin)"""
     msg = RE_SYS_PREFIX.sub("", msg, count=1)
-    m = RE_JOIN.match(msg)
+    m = RE_JOIN.match(msg) or RE_BE_JOIN.match(msg)
     if m:
         known_players.add(m.group(1))
         return "join", m.group(1), msg
-    m = RE_LEAVE.match(msg)
+    m = RE_LEAVE.match(msg) or RE_BE_LEAVE.match(msg)
     if m:
         return "leave", m.group(1), msg
     m = RE_CHAT.match(msg)
@@ -308,6 +312,46 @@ class LogWatcher:
                  len(players[first + timedelta(days=i)]),
                  joins[first + timedelta(days=i)],
                  deaths[first + timedelta(days=i)]) for i in range(days)]
+
+    def player_history(self, player, days=30, now=None):
+        """Bir oyuncunun son N gündeki oturumları (log arşivlerinden).
+        {"sessions": [(giriş, çıkış|None), …] yeniden eskiye, "week": sn, "month": sn, "hours": [24 dk]}"""
+        now = now or datetime.now()
+        first = (now - timedelta(days=days)).date()
+        evs = []
+        for path, d in self.archives():
+            if d >= first - timedelta(days=1):
+                evs.extend(self._archive_events(path))
+        evs.extend(self.events)
+        evs.sort(key=lambda e: e.time)
+        low = player.lower()
+        out, open_at = [], None
+        for e in evs:
+            if e.kind == "join" and (e.player or "").lower() == low:
+                if open_at:
+                    out.append((open_at, e.time))
+                open_at = e.time
+            elif open_at and ((e.kind == "leave" and (e.player or "").lower() == low) or e.kind in ("start", "stop")):
+                out.append((open_at, e.time))
+                open_at = None
+        if open_at:
+            out.append((open_at, None))
+        out = [(a, b) for a, b in out if a.date() >= first]
+        week_start = now - timedelta(days=7)
+        week = month = 0.0
+        hours = [0.0] * 24
+        for a, b in out:
+            end = b or now
+            dur = max(0.0, (end - a).total_seconds())
+            month += dur
+            if end > week_start:
+                week += max(0.0, (end - max(a, week_start)).total_seconds())
+            t0 = a
+            while t0 < end:                         # oynanan dakikaları saatlere dağıt
+                nxt = min(end, t0.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1))
+                hours[t0.hour] += (nxt - t0).total_seconds() / 60
+                t0 = nxt
+        return {"sessions": list(reversed(out)), "week": week, "month": month, "hours": hours}
 
 
 # ------------------------------------------------------------------ RAM / CPU
