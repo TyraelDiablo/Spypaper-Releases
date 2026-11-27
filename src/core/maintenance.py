@@ -161,8 +161,26 @@ class Maintenance:
 
     # ------------------------------------------------------------ whitelist
     @property
+    def _be(self):
+        from .bedrock import is_bedrock
+        return is_bedrock(self.config.server_path)
+
+    @property
+    def _k(self):
+        """Java / Bedrock farkları: dosya, ayar ve komut adları."""
+        if self._be:
+            return {"file": "allowlist.json", "prop": "allow-list", "motd": "server-name", "cmd": "allowlist"}
+        return {"file": "whitelist.json", "prop": "white-list", "motd": "motd", "cmd": "whitelist"}
+
+    def _motd_value(self):
+        if self._be:                                   # Bedrock sunucu adında renk kodu ve satır sonu yok
+            a, b = (self.tr(x) for x in MOTD_LINES)
+            return f"{a} - {b}"
+        return self.motd()
+
+    @property
     def _wl_file(self):
-        return os.path.join(self.config.server_path, "whitelist.json")
+        return os.path.join(self.config.server_path, self._k["file"])
 
     @property
     def _wl_backup(self):
@@ -186,9 +204,11 @@ class Maintenance:
     def _whitelist_on(self):
         if not self.props.exists:
             return False
-        return self.props.load().get("white-list", "false").lower() == "true"
+        return self.props.load().get(self._k["prop"], "false").lower() == "true"
 
     def _ops(self):
+        if self._be:                                   # Bedrock'ta izin listesi operatörleri de dışarıda tutar
+            return set()
         return {str(o.get("name", "")).lower() for o in
                 self._read_json(os.path.join(self.config.server_path, "ops.json"), [])}
 
@@ -207,8 +227,8 @@ class Maintenance:
               "auto": until is not None, "last_window": _iso(window) or self.state.get("last_window", "")}
         if self.props.exists:
             cur = self.props.load()
-            st["motd"] = cur.get("motd", "")
-            st["whitelist_was_on"] = cur.get("white-list", "false").lower() == "true"
+            st["motd"] = cur.get(self._k["motd"], "")
+            st["whitelist_was_on"] = cur.get(self._k["prop"], "false").lower() == "true"
         entries = self._read_json(self._wl_file, [])
         st["whitelist"] = entries
         try:                                           # durum diske yazılmadan whitelist'e dokunulmaz
@@ -223,10 +243,10 @@ class Maintenance:
         except OSError:
             pass
         if self.props.exists:
-            self.props.save({"motd": self.motd(), "white-list": True})
+            self.props.save({self._k["motd"]: self._motd_value(), self._k["prop"]: True})
         if running:
-            self.server.try_send("whitelist reload")
-            self.server.try_send("whitelist on")
+            self.server.try_send(f"{self._k['cmd']} reload")
+            self.server.try_send(f"{self._k['cmd']} on")
             ops = self._ops()
             for name in self.online():
                 if name.lower() not in ops:
@@ -256,9 +276,9 @@ class Maintenance:
         if old is None:
             old = self._read_json(self._wl_backup, [])
         now = self._read_json(self._wl_file, [])      # bakımda elle eklenenler de kalsın
-        seen = {(e.get("uuid") or e.get("name", "")).lower() for e in old if isinstance(e, dict)}
+        seen = {str(e.get("uuid") or e.get("xuid") or e.get("name", "")).lower() for e in old if isinstance(e, dict)}
         merged = list(old) + [e for e in now if isinstance(e, dict)
-                              and (e.get("uuid") or e.get("name", "")).lower() not in seen]
+                              and str(e.get("uuid") or e.get("xuid") or e.get("name", "")).lower() not in seen]
         try:
             self._write_json(self._wl_file, merged)
         except OSError:
@@ -266,14 +286,15 @@ class Maintenance:
         was_on = bool(st.get("whitelist_was_on"))
         if self.props.exists:
             motd = st.get("motd")
-            vals = {"white-list": was_on}
+            vals = {self._k["prop"]: was_on}
             if motd is not None:
-                vals["motd"] = motd if motd and motd != self.motd() else DEFAULT_MOTD
+                vals[self._k["motd"]] = motd if motd and motd != self._motd_value() else (
+                    "Bedrock server" if self._be else DEFAULT_MOTD)
             self.props.save(vals)
         if self.server.is_running:
-            self.server.try_send("whitelist reload")
+            self.server.try_send(f"{self._k['cmd']} reload")
             if not was_on:
-                self.server.try_send("whitelist off")
+                self.server.try_send(f"{self._k['cmd']} off")
         self._save_state({"active": False, "last_window": st.get("last_window", "")})
         try:
             os.remove(self._wl_backup)

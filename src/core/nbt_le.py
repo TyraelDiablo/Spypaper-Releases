@@ -72,3 +72,45 @@ def read_level_dat(path):
     with open(path, "rb") as f:
         data = f.read()
     return loads(data, 8)[1]
+
+
+def locate(b, offset=0):
+    """Kök bileşiğin yaprak değerlerinin konumları: {('abilities','build'): (etiket, bayt_konumu)}.
+    Uzunluğu değişmeyen değerleri (byte/int/float) yerinde değiştirmek için."""
+    out = {}
+
+    def walk(t, p, path):
+        if t == 10:
+            while True:
+                ct = b[p]
+                p += 1
+                if ct == 0:
+                    return p
+                name, p = _str(b, p)
+                out[path + (name,)] = (ct, p)
+                p = walk(ct, p, path + (name,))
+        _v, p2 = _payload(t, b, p)
+        return p2
+
+    t = b[offset]
+    _name, p = _str(b, offset + 1)
+    walk(t, p, ())
+    return out
+
+
+SIZES = {1: ("<b", 1), 2: ("<h", 2), 3: ("<i", 4), 4: ("<q", 8), 5: ("<f", 4), 6: ("<d", 8)}
+
+
+def patch(b, changes):
+    """changes: {yol: yeni_değer}. Yalnızca sayısal yaprakları yerinde değiştirir; yeni bytes döndürür."""
+    buf = bytearray(b)
+    where = locate(b)
+    for path, val in changes.items():
+        if path not in where:
+            raise NBTError(f"alan yok: {'/'.join(path)}")
+        tag, pos = where[path]
+        if tag not in SIZES:
+            raise NBTError(f"sayısal değil: {'/'.join(path)}")
+        fmt, _n = SIZES[tag]
+        struct.pack_into(fmt, buf, pos, val)
+    return bytes(buf)

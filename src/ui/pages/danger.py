@@ -98,8 +98,12 @@ class DangerPage(Page):
             self.dim[key] = cb
             dims.append(cb)
         self.dim["overworld"].setChecked(True)
-        w.add(row(*dims))
-        w.add(label("Vanilla, Fabric ve Forge'da Nether ve End dünya klasörünün içindedir; Overworld silinince "
+        from core.bedrock import is_bedrock
+        be = self._be = is_bedrock(app.config.server_path)
+        if not be:
+            w.add(row(*dims))
+        w.add(label("Bedrock'ta Overworld, Nether, End ve oyuncu verileri tek dünya klasöründedir; hepsi birlikte silinir."
+                    if be else "Vanilla, Fabric ve Forge'da Nether ve End dünya klasörünün içindedir; Overworld silinince "
                     "onlar ve oyuncuların envanterleri de gider.", "Muted", wrap=True))
         self.seed_mode = QComboBox()
         for v, text in (("random", N_("Rastgele seed")), ("keep", N_("Aynı seed")), ("custom", N_("Belirli seed"))):
@@ -122,6 +126,7 @@ class DangerPage(Page):
         self.btn_template = button("Harita Seç", "danger", self.replace_template)
         tp.add(row(None, self.btn_template, stretch_end=False))
         col.addWidget(tp)
+        tp.setVisible(not be)                         # taslak haritalar Java dünyasıdır
 
         # yedekten geri yükle
         r = danger_card("Yedekten Geri Yükle", "Tüm dünyayı ya da yalnızca seçtiğin parçaları yedekten geri al")
@@ -131,6 +136,8 @@ class DangerPage(Page):
         r.add(row(self.backup_box))
         self.restore_mode = QComboBox()
         for k, n in (("all", N_("Tüm dünya")), ("parts", N_("Seçilen parçalar")), ("area", N_("Yalnızca bir bölge"))):
+            if be and k != "all":                     # Bedrock dünyası tek veritabanı: parça parça geri yüklenemez
+                continue
             self.restore_mode.addItem(t(n), k)
         self.restore_mode.currentIndexChanged.connect(self._restore_mode_changed)
         r.add(row(label("Ne geri yüklensin?", "Muted"), self.restore_mode))
@@ -180,6 +187,7 @@ class DangerPage(Page):
         self.btn_players = button("Oyuncu Verilerini Sil", "danger", self.reset_players)
         p.add(row(None, self.btn_players, stretch_end=False))
         col.addWidget(p)
+        p.setVisible(not be)
 
         # dünya temizliği
         tr = danger_card("Dünya Temizliği", "Oyuncuların neredeyse hiç kalmadığı chunk'lar silinir; dünya küçülür, "
@@ -202,6 +210,7 @@ class DangerPage(Page):
         self.btn_trim = button("Temizle", "danger", self.trim_apply)
         tr.add(row(None, self.btn_trim_plan, self.btn_trim, stretch_end=False))
         col.addWidget(tr)
+        tr.setVisible(not be)                         # bölge dosyası (.mca) Java'ya özgü
         self._trim_plan = None
 
         # sunucuyu sil

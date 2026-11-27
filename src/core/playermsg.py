@@ -83,6 +83,8 @@ def plugin_installed(server_path):
 def kick(server, name, text, tr):
     """Oyuncuyu atar; eklenti varsa oyuncunun dilinde, yoksa panel dili (+ İngilizce)."""
     sp = server.config.server_path
+    if " " in name:                                    # Bedrock oyuncu adlarında boşluk olabilir
+        name = '"' + name.replace('"', "") + '"'
     k = key(text)
     local = tr(text)
     if k and plugin_installed(sp):

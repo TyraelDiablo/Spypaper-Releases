@@ -647,9 +647,12 @@ class MaintenancePage(Page):
         left.addStretch(1)
         top.addLayout(left, 1)
 
-        bk = Card("Dünya Yedekleri", "world, world_nether ve world_the_end tek zip'te")
+        from core.bedrock import is_bedrock
+        be = is_bedrock(app.config.server_path)
+        bk = Card("Dünya Yedekleri", "worlds klasörü tek zip'te" if be else "world, world_nether ve world_the_end tek zip'te")
         self.btn_backup = button("Şimdi Yedek Al", "primary", self.backup)
-        bk.header_actions.addWidget(button("Harita Olarak Dışa Aktar", "ghost", self.export_map))
+        if not be:                                     # harita şablonu Java dünyası içindir
+            bk.header_actions.addWidget(button("Harita Olarak Dışa Aktar", "ghost", self.export_map))
         bk.header_actions.addWidget(button("Klasörü Aç", "ghost", lambda: open_folder(self.app.backups.folder)))
         bk.header_actions.addWidget(self.btn_backup)
         self.progress = QProgressBar()
@@ -687,6 +690,7 @@ class MaintenancePage(Page):
         pg.add(self.pg_bar)
         pg.add(self.pg_lbl)
         self.root.addWidget(pg)
+        pg.setVisible(not be)                           # Chunky Bedrock'ta yok
         bridge.line.connect(self._pg_line)
         self.pg_done.connect(self._pg_installed)
 

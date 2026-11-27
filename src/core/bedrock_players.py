@@ -19,8 +19,23 @@ from .config import N_
 RE_CONNECT = re.compile(r"Player (?:connected|Spawned|disconnected):\s*(.+?),? xuid:\s*(\d+)")
 GAMEMODES = {0: N_("Hayatta Kalma"), 1: N_("Yaratıcı"), 2: N_("Macera"), 5: N_("Varsayılan"), 6: N_("İzleyici")}
 DIMENSIONS = {0: N_("Overworld"), 1: N_("Nether"), 2: N_("End")}
-PERMS = ("visitor", "member", "operator")
-PERM_NAMES = {"visitor": N_("Ziyaretçi"), "member": N_("Üye"), "operator": N_("Operatör")}
+PERMS = ("visitor", "member", "operator", "custom")
+PERM_NAMES = {"visitor": N_("Ziyaretçi"), "member": N_("Üye"), "operator": N_("Operatör"), "custom": N_("Özel")}
+PERM_DESC = {
+    "visitor": N_("Dünyayı gezer ama blok koyamaz, kıramaz, kapı/sandık kullanamaz, saldıramaz."),
+    "member": N_("Blok koyar, kırar, kapı ve sandık kullanır, oyunculara ve yaratıklara saldırır."),
+    "operator": N_("Üyenin yaptığı her şey ve ek olarak komut kullanır, ışınlanır, başkalarının yetkisini değiştirir."),
+    "custom": N_("Aşağıda seçtiğin yetenekler: ne yapabileceğini tek tek belirlersin."),
+}
+LEVEL_OF = {0: "visitor", 1: "member", 2: "operator", 3: "custom"}
+# Özel yetkide açılıp kapatılabilen yetenekler (oyunun kendi "Özel" ekranındakiler)
+ABILITIES = [("build", N_("Blok koyabilir")), ("mine", N_("Blok kırabilir")),
+             ("doorsandswitches", N_("Kapı ve şalter kullanabilir")), ("opencontainers", N_("Sandık ve kutu açabilir")),
+             ("attackplayers", N_("Oyunculara saldırabilir")), ("attackmobs", N_("Yaratıklara saldırabilir")),
+             ("op", N_("Operatör komutlarını kullanabilir")), ("teleport", N_("Işınlanabilir"))]
+PRESETS = {"visitor": dict.fromkeys([k for k, _ in ABILITIES], 0),
+           "member": {**dict.fromkeys([k for k, _ in ABILITIES], 1), "op": 0, "teleport": 0},
+           "operator": dict.fromkeys([k for k, _ in ABILITIES], 1)}
 
 
 def msa_id(xuid):
@@ -181,6 +196,8 @@ def parse_player(nbt):
         "armor": [x for x in map(_item, nbt.get("Armor") or []) if x],
         "offhand": [x for x in map(_item, nbt.get("Offhand") or []) if x],
         "ender": [x for x in map(_item, nbt.get("EnderChestInventory") or []) if x],
+        "world_perm": LEVEL_OF.get(int(nbt.get("playerPermissionsLevel", 1)), "member"),
+        "abilities": {k: int((nbt.get("abilities") or {}).get(k, 0)) for k, _ in ABILITIES},
     }
 
 
@@ -213,8 +230,9 @@ def load(server_path, server=None):
         except nbt_le.NBTError:
             info = {}
         name = nm.get(xuid) or msa[:8]
-        out.append(dict(info, name=name, xuid=xuid, known=bool(xuid), has_data=bool(info),
-                        perm=perms.get(xuid, "member"),
+        perm = perms.get(xuid) or info.get("world_perm") or "member"
+        out.append(dict(info, name=name, xuid=xuid, known=bool(xuid), has_data=bool(info), server_id=ref.get("ServerId"),
+                        perm=perm,
                         allowed=bool(xuid and xuid in allowed_x) or name.lower() in allowed_n))
         seen.add(xuid)
     for e in allowlist(server_path):                 # izin listesinde olup hiç girmemiş olanlar
@@ -225,3 +243,28 @@ def load(server_path, server=None):
                     "allowed": True})
     out.sort(key=lambda p: p["name"].lower())
     return out
+
+
+def write_permission(server_path, xuid, level, abilities=None):
+    """Oyuncunun dünyadaki yetkisini yazar (Özel dahil). Sunucu KAPALI olmalı.
+    level: visitor|member|operator|custom; abilities: {ad: 0/1} (custom için)."""
+    from . import leveldb_write
+    from .bedrock import level_name
+    dbdir = os.path.join(server_path, "worlds", level_name(server_path), "db")
+    db = leveldb_ro.read_db(dbdir, lambda k: k.startswith(b"player_"))
+    ref = db.get(f"player_{msa_id(xuid)}".encode())
+    if not ref:
+        raise ValueError("no-data")
+    sid = str(nbt_le.loads(ref)[1].get("ServerId", "")).encode()
+    data = db.get(sid)
+    if not data:
+        raise ValueError("no-data")
+    lv = {v: k for k, v in LEVEL_OF.items()}[level]
+    ab = dict(PRESETS.get(level) or {}, **(abilities or {}))
+    changes = {("playerPermissionsLevel",): lv, ("permissionsLevel",): 1 if level == "operator" else 0}
+    changes.update({("abilities", k): int(bool(v)) for k, v in ab.items()})
+    where = nbt_le.locate(data)
+    changes = {p: v for p, v in changes.items() if p in where}
+    leveldb_write.put(dbdir, sid, nbt_le.patch(data, changes))
+    # permissions.json özel yetkiyi bilmez: listedeki kayıt dünyadaki değeri ezmesin
+    set_permission(server_path, xuid, level if level in ("operator", "visitor") else "member")

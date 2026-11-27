@@ -34,6 +34,10 @@ def level_name(props):
 
 def dimension_dirs(server_path, level, dim):
     """Bir boyutun sunucu klasöründeki olası klasörleri (var olanlar)."""
+    from .bedrock import is_bedrock
+    if is_bedrock(server_path):                    # Bedrock: tek klasör (worlds/<dünya>), boyutlar içinde
+        p = os.path.join(server_path, "worlds", level)
+        return [p] if dim == "overworld" and os.path.isdir(p) else []
     base = os.path.join(server_path, level)
     cand = {
         "overworld": [base],

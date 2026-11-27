@@ -110,6 +110,21 @@ class BedrockPlayersPage(Page):
         self.b_perm = button("Yetkiyi Uygula", "ghost", self.apply_perm)
         self.b_allow = button("İzin Listesine Ekle / Çıkar", "ghost", self.toggle_allow)
         acts.add(row(label("Yetki"), self.perm, self.b_perm, self.b_allow, None, stretch_end=False))
+        self.perm_desc = label("", "Muted", wrap=True)
+        acts.add(self.perm_desc)
+        from PySide6.QtWidgets import QCheckBox, QWidget
+        self.ab_box = QWidget()
+        g = QGridLayout(self.ab_box)
+        g.setContentsMargins(0, 0, 0, 0)
+        g.setSpacing(6)
+        self.ab = {}
+        for i, (k, n) in enumerate(BPL.ABILITIES):
+            cb = QCheckBox(t(n))
+            cb.setCursor(Qt.PointingHandCursor)
+            self.ab[k] = cb
+            g.addWidget(cb, i // 4, i % 4)
+        acts.add(self.ab_box)
+        self.perm.currentIndexChanged.connect(self._perm_changed)
         right.addWidget(acts)
 
         # --- envanter ---
@@ -198,6 +213,7 @@ class BedrockPlayersPage(Page):
         self.status_lbl.setText(f"{st}{extra}  ·  {perm}  ·  {allowed}{xu}")
         self.face.setPixmap(heads.pixmap(p.get("xuid") or p["name"], p["name"], 48))
         self.perm.setCurrentIndex(max(0, self.perm.findData(p["perm"])))
+        self._perm_changed()
         if p.get("has_data"):
             hp = p.get("health") or 0
             food = int(p.get("hunger") or 0)
@@ -325,11 +341,41 @@ class BedrockPlayersPage(Page):
             key = next(k for k, n in modes if t(n) == pick)
             self.cmd(f"gamemode {key} {{p}}")
 
+    def _perm_changed(self, *_):
+        level = self.perm.currentData()
+        self.perm_desc.setText(t(BPL.PERM_DESC.get(level, "")))
+        custom = level == "custom"
+        self.ab_box.setVisible(custom)
+        if custom and self.current:
+            cur = self.current.get("abilities") or BPL.PRESETS["member"]
+            if self.current.get("perm") != "custom":
+                cur = BPL.PRESETS.get(self.current.get("perm"), cur)
+            for k, cb in self.ab.items():
+                cb.setChecked(bool(cur.get(k)))
+
     def apply_perm(self):
         p = self.current
         if not p or not p.get("xuid"):
             return
         level = self.perm.currentData()
+        if level == "custom" or not self._running():
+            # dünyadaki yetki (Özel dahil) yalnızca sunucu kapalıyken yazılabilir
+            if self._running():
+                self.warn(t("Özel yetki dünyaya yazılır; bunun için önce sunucuyu durdur."))
+                return
+            if not p.get("has_data"):
+                if level == "custom":
+                    self.warn(t("Özel yetki için oyuncunun sunucuya en az bir kez girmiş olması gerekir."))
+                    return
+            else:
+                try:
+                    BPL.write_permission(self.path, p["xuid"], level,
+                                         {k: cb.isChecked() for k, cb in self.ab.items()} if level == "custom" else None)
+                except Exception as e:
+                    self.error(t("Yetki yazılamadı: {e}", e=err_text(e)))
+                    return
+                self.on_show()
+                return
         BPL.set_permission(self.path, p["xuid"], level)
         if self._running() and p.get("online"):         # op/deop yalnızca oyundaki oyuncuda çalışır
             if level == "operator":

@@ -34,6 +34,7 @@ from .pages.velocity import VelocityPage
 from .pages.bots import BotsPage
 from .pages.bedrock_addons import BedrockAddonsPage
 from .pages.bedrock_players import BedrockPlayersPage
+from .pages.bedrock_settings import BedrockSettingsPage
 
 from core import N_
 
@@ -42,7 +43,7 @@ GROUPS = [
     ("general", N_("Genel"), [DashboardPage, ConsolePage, LogsPage, MapPage, EsploraPage, NotesPage]),
     ("players", N_("Oyuncular"), [PlayersPage, BedrockPlayersPage, TeamsPage, AdminPage, BotsPage]),
     ("content", N_("İçerik"), [PluginsPage, BedrockAddonsPage, ModTransPage, ContentPage]),
-    ("server", N_("Sunucu"), [VelocityPage, SettingsPage, ConfigsPage, FilesPage]),
+    ("server", N_("Sunucu"), [VelocityPage, SettingsPage, BedrockSettingsPage, ConfigsPage, FilesPage]),
     ("automation", N_("Otomasyon"), [MaintenancePage, TasksPage, DiscordPage]),
     ("security", N_("Güvenlik"), [GuardPage, DangerPage]),
 ]
@@ -141,13 +142,14 @@ class ServerPanel(QWidget):
         if is_bedrock(app.config.server_path):    # Bedrock (vanilla): Java dünyasına, eklentiye ve NBT'ye bağlı sayfalar yok
             self.hidden = set(self.hidden) | {PAGES.index(c) for c in (
                 MapPage, PlayersPage, TeamsPage, AdminPage, BotsPage, ModTransPage, ContentPage, SettingsPage,
-                MaintenancePage, PluginsPage, VelocityPage, ConfigsPage, GuardPage, DangerPage) if c in PAGES}
+                PluginsPage, VelocityPage, ConfigsPage, GuardPage) if c in PAGES}
         elif is_proxy(app.config.server_path):      # proxy'de dünya, oyuncu verisi ve server.properties yok
             self.hidden = set(self.hidden) | {PAGES.index(c) for c in (
                 MapPage, PlayersPage, TeamsPage, AdminPage, BotsPage, ModTransPage, ContentPage, SettingsPage,
-                MaintenancePage, BedrockAddonsPage, BedrockPlayersPage)}
+                MaintenancePage, BedrockAddonsPage, BedrockPlayersPage, BedrockSettingsPage)}
         else:
-            self.hidden = set(self.hidden) | {PAGES.index(c) for c in (VelocityPage, BedrockAddonsPage, BedrockPlayersPage)}
+            self.hidden = set(self.hidden) | {PAGES.index(c) for c in (VelocityPage, BedrockAddonsPage, BedrockPlayersPage,
+                                                                      BedrockSettingsPage)}
         for i, cls in enumerate(PAGES):
             page = cls(app, self.bridge)
             self.pages.append(page)
