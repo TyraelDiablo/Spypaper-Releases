@@ -31,11 +31,13 @@ def msa_id(xuid):
 
 
 def _json(path, default):
+    """BDS boş listeyi 'null' olarak yazar: türü uymayan içerik varsayılana döner."""
     try:
         with open(path, encoding="utf-8-sig") as f:
-            return json.load(f)
+            data = json.load(f)
     except (OSError, ValueError):
         return default
+    return data if isinstance(data, type(default)) else default
 
 
 def _write_json(path, data):

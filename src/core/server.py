@@ -143,6 +143,7 @@ class ServerProcess:
         self.run_id += 1
         try:                     # BDS log dosyası yazmaz: panelin log izleyicisi için konsolu logs/latest.log'a yazar
             os.makedirs(os.path.join(path, "logs"), exist_ok=True)
+            _archive_latest(os.path.join(path, "logs"))       # Java gibi: eskisi tarih-n.log.gz olur (geçmiş kaybolmaz)
             self._blog = open(os.path.join(path, "logs", "latest.log"), "w", encoding="utf-8")
         except OSError:
             self._blog = None
@@ -301,3 +302,22 @@ def classify_log_line(text):
     if level == "INFO":
         return "info"
     return "plain"
+
+
+def _archive_latest(logs):
+    """logs/latest.log -> logs/YYYY-MM-DD-n.log.gz (Java sunucularının yaptığı gibi)."""
+    import gzip
+    import shutil
+    from datetime import datetime
+    src = os.path.join(logs, "latest.log")
+    try:
+        if not os.path.isfile(src) or os.path.getsize(src) == 0:
+            return
+        day = datetime.fromtimestamp(os.path.getmtime(src)).strftime("%Y-%m-%d")
+        n = 1
+        while os.path.exists(os.path.join(logs, f"{day}-{n}.log.gz")):
+            n += 1
+        with open(src, "rb") as fi, gzip.open(os.path.join(logs, f"{day}-{n}.log.gz"), "wb") as fo:
+            shutil.copyfileobj(fi, fo)
+    except OSError:
+        pass
