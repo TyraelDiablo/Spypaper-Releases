@@ -693,6 +693,8 @@ class TextureDesigner(QDialog):
 
     def result_image(self):
         """2B doku (3B kipte de envanter yedeği olarak düz doku: modelin önden görünüşü)."""
+        if self.is_cube():
+            return self.faces.front()
         if self._mode == "3d":
             img = QImage(16, 16, QImage.Format_ARGB32)
             img.fill(Qt.transparent)
