@@ -122,7 +122,7 @@ class BedrockPlayersPage(Page):
             cb = QCheckBox(t(n))
             cb.setCursor(Qt.PointingHandCursor)
             self.ab[k] = cb
-            g.addWidget(cb, i // 4, i % 4)
+            g.addWidget(cb, i // 2, i % 2)        # 2 sütun: uzun yetenek adları kesilmesin
         acts.add(self.ab_box)
         self.perm.currentIndexChanged.connect(self._perm_changed)
         right.addWidget(acts)
@@ -137,8 +137,14 @@ class BedrockPlayersPage(Page):
         self.state = label("", "Muted", wrap=True)
         data.add(self.state)
         right.addWidget(data, 1)
-        bridge.state.connect(lambda s: self._update_actions())
+        bridge.state.connect(self._state_changed)
         self._update_actions()
+
+    def _state_changed(self, s):
+        self._update_actions()
+        # sunucu açılıp kapanınca çevrimiçi bilgisi değişir: listeyi yeniden oku
+        if self.isVisible():
+            self.on_show()
 
     @property
     def path(self):
