@@ -377,7 +377,9 @@ class BedrockPlayersPage(Page):
                 self.on_show()
                 return
         BPL.set_permission(self.path, p["xuid"], level)
-        if self._running() and p.get("online"):         # op/deop yalnızca oyundaki oyuncuda çalışır
+        # op/deop yalnızca oyundaki oyuncuda çalışır; sayfadaki durum eski olabilir, o an yeniden bak.
+        # Çevrimdışıysa permissions.json yeter: oyuncu girince yetkisi uygulanır.
+        if self._running() and p["name"].lower() in self._online():
             if level == "operator":
                 self.app.server.try_send(f"op {_q(p['name'])}")
             elif p["perm"] == "operator":
