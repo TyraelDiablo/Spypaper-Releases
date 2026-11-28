@@ -1573,6 +1573,7 @@
   "Oyuncu etkileşimini kapat": "Oyunçu qarşılıqlı əlaqəsini bağla",
   "Oyuncu girdi": "Oyunçu girdi",
   "Oyuncu girince duraklat, sunucu boşalınca devam et": "Oyunçu girəndə dayandır, server boşalanda davam et",
+  "Oyuncu henüz girmediği için Özel yetki bekletiliyor; ilk girişinden sonra sunucu yeniden başlarken uygulanır.": "Oyunçu hələ girmədiyi üçün Xüsusi icazə gözlədilir; ilk girişindən sonra server yenidən başlayanda tətbiq olunur.",
   "Oyuncu kafalarını göster": "Oyunçu başlarını göstər",
   "Oyuncu listesi ve çevrimiçi oyuncular": "Oyunçu siyahısı və onlayn oyunçular",
   "Oyuncu olayları ve sohbet sunucunun konsolundan okunur; yalnızca Spypaper'ın başlattığı sunucularda çalışır. Sohbet mesajları Discord'a gönderilir, oyuncularını bilgilendir. Mesajlarda @everyone ve etiketler çalışmaz.": "Oyunçu hadisələri və söhbət serverin konsolundan oxunur; yalnız Spypaper-in başlatdığı serverlərdə işləyir. Söhbət mesajları Discord-a göndərilir, oyunçularını məlumatlandır. Mesajlarda @everyone və etiketlər işləmir.",

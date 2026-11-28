@@ -1573,6 +1573,7 @@
   "Oyuncu etkileşimini kapat": "Desactivar interacción entre jugadores",
   "Oyuncu girdi": "Jugador conectado",
   "Oyuncu girince duraklat, sunucu boşalınca devam et": "Pausar cuando entren jugadores y seguir cuando el servidor esté vacío",
+  "Oyuncu henüz girmediği için Özel yetki bekletiliyor; ilk girişinden sonra sunucu yeniden başlarken uygulanır.": "El jugador aún no ha entrado, así que el permiso personalizado queda pendiente; se aplica al reiniciar el servidor tras su primera entrada.",
   "Oyuncu kafalarını göster": "Mostrar cabezas de jugadores",
   "Oyuncu listesi ve çevrimiçi oyuncular": "Lista de jugadores y jugadores conectados",
   "Oyuncu olayları ve sohbet sunucunun konsolundan okunur; yalnızca Spypaper'ın başlattığı sunucularda çalışır. Sohbet mesajları Discord'a gönderilir, oyuncularını bilgilendir. Mesajlarda @everyone ve etiketler çalışmaz.": "Los eventos de jugadores y el chat se leen de la consola del servidor; solo funcionan en servidores iniciados por Spypaper. Los mensajes del chat se envían a Discord; avisa a tus jugadores. @everyone y las menciones nunca funcionan en estos mensajes.",

@@ -117,7 +117,7 @@ def set_permission(server_path, xuid, level):
     """permissions.json'a yazar; 'member' varsayılandır ve listeden çıkarılır."""
     items = [e for e in _json(os.path.join(server_path, "permissions.json"), [])
              if isinstance(e, dict) and str(e.get("xuid")) != str(xuid)]
-    if level in ("operator", "visitor"):
+    if level in ("operator", "visitor", "custom"):     # BDS Özel yetkiyi de "custom" olarak burada tutar
         items.append({"permission": level, "xuid": str(xuid)})
     _write_json(os.path.join(server_path, "permissions.json"), items)
 
@@ -266,5 +266,44 @@ def write_permission(server_path, xuid, level, abilities=None):
     where = nbt_le.locate(data)
     changes = {p: v for p, v in changes.items() if p in where}
     leveldb_write.put(dbdir, sid, nbt_le.patch(data, changes))
-    # permissions.json özel yetkiyi bilmez: listedeki kayıt dünyadaki değeri ezmesin
-    set_permission(server_path, xuid, level if level in ("operator", "visitor") else "member")
+    # BDS girişte permissions.json'a bakar; "custom" yazılıysa dünyadaki yeteneklere dokunmaz
+    set_permission(server_path, xuid, level)
+
+
+# ------------------------------------------------------------------ ilk girişte verilecek Özel yetki
+def _pending_path(server_path):
+    return os.path.join(server_path, ".spypaper", "pending_perms.json")
+
+
+def pending(server_path):
+    """{xuid: {ad: 0/1}} — verisi henüz olmayan oyunculara bekleyen Özel yetkiler."""
+    d = _json(_pending_path(server_path), {})
+    return d if isinstance(d, dict) else {}
+
+
+def set_pending(server_path, xuid, abilities):
+    d = pending(server_path)
+    if abilities is None:
+        d.pop(str(xuid), None)
+    else:
+        d[str(xuid)] = {k: int(bool(v)) for k, v in abilities.items()}
+    os.makedirs(os.path.dirname(_pending_path(server_path)), exist_ok=True)
+    _write_json(_pending_path(server_path), d)
+    if abilities is not None:
+        set_permission(server_path, xuid, "custom")
+
+
+def apply_pending(server_path):
+    """Sunucu başlamadan hemen önce (kapalıyken) çağrılır: verisi oluşmuş oyunculara bekleyen yetkiyi yazar."""
+    from .bedrock import is_bedrock
+    if not is_bedrock(server_path):
+        return
+    d = pending(server_path)
+    for xuid, ab in list(d.items()):
+        try:
+            write_permission(server_path, xuid, "custom", ab)
+            d.pop(xuid)
+        except ValueError:          # oyuncu henüz girmedi
+            pass
+    if d != pending(server_path):
+        _write_json(_pending_path(server_path), d)

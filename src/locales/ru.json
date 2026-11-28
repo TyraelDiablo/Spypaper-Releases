@@ -1573,6 +1573,7 @@
   "Oyuncu etkileşimini kapat": "Отключить взаимодействие игроков",
   "Oyuncu girdi": "Игрок вошёл",
   "Oyuncu girince duraklat, sunucu boşalınca devam et": "Ставить на паузу при входе игроков и продолжать, когда сервер пуст",
+  "Oyuncu henüz girmediği için Özel yetki bekletiliyor; ilk girişinden sonra sunucu yeniden başlarken uygulanır.": "Игрок ещё не заходил, поэтому особые права ожидают; они применятся при перезапуске после его первого входа.",
   "Oyuncu kafalarını göster": "Показывать головы игроков",
   "Oyuncu listesi ve çevrimiçi oyuncular": "Список игроков и игроки онлайн",
   "Oyuncu olayları ve sohbet sunucunun konsolundan okunur; yalnızca Spypaper'ın başlattığı sunucularda çalışır. Sohbet mesajları Discord'a gönderilir, oyuncularını bilgilendir. Mesajlarda @everyone ve etiketler çalışmaz.": "События игроков и чат читаются из консоли сервера, поэтому работают только для серверов, запущенных Spypaper. Сообщения чата отправляются в Discord; предупредите игроков. @everyone и упоминания в этих сообщениях никогда не срабатывают.",

@@ -69,6 +69,7 @@ class App:
             print(f"[playermsg] {e}")
         self.server.state_hooks.append(self._bots_on_start)
         self.server.prestart_hooks.append(lambda path: __import__("core.playermsg", fromlist=["x"]).refresh_plugin(path))
+        self.server.prestart_hooks.append(lambda path: __import__("core.bedrock_players", fromlist=["x"]).apply_pending(path))
         self.scheduler.reporter = self._report
         self.scheduler.on_report = lambda title, lines: self.discord.event("report", name=title, text="\n".join(__import__("core.report", fromlist=["x"]).plain(lines)))
 

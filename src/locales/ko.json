@@ -1573,6 +1573,7 @@
   "Oyuncu etkileşimini kapat": "플레이어 상호작용 끄기",
   "Oyuncu girdi": "플레이어 접속",
   "Oyuncu girince duraklat, sunucu boşalınca devam et": "플레이어가 접속하면 일시정지, 서버가 비면 재개",
+  "Oyuncu henüz girmediği için Özel yetki bekletiliyor; ilk girişinden sonra sunucu yeniden başlarken uygulanır.": "플레이어가 아직 접속하지 않아 사용자 지정 권한이 대기 중이며, 첫 접속 후 서버를 다시 시작할 때 적용됩니다.",
   "Oyuncu kafalarını göster": "플레이어 머리 표시",
   "Oyuncu listesi ve çevrimiçi oyuncular": "플레이어 목록과 접속 중인 플레이어",
   "Oyuncu olayları ve sohbet sunucunun konsolundan okunur; yalnızca Spypaper'ın başlattığı sunucularda çalışır. Sohbet mesajları Discord'a gönderilir, oyuncularını bilgilendir. Mesajlarda @everyone ve etiketler çalışmaz.": "플레이어 이벤트와 채팅은 서버 콘솔에서 읽으므로 Spypaper로 시작한 서버에서만 동작합니다. 채팅 메시지는 Discord로 전송되니 플레이어에게 알려 주세요. 이 메시지에서 @everyone과 멘션은 작동하지 않습니다.",

@@ -1573,6 +1573,7 @@
   "Oyuncu etkileşimini kapat": "Spelerinteractie uitschakelen",
   "Oyuncu girdi": "Speler gejoind",
   "Oyuncu girince duraklat, sunucu boşalınca devam et": "Pauzeren als spelers joinen, hervatten als de server leeg is",
+  "Oyuncu henüz girmediği için Özel yetki bekletiliyor; ilk girişinden sonra sunucu yeniden başlarken uygulanır.": "De speler is nog niet geweest, dus het aangepaste recht wacht; het wordt toegepast bij de herstart na de eerste join.",
   "Oyuncu kafalarını göster": "Spelerhoofden tonen",
   "Oyuncu listesi ve çevrimiçi oyuncular": "Spelerslijst en online spelers",
   "Oyuncu olayları ve sohbet sunucunun konsolundan okunur; yalnızca Spypaper'ın başlattığı sunucularda çalışır. Sohbet mesajları Discord'a gönderilir, oyuncularını bilgilendir. Mesajlarda @everyone ve etiketler çalışmaz.": "Spelergebeurtenissen en chat worden uit de serverconsole gelezen en werken alleen bij servers die Spypaper heeft gestart. Chatberichten gaan naar Discord; laat je spelers dat weten. @everyone en vermeldingen werken nooit in deze berichten.",

@@ -1573,6 +1573,7 @@
   "Oyuncu etkileşimini kapat": "Disattiva interazione tra giocatori",
   "Oyuncu girdi": "Giocatore entrato",
   "Oyuncu girince duraklat, sunucu boşalınca devam et": "Metti in pausa quando entrano giocatori, riprendi a server vuoto",
+  "Oyuncu henüz girmediği için Özel yetki bekletiliyor; ilk girişinden sonra sunucu yeniden başlarken uygulanır.": "Il giocatore non è ancora entrato: il permesso personalizzato resta in attesa e verrà applicato al riavvio dopo il primo accesso.",
   "Oyuncu kafalarını göster": "Mostra le teste dei giocatori",
   "Oyuncu listesi ve çevrimiçi oyuncular": "Elenco giocatori e giocatori online",
   "Oyuncu olayları ve sohbet sunucunun konsolundan okunur; yalnızca Spypaper'ın başlattığı sunucularda çalışır. Sohbet mesajları Discord'a gönderilir, oyuncularını bilgilendir. Mesajlarda @everyone ve etiketler çalışmaz.": "Gli eventi dei giocatori e la chat vengono letti dalla console del server; funzionano solo con server avviati da Spypaper. I messaggi della chat vengono inviati a Discord; avvisa i tuoi giocatori. @everyone e le menzioni non funzionano mai in questi messaggi.",

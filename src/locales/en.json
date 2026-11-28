@@ -1573,6 +1573,7 @@
   "Oyuncu etkileşimini kapat": "Disable player interaction",
   "Oyuncu girdi": "Player joined",
   "Oyuncu girince duraklat, sunucu boşalınca devam et": "Pause when players join, resume when the server is empty",
+  "Oyuncu henüz girmediği için Özel yetki bekletiliyor; ilk girişinden sonra sunucu yeniden başlarken uygulanır.": "The player hasn't joined yet, so the Custom permission is pending; it's applied when the server restarts after their first join.",
   "Oyuncu kafalarını göster": "Show player heads",
   "Oyuncu listesi ve çevrimiçi oyuncular": "Player list and online players",
   "Oyuncu olayları ve sohbet sunucunun konsolundan okunur; yalnızca Spypaper'ın başlattığı sunucularda çalışır. Sohbet mesajları Discord'a gönderilir, oyuncularını bilgilendir. Mesajlarda @everyone ve etiketler çalışmaz.": "Player events and chat are read from the server console, so they only work for servers started by Spypaper. Chat messages are sent to Discord; let your players know. @everyone and mentions never work in these messages.",

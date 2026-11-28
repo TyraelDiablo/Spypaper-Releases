@@ -1573,6 +1573,7 @@
   "Oyuncu etkileşimini kapat": "禁用玩家互动",
   "Oyuncu girdi": "玩家加入",
   "Oyuncu girince duraklat, sunucu boşalınca devam et": "有玩家进入时暂停，服务器空闲时继续",
+  "Oyuncu henüz girmediği için Özel yetki bekletiliyor; ilk girişinden sonra sunucu yeniden başlarken uygulanır.": "玩家尚未加入，自定义权限暂缓；将在其首次加入后服务器重启时应用。",
   "Oyuncu kafalarını göster": "显示玩家头像",
   "Oyuncu listesi ve çevrimiçi oyuncular": "玩家列表和在线玩家",
   "Oyuncu olayları ve sohbet sunucunun konsolundan okunur; yalnızca Spypaper'ın başlattığı sunucularda çalışır. Sohbet mesajları Discord'a gönderilir, oyuncularını bilgilendir. Mesajlarda @everyone ve etiketler çalışmaz.": "玩家事件和聊天从服务器控制台读取，因此仅适用于由 Spypaper 启动的服务器。聊天消息会发送到 Discord，请告知你的玩家。这些消息中的 @everyone 和提及永远不会生效。",

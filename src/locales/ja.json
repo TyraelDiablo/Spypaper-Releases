@@ -1573,6 +1573,7 @@
   "Oyuncu etkileşimini kapat": "プレイヤー間の操作を無効化",
   "Oyuncu girdi": "プレイヤー参加",
   "Oyuncu girince duraklat, sunucu boşalınca devam et": "プレイヤー参加時に一時停止し、無人になったら再開",
+  "Oyuncu henüz girmediği için Özel yetki bekletiliyor; ilk girişinden sonra sunucu yeniden başlarken uygulanır.": "プレイヤーがまだ参加していないため、カスタム権限は保留中です。初参加後のサーバー再起動時に適用されます。",
   "Oyuncu kafalarını göster": "プレイヤーの頭を表示",
   "Oyuncu listesi ve çevrimiçi oyuncular": "プレイヤー一覧とオンラインのプレイヤー",
   "Oyuncu olayları ve sohbet sunucunun konsolundan okunur; yalnızca Spypaper'ın başlattığı sunucularda çalışır. Sohbet mesajları Discord'a gönderilir, oyuncularını bilgilendir. Mesajlarda @everyone ve etiketler çalışmaz.": "プレイヤーのイベントとチャットはサーバーのコンソールから読み取るため、Spypaper で起動したサーバーでのみ動作します。チャットは Discord に送信されるので、プレイヤーに知らせてください。これらのメッセージでは @everyone やメンションは機能しません。",

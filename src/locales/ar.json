@@ -1573,6 +1573,7 @@
   "Oyuncu etkileşimini kapat": "تعطيل تفاعل اللاعبين",
   "Oyuncu girdi": "انضم لاعب",
   "Oyuncu girince duraklat, sunucu boşalınca devam et": "الإيقاف المؤقت عند دخول اللاعبين والاستئناف عندما يفرغ الخادم",
+  "Oyuncu henüz girmediği için Özel yetki bekletiliyor; ilk girişinden sonra sunucu yeniden başlarken uygulanır.": "لم يدخل اللاعب بعد، لذا الصلاحية المخصّصة معلّقة؛ وتُطبَّق عند إعادة تشغيل الخادم بعد أول دخول له.",
   "Oyuncu kafalarını göster": "عرض رؤوس اللاعبين",
   "Oyuncu listesi ve çevrimiçi oyuncular": "قائمة اللاعبين واللاعبون المتصلون",
   "Oyuncu olayları ve sohbet sunucunun konsolundan okunur; yalnızca Spypaper'ın başlattığı sunucularda çalışır. Sohbet mesajları Discord'a gönderilir, oyuncularını bilgilendir. Mesajlarda @everyone ve etiketler çalışmaz.": "تُقرأ أحداث اللاعبين والدردشة من وحدة تحكم الخادم، لذا تعمل فقط مع الخوادم التي شغّلها Spypaper. تُرسل رسائل الدردشة إلى Discord؛ أبلغ لاعبيك. لا تعمل ‎@everyone والإشارات في هذه الرسائل أبدًا.",

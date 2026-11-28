@@ -371,7 +371,9 @@ class BedrockPlayersPage(Page):
                 return
             if not p.get("has_data"):
                 if level == "custom":
-                    self.warn(t("Özel yetki için oyuncunun sunucuya en az bir kez girmiş olması gerekir."))
+                    BPL.set_pending(self.path, p["xuid"], {k: cb.isChecked() for k, cb in self.ab.items()})
+                    self.info(t("Oyuncu henüz girmediği için Özel yetki bekletiliyor; ilk girişinden sonra sunucu yeniden başlarken uygulanır."))
+                    self.on_show()
                     return
             else:
                 try:
