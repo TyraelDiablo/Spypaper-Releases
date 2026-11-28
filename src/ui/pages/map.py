@@ -5,7 +5,7 @@ import webbrowser
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal
 from PySide6.QtWidgets import QLineEdit, QProgressBar, QStackedWidget, QVBoxLayout, QWidget
 
-from core import N_, bluemap, software
+from core import N_, bluemap, software, structures
 from core.config import detect_version
 from ..i18n import t
 from ..widgets import Card, Page, ask, button, label, row
@@ -26,6 +26,7 @@ class MapPage(Page):
     found = Signal(dict, bool, str)
     progress = Signal(int, int)
     installed = Signal(str, str)
+    marked = Signal(object, str)
 
     def __init__(self, app, bridge):
         super().__init__(app, bridge)
@@ -43,7 +44,10 @@ class MapPage(Page):
         self.addr.setMaximumWidth(280)
         self.btn_reload = button("Yenile", "ghost", self.refresh)
         self.btn_browser = button("Tarayıcıda Aç", "ghost", lambda: webbrowser.open(self.url()))
-        self.root.addLayout(row(self.state, None, self.addr, self.btn_reload, self.btn_browser, stretch_end=False))
+        self.btn_struct = button("Yapılar", "ghost", self._struct_menu,
+                                 tooltip=t("Oluşmuş yapıları (köy, kale, antik şehir…) haritada işaretle"))
+        self.root.addLayout(row(self.state, None, self.addr, self.btn_struct, self.btn_reload, self.btn_browser,
+                                stretch_end=False))
 
         self.stack = QStackedWidget()
         self.root.addWidget(self.stack, 1)
@@ -85,6 +89,14 @@ class MapPage(Page):
         self.found.connect(self._on_found)
         self.progress.connect(lambda a, b: (self.bar.setMaximum(max(b, 1)), self.bar.setValue(a)))
         self.installed.connect(self._on_installed)
+        self.marked.connect(self._on_marked)
+        self.marking = False
+        # yapı işaretleri: sunucu kapanınca (bölge dosyaları tam yazılmışken) ve açıkken yarım saatte bir yenilenir
+        bridge.state.connect(lambda s: s == "stopped" and self.update_structures(quiet=True))
+        self.struct_timer = QTimer(self)
+        self.struct_timer.setInterval(30 * 60 * 1000)
+        self.struct_timer.timeout.connect(lambda: self.app.server.is_running and self.update_structures(quiet=True))
+        self.struct_timer.start()
         # sunucu açılınca BlueMap'in web sunucusu birkaç saniye sonra hazır olur: kısa aralıklarla tekrar dene
         self.retry = QTimer(self)
         self.retry.setInterval(5000)
@@ -193,6 +205,70 @@ class MapPage(Page):
         if not ok:
             self.loaded_url = ""
             self.state.setText(t("Harita yüklenemedi"))
+
+    # ---------------------------------------------------------------- yapı işaretleri
+    def _struct_menu(self):
+        from PySide6.QtWidgets import QMenu
+        c = self.app.config
+        m = QMenu(self)
+        on = m.addAction(t("Yapıları haritada göster"))
+        on.setCheckable(True)
+        on.setChecked(bool(c.get("map_structures")))
+        on.toggled.connect(lambda v: (c.set("map_structures", v), self.update_structures()))
+        m.addSeparator()
+        groups = set(c.get("map_structure_groups") or [])
+        for key, name in structures.GROUPS:
+            a = m.addAction(t(name))
+            a.setCheckable(True)
+            a.setChecked(key in groups)
+            a.setEnabled(bool(c.get("map_structures")))
+
+            def flip(v, key=key):
+                g = set(c.get("map_structure_groups") or [])
+                g.add(key) if v else g.discard(key)
+                c.set("map_structure_groups", sorted(g))
+                self.update_structures()
+            a.toggled.connect(flip)
+        m.addSeparator()
+        up = m.addAction(t("Şimdi güncelle"))
+        up.setEnabled(bool(c.get("map_structures")))
+        up.triggered.connect(lambda: self.update_structures())
+        hint = m.addAction(t("Yalnızca oluşmuş yerlerdeki yapılar gösterilir; keşfedilmemiş yerler ele verilmez."))
+        hint.setEnabled(False)
+        m.exec(self.btn_struct.mapToGlobal(self.btn_struct.rect().bottomLeft()))
+
+    def update_structures(self, quiet=False):
+        c = self.app.config
+        from core.bedrock import is_bedrock
+        enabled = bool(c.get("map_structures"))
+        sp = c.server_path
+        if self.marking or not sp or is_bedrock(sp) or not bluemap.config_dir(sp) or (quiet and not enabled):
+            return
+        self.marking = True
+        groups = set(c.get("map_structure_groups") or [])
+        label_ = t("Yapılar")
+
+        def work():
+            try:
+                self.marked.emit(structures.update(sp, groups, t, label_, enabled), "quiet" if quiet else "")
+            except Exception as e:
+                self.marked.emit(e, "quiet" if quiet else "")
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_marked(self, res, mode):
+        self.marking = False
+        if isinstance(res, Exception):
+            if not mode:
+                from ..widgets import err_text
+                self.error(t("Yapılar okunamadı: {e}", e=err_text(res)))
+            return
+        if self.app.server.is_running:
+            self.app.server.try_send("bluemap reload")      # BlueMap ayarları yeniden okuyup işaretleri günceller
+        if not mode:
+            if not self.app.config.get("map_structures"):
+                self.info(t("Yapı işaretleri kaldırıldı."))
+            else:
+                self.info(t("{n} yapı işaretlendi.", n=sum(res.values())))
 
     # ---------------------------------------------------------------- işlemler
     def _start_server(self):

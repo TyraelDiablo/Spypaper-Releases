@@ -31,6 +31,9 @@ SERVER_DEFAULTS = {
     "ram_min": "2G",
     "ram_max": "4G",
     "bluemap_url": "http://localhost:8100",
+    "map_structures": False,        # core.structures: oluşmuş yapıları BlueMap'te işaretle
+    "map_structure_groups": ["village", "outpost", "mansion", "stronghold", "ancient_city", "trial", "monument",
+                             "temple", "nether", "end_city"],
     "maintenance_schedule": {},   # core.maintenance.SCHEDULE_DEFAULTS
     "maintenance_state": {},
     "scheduled_tasks": [],     # core.scheduler: zamanlanmış görevler
